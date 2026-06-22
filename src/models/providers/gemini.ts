@@ -235,10 +235,10 @@ export class GeminiProvider implements LLMProvider {
       if (geminiTools) {
         params.tools = geminiTools;
 
-        // Add toolConfig to force function calling
+        // Add toolConfig to enable function calling
         params.toolConfig = {
           functionCallingConfig: {
-            mode: "ANY" // Use ANY mode to force the model to use function calls
+            mode: "AUTO" // Use AUTO mode so the model can choose whether to use tools or reply with text
           }
         };
       }

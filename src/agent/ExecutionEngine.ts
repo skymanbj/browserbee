@@ -463,6 +463,28 @@ The <requires_approval> tag is mandatory. Set it to "true" for purchases, data d
           }
 
           if (!toolMatch) {
+            // Check if the LLM responded with text describing an action it intends to take
+            // but forgot to use a tool - this is a common failure mode
+            const actionIntentionPattern = /让我|我会|我来|我先|我想|马上|稍等|正在|好的|I'll|I will|I need to|I should|let me|需要|应该|打算|接下来/i;
+            const hasActionIntention = actionIntentionPattern.test(accumulatedText);
+            
+            // Also check if the response is relatively short (likely a plan description, not a completion)
+            const isShortResponse = accumulatedText.trim().length < 500;
+            
+            if (hasActionIntention && isShortResponse && !accumulatedText.includes("完成") && !accumulatedText.includes("done") && !accumulatedText.includes("summary")) {
+              console.log("LLM responded with action intention but no tool call, retrying with explicit instruction");
+              
+              // Add the LLM's response and a corrective user message
+              messages.push(
+                { role: "assistant", content: accumulatedText },
+                {
+                  role: "user",
+                  content: `Error: You described what you would do but did not actually use a tool. You MUST use a tool to perform actions. Please immediately call the appropriate tool to perform the action you described. Use the exact XML format: <tool>tool_name</tool><input>arguments</input><requires_approval>true or false</requires_approval>`
+                }
+              );
+              continue; // Continue to the next iteration to retry
+            }
+            
             // no tool tag ⇒ task complete
             done = true;
             break;

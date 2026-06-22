@@ -13,9 +13,24 @@ export const browserClick: ToolFactory = (page: Page) =>
         return await withActivePage(page, async (activePage) => {
           if (/[#.[]/.test(input)) {
             await activePage.click(input);
+          } else {
+            await activePage.getByText(input).click();
+          }
+
+          // Wait up to 1.5 seconds for potential navigation/loading to complete
+          try {
+            await Promise.race([
+              activePage.waitForLoadState("load", { timeout: 1500 }),
+              activePage.waitForLoadState("networkidle", { timeout: 1500 }).catch(() => {}),
+              new Promise(resolve => setTimeout(resolve, 1500))
+            ]);
+          } catch (e) {
+            // Ignore wait timeouts
+          }
+
+          if (/[#.[]/.test(input)) {
             return `Clicked selector: ${input}`;
           }
-          await activePage.getByText(input).click();
           return `Clicked element containing text: ${input}`;
         });
       } catch (error) {

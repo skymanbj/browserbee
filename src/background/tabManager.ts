@@ -139,7 +139,7 @@ export async function getCrxApp(windowId?: number, forceNew = false): Promise<Aw
       if (defaultCrxAppPromise) {
         try {
           const oldApp = await defaultCrxAppPromise;
-          await oldApp.close().catch(() => {});
+          await Promise.resolve(oldApp.close()).catch(() => {});
         } catch (e) {
           // Ignore errors
         }
@@ -163,7 +163,7 @@ export async function getCrxApp(windowId?: number, forceNew = false): Promise<Aw
     if (windowToCrxAppMap.has(windowId)) {
       try {
         const oldApp = await windowToCrxAppMap.get(windowId)!;
-        await oldApp.close().catch(() => {});
+        await Promise.resolve(oldApp.close()).catch(() => {});
       } catch (e) {
         // Ignore errors
       }
@@ -613,7 +613,7 @@ export async function resetPlaywright(): Promise<boolean> {
     for (const [windowId, appPromise] of windowToCrxAppMap.entries()) {
       try {
         const app = await appPromise;
-        closePromises.push(app.close().catch(err => {
+        closePromises.push(Promise.resolve(app.close()).catch(err => {
           handleError(err, `closing Playwright instance for window ${windowId}`);
         }));
       } catch (error) {
@@ -628,7 +628,7 @@ export async function resetPlaywright(): Promise<boolean> {
     if (defaultCrxAppPromise) {
       try {
         const app = await defaultCrxAppPromise;
-        closePromises.push(app.close().catch(err => {
+        closePromises.push(Promise.resolve(app.close()).catch(err => {
           handleError(err, 'closing default Playwright instance');
         }));
       } catch (error) {
@@ -752,7 +752,7 @@ export function setupTabListeners(): void {
     if (windowToCrxAppMap.has(windowId)) {
       try {
         const app = await windowToCrxAppMap.get(windowId)!;
-        await app.close().catch(err => {
+        await Promise.resolve(app.close()).catch(err => {
           handleError(err, `closing Playwright instance for window ${windowId}`);
         });
       } catch (error) {
@@ -787,7 +787,7 @@ export async function cleanupOnUnload(): Promise<void> {
   for (const [windowId, appPromise] of windowToCrxAppMap.entries()) {
     try {
       const app = await appPromise;
-      closePromises.push(app.close().catch(err => {
+      closePromises.push(Promise.resolve(app.close()).catch(err => {
         handleError(err, `closing Playwright instance for window ${windowId}`);
       }));
     } catch (error) {
@@ -802,7 +802,7 @@ export async function cleanupOnUnload(): Promise<void> {
   if (defaultCrxAppPromise) {
     try {
       const app = await defaultCrxAppPromise;
-      closePromises.push(app.close().catch(err => {
+      closePromises.push(Promise.resolve(app.close()).catch(err => {
         handleError(err, 'closing default Playwright instance');
       }));
     } catch (error) {

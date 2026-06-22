@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export const useTabManagement = () => {
+export const useTabManagement = (isProcessing: boolean) => {
   const [tabId, setTabId] = useState<number | null>(null);
   const [windowId, setWindowId] = useState<number | null>(null);
   const [tabTitle, setTabTitle] = useState<string>('');
@@ -42,6 +42,42 @@ export const useTabManagement = () => {
 
     getCurrentTab();
   }, []);
+
+  // Listen for user manually switching active tabs in Chrome
+  useEffect(() => {
+    // If the agent is running/processing, do NOT follow active tab changes
+    if (isProcessing) return;
+
+    const handleActivated = async (activeInfo: chrome.tabs.TabActiveInfo) => {
+      try {
+        const tab = await chrome.tabs.get(activeInfo.tabId);
+        if (tab && tab.id) {
+          const activeTabId = tab.id;
+          const activeWindowId = tab.windowId;
+          const activeTabTitle = tab.title || 'Unknown Tab';
+
+          setTabId(activeTabId);
+          setWindowId(activeWindowId);
+          setTabTitle(activeTabTitle);
+          console.log(`User switched active tab. Binding to tab ID ${activeTabId} in window ${activeWindowId}`);
+
+          // Sync to background
+          chrome.runtime.sendMessage({
+            action: 'initializeTab',
+            tabId: activeTabId,
+            windowId: activeWindowId
+          });
+        }
+      } catch (error) {
+        console.error('Error handling active tab change:', error);
+      }
+    };
+
+    chrome.tabs.onActivated.addListener(handleActivated);
+    return () => {
+      chrome.tabs.onActivated.removeListener(handleActivated);
+    };
+  }, [isProcessing]);
 
   // Listen for tab updates to update the tab title in real-time
   useEffect(() => {

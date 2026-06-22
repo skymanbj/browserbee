@@ -53,13 +53,6 @@ export function SidePanel() {
 
   // Use custom hooks to manage state and functionality
   const {
-    tabId,
-    windowId,
-    tabTitle,
-    setTabTitle
-  } = useTabManagement();
-
-  const {
     messages,
     streamingSegments,
     isStreaming,
@@ -75,6 +68,13 @@ export function SidePanel() {
     clearMessages,
     currentSegmentId
   } = useMessageManagement();
+
+  const {
+    tabId,
+    windowId,
+    tabTitle,
+    setTabTitle
+  } = useTabManagement(isProcessing);
 
   // Heartbeat interval for checking agent status
   useEffect(() => {

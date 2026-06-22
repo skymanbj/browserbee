@@ -5,10 +5,10 @@ import { OpenAIProvider } from './openai';
 import { OpenAICompatibleProvider, OpenAICompatibleProviderOptions, OpenAICompatibleInstance } from './openai-compatible';
 import { LLMProvider, ProviderOptions } from './types';
 
-export type ProviderId = 'anthropic' | 'openai' | 'gemini' | 'ollama' | `openai-compatible:${string}`;
+export type ProviderId = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'openai-compatible' | `openai-compatible:${string}`;
 
-function isOpenAICompatibleProvider(provider: string): provider is `openai-compatible:${string}` {
-  return provider.startsWith('openai-compatible:');
+function isOpenAICompatibleProvider(provider: string): provider is 'openai-compatible' | `openai-compatible:${string}` {
+  return provider === 'openai-compatible' || provider.startsWith('openai-compatible:');
 }
 
 function extractInstanceId(provider: string): string {
@@ -25,6 +25,16 @@ export async function createProvider(
     const instances: OpenAICompatibleInstance[] = (await chrome.storage.sync.get({ openaiCompatibleInstances: [] })).openaiCompatibleInstances || [];
     const instance = instances.find((inst: OpenAICompatibleInstance) => inst.id === instanceId);
     if (!instance) {
+      // Fallback for tests or when no instance is configured yet but options are provided
+      if (options && (options.apiKey || options.baseUrl)) {
+        return new OpenAICompatibleProvider({
+          apiKey: options.apiKey,
+          baseUrl: options.baseUrl,
+          apiModelId: options.apiModelId,
+          openaiCompatibleModels: (options as any).openaiCompatibleModels || [],
+          dangerouslyAllowBrowser: true,
+        } as OpenAICompatibleProviderOptions);
+      }
       throw new Error(`OpenAI-compatible instance "${instanceId}" not found. Please configure it in the extension options.`);
     }
     return new OpenAICompatibleProvider({

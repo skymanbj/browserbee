@@ -34,29 +34,27 @@ const _origSendMessage = (chrome.runtime.sendMessage as Function).bind(
     return _origSendMessage(message, callback);
   }
 
-  // Wrap in callback to ensure lastError doesn't surface as an unhandled rejection.
+  // If no callback is provided, return a Promise (in MV3, sendMessage returns a Promise if no callback is specified).
   try {
-    return _origSendMessage(message, () => {
-      // Swallow expected shutdown/teardown errors silently.
-      const err = chrome.runtime.lastError;
-      if (!err) return;
-      const msg = String(err.message || err);
-      if (
-        msg.includes("Receiving end does not exist") ||
-        msg.includes("Extension context invalidated") ||
-        msg.includes("Could not establish connection")
-      ) {
-        return;
-      }
-      // For unexpected errors, still avoid throwing.
-      return;
-    });
-  } catch {
-    // Fallback to promise-based swallow.
-    const result = _origSendMessage(message);
-    if (result && typeof result.catch === "function") {
-      return result.catch(() => undefined);
+    const promise = _origSendMessage(message);
+    if (promise && typeof promise.catch === "function") {
+      return promise.catch((err: any) => {
+        const msg = String(err?.message || err);
+        if (
+          msg.includes("Receiving end does not exist") ||
+          msg.includes("Extension context invalidated") ||
+          msg.includes("Could not establish connection")
+        ) {
+          // Swallow expected connection-related errors
+          return;
+        }
+        // Re-throw other unexpected errors to allow calling sites to catch them
+        throw err;
+      });
     }
-    return result;
+    // Guarantee a Promise is returned even if the original returned undefined (common in non-background contexts)
+    return Promise.resolve(promise);
+  } catch (err) {
+    return Promise.reject(err);
   }
 };

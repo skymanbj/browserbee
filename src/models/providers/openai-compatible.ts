@@ -94,17 +94,136 @@ export class OpenAICompatibleProvider implements LLMProvider {
 
     try {
       const stream = await this.client.chat.completions.create(options) as unknown as AsyncIterable<any>;
+
+      let toolCallId = null;
+      let toolName = null;
+      let toolArguments = null;
+      let isCollectingToolCall = false;
+
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta;
+        
         if (delta?.content) {
           yield { type: "text", text: delta.content };
         }
+
+        if (delta?.tool_calls && delta.tool_calls.length > 0) {
+          const toolCall = delta.tool_calls[0];
+          
+          if (toolCall.index === 0 && toolCall.function?.name) {
+            isCollectingToolCall = true;
+            toolCallId = toolCall.id;
+            toolName = toolCall.function.name;
+            toolArguments = toolCall.function.arguments || "";
+          } 
+          else if (isCollectingToolCall && toolCall.function?.arguments) {
+            toolArguments += toolCall.function.arguments;
+          }
+          
+          if (chunk.choices[0]?.finish_reason === "tool_calls" && isCollectingToolCall) {
+            try {
+              let args;
+              try {
+                args = JSON.parse(toolArguments || "{}");
+              } catch (parseError) {
+                const jsonObjects = toolArguments.split(/(?<=\})(?=\{)/);
+                if (jsonObjects.length > 1) {
+                  args = JSON.parse(jsonObjects[0]);
+                } else {
+                  const sanitizedArgs = toolArguments
+                    .replace(/(\w+)\[name="([^"]+)"\]/g, '$1[name=\'$2\']')
+                    .replace(/(\w+)\[class="([^"]+)"\]/g, '$1[class=\'$2\']')
+                    .replace(/(\w+)\[id="([^"]+)"\]/g, '$1[id=\'$2\']')
+                    .replace(/(\w+)\[type="([^"]+)"\]/g, '$1[type=\'$2\']')
+                    .replace(/(\w+)\[value="([^"]+)"\]/g, '$1[value=\'$2\']');
+                  
+                  try {
+                    args = JSON.parse(sanitizedArgs);
+                  } catch (secondError) {
+                    const inputMatch = toolArguments.match(/"input"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/);
+                    const requiresApprovalMatch = toolArguments.match(/"requires_approval"\s*:\s*(true|false)/);
+                    
+                    if (inputMatch) {
+                      args = {
+                        input: inputMatch[1].replace(/\\"/g, '"'),
+                        requires_approval: requiresApprovalMatch ? 
+                          requiresApprovalMatch[1] === 'true' : false
+                      };
+                    } else {
+                      throw secondError;
+                    }
+                  }
+                }
+              }
+              
+              const input = args.input || "";
+              const requiresApproval = args.requires_approval === true ? "true" : "false";
+              const xmlToolCall = `<tool>${toolName}</tool>\n<input>${input}</input>\n<requires_approval>${requiresApproval}</requires_approval>`;
+              
+              yield { type: "text", text: xmlToolCall };
+              
+              isCollectingToolCall = false;
+              toolCallId = null;
+              toolName = null;
+              toolArguments = null;
+            } catch (error) {
+              yield { type: "text", text: "Error: Failed to parse tool call. Please try again." };
+            }
+          }
+        }
+
         if (chunk.usage) {
           yield {
             type: "usage",
             inputTokens: chunk.usage.prompt_tokens || 0,
             outputTokens: chunk.usage.completion_tokens || 0,
           };
+        }
+      }
+
+      if (isCollectingToolCall && toolName) {
+        try {
+          let args;
+          try {
+            args = JSON.parse(toolArguments || "{}");
+          } catch (parseError) {
+            const jsonObjects = toolArguments.split(/(?<=\})(?=\{)/);
+            if (jsonObjects.length > 1) {
+              args = JSON.parse(jsonObjects[0]);
+            } else {
+              const sanitizedArgs = toolArguments
+                .replace(/(\w+)\[name="([^"]+)"\]/g, '$1[name=\'$2\']')
+                .replace(/(\w+)\[class="([^"]+)"\]/g, '$1[class=\'$2\']')
+                .replace(/(\w+)\[id="([^"]+)"\]/g, '$1[id=\'$2\']')
+                .replace(/(\w+)\[type="([^"]+)"\]/g, '$1[type=\'$2\']')
+                .replace(/(\w+)\[value="([^"]+)"\]/g, '$1[value=\'$2\']');
+              
+              try {
+                args = JSON.parse(sanitizedArgs);
+              } catch (secondError) {
+                const inputMatch = toolArguments.match(/"input"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/);
+                const requiresApprovalMatch = toolArguments.match(/"requires_approval"\s*:\s*(true|false)/);
+                
+                if (inputMatch) {
+                  args = {
+                    input: inputMatch[1].replace(/\\"/g, '"'),
+                    requires_approval: requiresApprovalMatch ? 
+                      requiresApprovalMatch[1] === 'true' : false
+                  };
+                } else {
+                  throw secondError;
+                }
+              }
+            }
+          }
+          
+          const input = args.input || "";
+          const requiresApproval = args.requires_approval === true ? "true" : "false";
+          const xmlToolCall = `<tool>${toolName}</tool>\n<input>${input}</input>\n<requires_approval>${requiresApproval}</requires_approval>`;
+          
+          yield { type: "text", text: xmlToolCall };
+        } catch (error) {
+          yield { type: "text", text: "Error: Failed to parse tool call. Please try again." };
         }
       }
     } catch (error) {

@@ -41,7 +41,9 @@ Remember to follow the verification-first workflow: navigate → observe → ana
       `\n\n## CURRENT PAGE CONTEXT\n${this.currentPageContext}\n` : "";
   
     return `You are a browser-automation assistant called **BrowserBee 🐝**.
-  
+
+CRITICAL RULE: You MUST ALWAYS use tools to perform actions. Never describe what you would do - actually do it using tools. Every user request requires at least one tool call as your FIRST response. Do NOT respond with just text saying what you will do - immediately use a tool to do it. For example, if asked to click something, directly call browser_click - do not first say "let me look at the page" without calling a tool.
+
   You have access to these tools:
   
   ${toolDescriptions}${pageContextSection}

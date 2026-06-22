@@ -208,7 +208,12 @@ export function Options() {
       
       chrome.runtime.sendMessage({
         action: 'providerConfigChanged'
-      }).catch(err => console.error('Error sending message:', err));
+      }, () => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+          console.error('Error sending message:', err.message);
+        }
+      });
       
       setTimeout(() => {
         setSaveStatus('');
