@@ -1,38 +1,38 @@
-import path from 'path';
-import { defineConfig } from 'vite';
-import sourcemaps from 'rollup-plugin-sourcemaps';
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+import sourcemaps from "rollup-plugin-sourcemaps";
+import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   optimizeDeps: {
-    exclude: ['playwright-crx']
+    exclude: ["playwright-crx"],
   },
   build: {
     // playwright-crx cannot be obfuscated
     minify: false,
     sourcemap: true,
-    outDir: 'dist',
+    outDir: "dist",
     emptyOutDir: true,
     rollupOptions: {
       // @ts-ignore
       plugins: [sourcemaps()],
       input: {
-        'background': path.resolve(__dirname, 'src/background.ts'),
-        'sidepanel': path.resolve(__dirname, 'src/sidepanel/index.tsx'),
-        'options': path.resolve(__dirname, 'src/options/index.tsx'),
+        background: path.resolve(__dirname, "src/background.ts"),
+        sidepanel: path.resolve(__dirname, "src/sidepanel/index.tsx"),
+        options: path.resolve(__dirname, "src/options/index.tsx"),
       },
       output: {
-        entryFileNames: '[name].js',
+        entryFileNames: "[name].js",
         assetFileNames: (assetInfo) => {
           // Use a fixed name for CSS files
-          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-            return 'assets/styles.css';
+          if (assetInfo.name && assetInfo.name.endsWith(".css")) {
+            return "assets/styles.css";
           }
           // Use the default naming pattern for other assets
-          return 'assets/[name].[hash].[ext]';
+          return "assets/[name].[hash].[ext]";
         },
       },
     },

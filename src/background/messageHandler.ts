@@ -4,6 +4,7 @@ import { executePrompt } from './agentController';
 import { cancelExecution } from './agentController';
 import { clearMessageHistory } from './agentController';
 import { initializeAgent } from './agentController';
+import { getAgentStatus } from './agentController';
 import { triggerReflection } from './reflectionController';
 import { attachToTab, getTabState, getWindowForTab, forceResetPlaywright } from './tabManager';
 import { BackgroundMessage } from './types';
@@ -427,8 +428,7 @@ async function handleCheckAgentStatus(
       return;
     }
     
-    // Get the agent status from agentController using dynamic import
-    const { getAgentStatus } = await import('./agentController');
+    // Get the agent status
     const status = getAgentStatus(windowId);
     
     // Send the status back to the UI

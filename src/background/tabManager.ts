@@ -1,5 +1,7 @@
 import { crx } from 'playwright-crx';
 import { BrowserAgent } from '../agent/AgentCore';
+import { setCurrentPage, resetPageContext } from '../agent/PageContextManager';
+import { handleMessage } from './messageHandler';
 import { TabState, WindowState } from './types';
 import { logWithTimestamp, handleError } from './utils';
 
@@ -361,9 +363,12 @@ export async function attachToTab(tabId: number, windowId?: number, retryCount: 
         logWithTimestamp(`Tab ${tabId} has restricted URL (${tab.url}), not valid for attachment`, 'warn');
         return { 
           error: "unsupported_tab", 
-          reason: "This page cannot be accessed by extensions for security reasons." 
+          reason: `This page (${tab.url}) cannot be accessed by extensions for security reasons.`
         };
       }
+      
+      // Log the actual URL for debugging
+      logWithTimestamp(`Tab ${tabId} URL after navigation check: ${tab.url}`);
     } catch (error) {
       logWithTimestamp(`Error getting tab info: ${error}`, 'warn');
       return false;
@@ -385,7 +390,6 @@ export async function attachToTab(tabId: number, windowId?: number, retryCount: 
       
       // Update PageContextManager with the new page
       try {
-        const { setCurrentPage } = await import('../agent/PageContextManager');
         setCurrentPage(page);
         logWithTimestamp(`Updated PageContextManager with page for tab ${tabId}`);
       } catch (error) {
@@ -666,8 +670,7 @@ export function setupTabListeners(): void {
       
       // Cancel any ongoing execution for this tab
       try {
-        // Import messageHandler to handle the cancellation message
-        const { handleMessage } = await import('./messageHandler');
+        // Use messageHandler to handle the cancellation message
         
         // Create a cancellation message similar to what the UI would send
         const cancelMessage = {
@@ -698,7 +701,6 @@ export function setupTabListeners(): void {
       
       // Reset PageContextManager
       try {
-        const { resetPageContext } = await import('../agent/PageContextManager');
         resetPageContext();
         logWithTimestamp(`Reset PageContextManager for closed tab ${tabId}`);
       } catch (error) {
@@ -719,8 +721,7 @@ export function setupTabListeners(): void {
     // Cancel execution for each tab in the window
     if (tabsInWindow.length > 0) {
       try {
-        // Import messageHandler to handle the cancellation message
-        const { handleMessage } = await import('./messageHandler');
+        // Use messageHandler to handle the cancellation message
         
         for (const tabId of tabsInWindow) {
           // Create a cancellation message similar to what the UI would send

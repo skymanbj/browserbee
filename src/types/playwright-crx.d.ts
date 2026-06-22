@@ -1,4 +1,4 @@
-import { Page } from 'playwright-crx/test';
+import type { Page } from 'playwright-crx';
 
 declare module 'playwright-crx' {
   export interface Crx {

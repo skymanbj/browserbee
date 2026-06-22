@@ -7,6 +7,8 @@ import { ScreenshotManager } from "../tracking/screenshotManager";
 import { TokenTrackingService } from "../tracking/tokenTrackingService";
 import { ConfigManager } from "./configManager";
 import { saveReflectionMemory } from "./reflectionController";
+import { attachToTab } from './tabManager';
+import { setCurrentPage } from '../agent/PageContextManager';
 import { 
   resetStreamingState, 
   addToStreamingBuffer, 
@@ -512,8 +514,7 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
         }, targetTabId);
       }
       
-      // Import the attachToTab function dynamically to avoid circular dependencies
-      const { attachToTab } = await import('./tabManager');
+      // Attach to the tab (statically imported to avoid import() in service worker)
       
       // Attach to the tab
       const attachResult = await attachToTab(targetTabId);
@@ -570,7 +571,6 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
     
     // Update PageContextManager with the new page
     try {
-      const { setCurrentPage } = await import('../agent/PageContextManager');
       setCurrentPage(updatedTabState.page);
       logWithTimestamp(`Updated PageContextManager with page for tab ${targetTabId} in executePrompt`);
     } catch (error) {

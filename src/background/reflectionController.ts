@@ -1,4 +1,5 @@
 import { ExecutionCallbacks } from '../agent/ExecutionEngine';
+import { executePromptWithFallback } from '../agent/AgentCore';
 import { normalizeDomain } from '../tracking/domainUtils';
 import { MemoryService, AgentMemory } from '../tracking/memoryService';
 import { executePrompt } from './agentController';
@@ -320,10 +321,7 @@ async function correctReflectionJSON(malformedJson: string, error: Error, domain
       throw new Error(`No agent found for window ${windowId}`);
     }
     
-    // Execute the correction prompt
-    // We're using a direct call to the agent's executePrompt method
-    // This is a special case for correction, not a regular user prompt
-    const { executePromptWithFallback } = await import('../agent/AgentCore');
+    // Execute the correction prompt (statically imported)
     await executePromptWithFallback(agent, correctionPrompt, correctionCallbacks, []);
     
   } catch (correctionError) {

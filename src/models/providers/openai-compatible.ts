@@ -108,7 +108,8 @@ export class OpenAICompatibleProvider implements LLMProvider {
         }
       }
     } catch (error) {
-      yield { type: "text", text: "Error: Failed to stream response from OpenAI-Compatible API. Please try again." };
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      yield { type: "text", text: `Error: API request failed - ${errorMsg}` };
     }
   }
 
