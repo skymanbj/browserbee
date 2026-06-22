@@ -1,5 +1,4 @@
-import { getWindowForTab } from './tabManager';
-import { UIMessage } from './types';
+import { getWindowForTab } from "./tabManager";
 
 /**
  * Send a message to the UI
@@ -8,24 +7,58 @@ import { UIMessage } from './types';
  * @param tabId Optional tab ID to include in the message
  * @param windowId Optional window ID to include in the message
  */
-export function sendUIMessage(action: string, content: any, tabId?: number, windowId?: number) {
+export function sendUIMessage(
+  action: string,
+  content: any,
+  tabId?: number,
+  windowId?: number,
+) {
   // Include the current tab ID and window ID in the message if available
+  const message: any = {};
   if (tabId) {
     // Get windowId from tabId if not provided
     if (!windowId) {
       try {
         // Try to get the window ID from the tab manager
-        if (typeof getWindowForTab === 'function') {
+        if (typeof getWindowForTab === "function") {
           windowId = getWindowForTab(tabId);
         }
       } catch (error) {
         // Ignore errors, just proceed without window ID
-        console.warn('Could not get window ID for tab:', tabId);
+        console.warn("Could not get window ID for tab:", tabId);
       }
     }
-    chrome.runtime.sendMessage({ action, content, tabId, windowId });
+    message.action = action;
+    message.content = content;
+    message.tabId = tabId;
+    message.windowId = windowId;
   } else {
-    chrome.runtime.sendMessage({ action, content });
+    message.action = action;
+    message.content = content;
+  }
+
+  try {
+    // Always provide a callback so chrome.runtime.lastError can be captured
+    chrome.runtime.sendMessage(message, () => {
+      const err = chrome.runtime.lastError;
+      if (!err) return;
+
+      const msg = String(err.message || err);
+      // Common, non-fatal noise when UI context is not attached or is being torn down
+      if (
+        msg.includes("Receiving end does not exist") ||
+        msg.includes("Extension context invalidated") ||
+        msg.includes("Could not establish connection")
+      ) {
+        console.warn(`[sendUIMessage] ${msg}`);
+        return;
+      }
+
+      console.error(`[sendUIMessage] ${msg}`);
+    });
+  } catch (e) {
+    // Service worker can throw during shutdown; don't crash background
+    console.warn(`[sendUIMessage] exception: ${String(e)}`);
   }
 }
 
@@ -34,15 +67,18 @@ export function sendUIMessage(action: string, content: any, tabId?: number, wind
  * @param message The message to log
  * @param level The log level (log, warn, error)
  */
-export function logWithTimestamp(message: string, level: 'log' | 'warn' | 'error' = 'log') {
+export function logWithTimestamp(
+  message: string,
+  level: "log" | "warn" | "error" = "log",
+) {
   const timestamp = new Date().toISOString();
   const formattedMessage = `[${timestamp}] ${message}`;
 
   switch (level) {
-    case 'warn':
+    case "warn":
       console.warn(formattedMessage);
       break;
-    case 'error':
+    case "error":
       console.error(formattedMessage);
       break;
     default:
@@ -59,7 +95,7 @@ export function logWithTimestamp(message: string, level: 'log' | 'warn' | 'error
 export function handleError(error: any, context: string): string {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const formattedError = `Error in ${context}: ${errorMessage}`;
-  logWithTimestamp(formattedError, 'error');
+  logWithTimestamp(formattedError, "error");
   return formattedError;
 }
 
@@ -69,5 +105,5 @@ export function handleError(error: any, context: string): string {
  * @returns Promise that resolves after the specified time
  */
 export function wait(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

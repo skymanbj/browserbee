@@ -9,27 +9,54 @@
  */
 
 // Polyfill `window` in service worker context (Vite's __vitePreload needs window.dispatchEvent)
-if (typeof window === 'undefined') {
+if (typeof window === "undefined") {
   (globalThis as any).window = {
     dispatchEvent: () => {},
     addEventListener: () => {},
     removeEventListener: () => {},
-    location: { href: '' },
+    location: { href: "" },
     process: undefined,
     console: console,
     Buffer: undefined,
-    crypto: typeof crypto !== 'undefined' ? crypto : undefined,
+    crypto: typeof crypto !== "undefined" ? crypto : undefined,
   };
 }
 
-const _origSendMessage = (chrome.runtime.sendMessage as Function).bind(chrome.runtime);
-(chrome.runtime as any).sendMessage = function (message: any, callback?: Function): any {
-  if (typeof callback === 'function') {
+const _origSendMessage = (chrome.runtime.sendMessage as Function).bind(
+  chrome.runtime,
+);
+(chrome.runtime as any).sendMessage = function (
+  message: any,
+  callback?: Function,
+): any {
+  // If caller provides callback, let it handle lastError.
+  if (typeof callback === "function") {
     return _origSendMessage(message, callback);
   }
-  const result = _origSendMessage(message);
-  if (result && typeof result.catch === 'function') {
-    return result.catch(() => undefined);
+
+  // Wrap in callback to ensure lastError doesn't surface as an unhandled rejection.
+  try {
+    return _origSendMessage(message, () => {
+      // Swallow expected shutdown/teardown errors silently.
+      const err = chrome.runtime.lastError;
+      if (!err) return;
+      const msg = String(err.message || err);
+      if (
+        msg.includes("Receiving end does not exist") ||
+        msg.includes("Extension context invalidated") ||
+        msg.includes("Could not establish connection")
+      ) {
+        return;
+      }
+      // For unexpected errors, still avoid throwing.
+      return;
+    });
+  } catch {
+    // Fallback to promise-based swallow.
+    const result = _origSendMessage(message);
+    if (result && typeof result.catch === "function") {
+      return result.catch(() => undefined);
+    }
+    return result;
   }
-  return result;
 };
