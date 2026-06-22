@@ -8,18 +8,32 @@ interface MessageDisplayProps {
   streamingSegments: Record<number, string>;
   isStreaming: boolean;
   onDeleteMessage: (index: number) => void;
+  onDeleteTurn: (indexes: number[]) => void;
   isProcessing: boolean;
 }
 
+interface ConversationTurn {
+  prompt: string;
+  promptMessageIndex: number;
+  messages: { message: Message; originalIndex: number }[];
+}
+
 interface RenderItem {
+  type: 'initial_system' | 'turn';
+  message?: Message;
+  originalIndex?: number;
+  turn?: ConversationTurn;
+}
+
+interface GroupedRenderItem {
   type: 'single' | 'tool_group';
   message?: Message;
   originalIndex?: number;
   groupMessages?: { message: Message; originalIndex: number }[];
 }
 
-const groupMessages = (messages: Message[]): RenderItem[] => {
-  const items: RenderItem[] = [];
+const groupMessages = (messages: Message[]): GroupedRenderItem[] => {
+  const items: GroupedRenderItem[] = [];
   let currentGroup: { message: Message; originalIndex: number }[] = [];
 
   const flushGroup = () => {
@@ -58,6 +72,43 @@ const groupMessages = (messages: Message[]): RenderItem[] => {
   return items;
 };
 
+const segmentConversations = (messages: Message[]): RenderItem[] => {
+  const items: RenderItem[] = [];
+  let currentTurn: ConversationTurn | null = null;
+
+  messages.forEach((msg, index) => {
+    const isNewPrompt = msg.type === 'system' && msg.content.startsWith('New prompt: "') && msg.content.endsWith('"');
+
+    if (isNewPrompt) {
+      if (currentTurn) {
+        items.push({ type: 'turn', turn: currentTurn });
+      }
+      const promptText = msg.content.substring('New prompt: "'.length, msg.content.length - 1);
+      currentTurn = {
+        prompt: promptText,
+        promptMessageIndex: index,
+        messages: []
+      };
+    } else {
+      if (currentTurn === null) {
+        items.push({
+          type: 'initial_system',
+          message: msg,
+          originalIndex: index
+        });
+      } else {
+        currentTurn.messages.push({ message: msg, originalIndex: index });
+      }
+    }
+  });
+
+  if (currentTurn) {
+    items.push({ type: 'turn', turn: currentTurn });
+  }
+
+  return items;
+};
+
 const CollapsibleWrapper: React.FC<{
   children: React.ReactNode;
   content: string;
@@ -86,7 +137,10 @@ const CollapsibleWrapper: React.FC<{
       
       <div className="mt-1 flex justify-start">
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
           className="btn btn-link btn-xs p-0 text-primary no-underline hover:underline font-bold"
         >
           {isExpanded ? '收起 ↑' : '展开全文 ↓'}
@@ -110,7 +164,10 @@ const ToolGroup: React.FC<{
   return (
     <div className="border border-base-content border-opacity-10 rounded-lg overflow-hidden my-2 bg-base-200 bg-opacity-30">
       <div 
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
         className="flex items-center justify-between px-3 py-2 cursor-pointer bg-base-200 hover:bg-opacity-80 text-xs font-semibold text-gray-600 select-none"
       >
         <div className="flex items-center gap-1.5">
@@ -131,7 +188,10 @@ const ToolGroup: React.FC<{
                 {message.content}
               </div>
               <button
-                onClick={() => onDeleteMessage(originalIndex)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteMessage(originalIndex);
+                }}
                 className="btn btn-ghost btn-xs btn-circle opacity-25 hover:opacity-100 transition-opacity text-error flex-shrink-0 self-center"
                 title="Delete this step"
               >
@@ -145,32 +205,151 @@ const ToolGroup: React.FC<{
   );
 };
 
+const ConversationTurnComponent: React.FC<{
+  turn: ConversationTurn;
+  isLast: boolean;
+  isProcessing: boolean;
+  onDeleteTurn: (indexes: number[]) => void;
+  onDeleteMessage: (index: number) => void;
+}> = ({ turn, isLast, isProcessing, onDeleteTurn, onDeleteMessage }) => {
+  const shouldDefaultOpen = isLast && isProcessing;
+  const [isOpen, setIsOpen] = useState(shouldDefaultOpen);
+
+  useEffect(() => {
+    if (isLast) {
+      setIsOpen(isProcessing);
+    }
+  }, [isProcessing, isLast]);
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const allIndexes = [turn.promptMessageIndex, ...turn.messages.map(m => m.originalIndex)];
+    if (confirm(`删除这轮对话吗？`)) {
+      onDeleteTurn(allIndexes);
+    }
+  };
+
+  const turnGroupedItems = groupMessages(turn.messages.map(m => m.message));
+
+  return (
+    <div className="border border-base-content border-opacity-10 rounded-lg overflow-hidden my-3 shadow-sm bg-base-100">
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between px-3 py-2.5 cursor-pointer bg-base-200 hover:bg-opacity-80 text-sm font-medium text-base-content select-none"
+      >
+        <div className="flex items-center gap-2 flex-grow min-w-0 pr-2">
+          <span className="text-primary font-bold flex-shrink-0">问:</span>
+          <span className="truncate flex-grow text-gray-700 font-medium" title={turn.prompt}>{turn.prompt}</span>
+          {isLast && isProcessing && (
+            <span className="loading loading-double-ring loading-xs text-primary flex-shrink-0"></span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleDeleteClick}
+            className="btn btn-ghost btn-xs btn-circle opacity-30 hover:opacity-100 text-error"
+            title="删除本轮对话"
+          >
+            ✕
+          </button>
+          <span className="text-gray-400 text-xs font-bold">
+            {isOpen ? '收起 ↑' : '答 ↓'}
+          </span>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="p-3 bg-base-100 bg-opacity-30 space-y-2 border-t border-base-content border-opacity-5">
+          {turn.messages.length === 0 && !isProcessing && (
+            <p className="text-gray-400 text-xs italic">无回答内容</p>
+          )}
+
+          {turnGroupedItems.map((item, idx) => {
+            if (item.type === 'tool_group' && item.groupMessages) {
+              const mappedGroup = item.groupMessages.map(gm => {
+                const originalIndex = turn.messages[gm.originalIndex!].originalIndex;
+                return {
+                  message: gm.message,
+                  originalIndex: originalIndex
+                };
+              });
+
+              return (
+                <ToolGroup
+                  key={`turn-tool-group-${idx}`}
+                  groupMessages={mappedGroup}
+                  isProcessing={isProcessing && isLast}
+                  onDeleteMessage={onDeleteMessage}
+                />
+              );
+            }
+
+            const relativeIndex = item.originalIndex!;
+            const originalIndex = turn.messages[relativeIndex].originalIndex;
+            const msg = turn.messages[relativeIndex].message;
+
+            return (
+              <div key={`msg-${originalIndex}`} className="flex items-start justify-between gap-2 relative">
+                <div className="flex-grow min-w-0">
+                  {msg.type === 'system' ? (
+                    <CollapsibleWrapper content={msg.content} bgClass="from-base-200">
+                      <div className="bg-base-200 px-3 py-1 rounded text-gray-500 text-sm">
+                        {msg.content}
+                      </div>
+                    </CollapsibleWrapper>
+                  ) : msg.type === 'screenshot' && msg.imageData ? (
+                    <ScreenshotMessage imageData={msg.imageData} mediaType={msg.mediaType} />
+                  ) : (
+                    <CollapsibleWrapper content={msg.content} bgClass="from-base-100">
+                      <LlmContent content={msg.content} />
+                    </CollapsibleWrapper>
+                  )}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteMessage(originalIndex);
+                  }}
+                  className="btn btn-ghost btn-xs btn-circle opacity-25 hover:opacity-100 transition-opacity text-error flex-shrink-0 self-center"
+                  title="Delete this message"
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const MessageDisplay: React.FC<MessageDisplayProps> = ({
   messages,
   streamingSegments,
   isStreaming,
   onDeleteMessage,
+  onDeleteTurn,
   isProcessing
 }) => {
-  // Always show all messages
-  const filteredMessages = messages;
-
-  if (filteredMessages.length === 0 && Object.keys(streamingSegments).length === 0) {
+  if (messages.length === 0 && Object.keys(streamingSegments).length === 0) {
     return <p className="text-gray-500">No output yet</p>;
   }
 
-  const groupedItems = groupMessages(filteredMessages);
+  const segmentedItems = segmentConversations(messages);
 
   return (
     <div>
-      {/* Render completed messages in their original order */}
-      {groupedItems.map((item, index) => {
-        if (item.type === 'tool_group' && item.groupMessages) {
+      {segmentedItems.map((item, index) => {
+        if (item.type === 'turn' && item.turn) {
+          const isLast = index === segmentedItems.length - 1;
           return (
-            <ToolGroup
-              key={`tool-group-${index}`}
-              groupMessages={item.groupMessages}
+            <ConversationTurnComponent
+              key={`turn-${index}`}
+              turn={item.turn}
+              isLast={isLast}
               isProcessing={isProcessing}
+              onDeleteTurn={onDeleteTurn}
               onDeleteMessage={onDeleteMessage}
             />
           );
@@ -183,21 +362,20 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({
           <div key={`msg-${originalIndex}`} className="mb-2 flex items-start justify-between gap-2 relative">
             <div className="flex-grow min-w-0">
               {msg.type === 'system' ? (
-                <CollapsibleWrapper content={msg.content} bgClass="from-base-200">
-                  <div className="bg-base-200 px-3 py-1 rounded text-gray-500 text-sm">
-                    {msg.content}
-                  </div>
-                </CollapsibleWrapper>
+                <div className="bg-base-200 px-3 py-1 rounded text-gray-500 text-sm">
+                  {msg.content}
+                </div>
               ) : msg.type === 'screenshot' && msg.imageData ? (
                 <ScreenshotMessage imageData={msg.imageData} mediaType={msg.mediaType} />
               ) : (
-                <CollapsibleWrapper content={msg.content} bgClass="from-base-100">
-                  <LlmContent content={msg.content} />
-                </CollapsibleWrapper>
+                <LlmContent content={msg.content} />
               )}
             </div>
             <button
-              onClick={() => onDeleteMessage(originalIndex)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteMessage(originalIndex);
+              }}
               className="btn btn-ghost btn-xs btn-circle opacity-25 hover:opacity-100 transition-opacity text-error flex-shrink-0 self-center"
               title="Delete this message"
             >
@@ -207,7 +385,6 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({
         );
       })}
       
-      {/* Render currently streaming segments at the end */}
       {isStreaming && Object.entries(streamingSegments).map(([id, content]) => (
         <div key={`segment-${id}`} className="mb-2 animate-pulse pr-8">
           <LlmContent content={content} />

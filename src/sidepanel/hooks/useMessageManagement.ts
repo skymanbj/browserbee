@@ -66,6 +66,10 @@ export const useMessageManagement = () => {
     setMessages(prev => prev.filter((_, idx) => idx !== index));
   };
 
+  const deleteMultipleMessages = (indexes: number[]) => {
+    setMessages(prev => prev.filter((_, idx) => !indexes.includes(idx)));
+  };
+
   return {
     messages,
     streamingSegments,
@@ -81,6 +85,7 @@ export const useMessageManagement = () => {
     completeStreaming,
     clearMessages,
     deleteMessage,
+    deleteMultipleMessages,
     currentSegmentId
   };
 };

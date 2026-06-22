@@ -48,7 +48,8 @@ export function sendUIMessage(
       if (
         msg.includes("Receiving end does not exist") ||
         msg.includes("Extension context invalidated") ||
-        msg.includes("Could not establish connection")
+        msg.includes("Could not establish connection") ||
+        msg.includes("The message port closed before a response was received")
       ) {
         console.warn(`[sendUIMessage] ${msg}`);
         return;

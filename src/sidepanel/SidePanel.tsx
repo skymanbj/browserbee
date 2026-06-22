@@ -67,6 +67,7 @@ export function SidePanel() {
     completeStreaming,
     clearMessages,
     deleteMessage,
+    deleteMultipleMessages,
     currentSegmentId
   } = useMessageManagement();
 
@@ -328,6 +329,7 @@ export function SidePanel() {
                   streamingSegments={streamingSegments}
                   isStreaming={isStreaming}
                   onDeleteMessage={deleteMessage}
+                  onDeleteTurn={deleteMultipleMessages}
                   isProcessing={isProcessing}
                 />
               </div>
