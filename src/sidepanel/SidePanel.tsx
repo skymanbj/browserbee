@@ -328,6 +328,7 @@ export function SidePanel() {
                   streamingSegments={streamingSegments}
                   isStreaming={isStreaming}
                   onDeleteMessage={deleteMessage}
+                  isProcessing={isProcessing}
                 />
               </div>
             </div>
