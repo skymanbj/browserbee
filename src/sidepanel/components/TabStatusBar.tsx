@@ -94,7 +94,7 @@ export const TabStatusBar: React.FC<TabStatusBarProps> = ({
   };
   
   return (
-    <div className="text-sm bg-base-300 rounded-md px-2 py-1 border border-base-content border-opacity-10 flex items-center justify-between max-w-[200px]">
+    <div className="text-sm bg-base-300 rounded-md px-2 py-1 border border-base-content border-opacity-10 flex items-center justify-between w-full">
       <div className="flex items-center flex-grow overflow-hidden">
         <div className={`w-2 h-2 rounded-full mr-2 flex-shrink-0 ${
           tabStatus === 'attached' ? 'bg-green-500 animate-pulse' : 

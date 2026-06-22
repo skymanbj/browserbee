@@ -300,18 +300,12 @@ export function SidePanel() {
 
   return (
     <div className="flex flex-col h-screen p-4 bg-base-200">
-      <header className="mb-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold text-primary">BrowserBee 🐝</h1>
+      <header className="mb-2">
         <TabStatusBar
           tabId={tabId}
           tabTitle={tabTitle}
           tabStatus={tabStatus}
         />
-      </div>
-      <p className="text-sm text-gray-600 mt-2">
-          What can I do for you today?
-        </p>
       </header>
 
       {hasConfiguredProviders ? (
@@ -322,6 +316,7 @@ export function SidePanel() {
                 onClearHistory={handleClearHistory}
                 onReflectAndLearn={handleReflectAndLearn}
                 isProcessing={isProcessing}
+                messages={messages}
               />
               <div
                 ref={outputRef}
