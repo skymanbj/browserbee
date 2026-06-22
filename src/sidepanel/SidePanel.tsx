@@ -66,6 +66,7 @@ export function SidePanel() {
     startNewSegment,
     completeStreaming,
     clearMessages,
+    deleteMessage,
     currentSegmentId
   } = useMessageManagement();
 
@@ -326,6 +327,7 @@ export function SidePanel() {
                   messages={messages}
                   streamingSegments={streamingSegments}
                   isStreaming={isStreaming}
+                  onDeleteMessage={deleteMessage}
                 />
               </div>
             </div>
