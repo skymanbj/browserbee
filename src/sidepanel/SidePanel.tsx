@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ConfigManager } from '../background/configManager';
+import { FileAttachment } from '../background/types';
 import { TokenTrackingService } from '../tracking/tokenTrackingService';
 import { ApprovalRequest } from './components/ApprovalRequest';
 import { MessageDisplay } from './components/MessageDisplay';
@@ -26,6 +27,9 @@ export function SidePanel() {
 
   // State to track if any LLM providers are configured
   const [hasConfiguredProviders, setHasConfiguredProviders] = useState<boolean>(false);
+
+  // State for file attachments
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
 
   // Check if any providers are configured when component mounts
   useEffect(() => {
@@ -215,21 +219,24 @@ export function SidePanel() {
   });
 
   // Handle form submission
-  const handleSubmit = async (prompt: string) => {
+  const handleSubmit = async (prompt: string, submittedAttachments?: FileAttachment[]) => {
     setIsProcessing(true);
-    // Update the tab status to running
     setTabStatus('running');
 
-    // Add a system message to indicate a new prompt
-    addSystemMessage(`New prompt: "${prompt}"`);
+    const currentAttachments = submittedAttachments || attachments;
+    const attachmentNote = currentAttachments.length > 0
+      ? ` (${currentAttachments.length} attachment${currentAttachments.length > 1 ? 's' : ''})`
+      : '';
+    addSystemMessage(`New prompt: "${prompt}"${attachmentNote}`, currentAttachments.length > 0 ? currentAttachments : undefined);
 
     try {
-      await executePrompt(prompt);
+      await executePrompt(prompt, currentAttachments.length > 0 ? currentAttachments : undefined);
+      // Clear attachments after successful submission
+      setAttachments([]);
     } catch (error) {
       console.error('Error:', error);
       addSystemMessage('Error: ' + (error instanceof Error ? error.message : String(error)));
       setIsProcessing(false);
-      // Update the tab status to error
       setTabStatus('error');
     }
   };
@@ -357,6 +364,8 @@ export function SidePanel() {
             onCancel={handleCancel}
             isProcessing={isProcessing}
             tabStatus={tabStatus}
+            attachments={attachments}
+            onAttachmentsChange={setAttachments}
           />
           <ProviderSelector isProcessing={isProcessing} />
         </>

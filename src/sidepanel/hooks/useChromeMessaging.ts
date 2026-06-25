@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { ChromeMessage } from "../types";
+import { FileAttachment } from "../../background/types";
 
 interface UseChromeMessagingProps {
   tabId: number | null;
@@ -315,14 +316,14 @@ export const useChromeMessaging = ({
     onAgentStatusUpdate,
   ]);
 
-  const executePrompt = (prompt: string) => {
+  const executePrompt = (prompt: string, attachments?: FileAttachment[]) => {
     return new Promise<void>((resolve, reject) => {
       try {
-        // Send message to background script with tab ID
         chrome.runtime.sendMessage(
           {
             action: "executePrompt",
             prompt,
+            attachments,
             tabId,
             windowId,
           },

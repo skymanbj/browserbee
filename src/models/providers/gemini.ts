@@ -118,17 +118,34 @@ export class GeminiProvider implements LLMProvider {
 
         const role = msg.role === "assistant" ? "model" : "user";
 
-        // If this message has the same role as the previous one, combine them
-        if (role === previousRole && processedMessages.length > 0) {
-          const lastMsg = processedMessages[processedMessages.length - 1];
-          // Combine the content with a newline separator
-          const combinedText = lastMsg.parts[0].text + "\n\n" + msg.content;
-          lastMsg.parts[0].text = combinedText;
-        } else {
-          // Add as a new message
+        // Check if content is already an array of Gemini parts (from convertContentForProvider)
+        const isGeminiParts = Array.isArray(msg.content) && 
+          msg.content.length > 0 && 
+          (msg.content[0].text !== undefined || msg.content[0].inline_data !== undefined);
+
+        if (isGeminiParts) {
+          // Content is already in Gemini parts format, use directly
           processedMessages.push({
             role: role,
-            parts: [{ text: msg.content }]
+            parts: msg.content
+          });
+          previousRole = role;
+        } else if (role === previousRole && processedMessages.length > 0) {
+          // If this message has the same role as the previous one, combine them
+          const lastMsg = processedMessages[processedMessages.length - 1];
+          const contentText = typeof msg.content === 'string' ? msg.content : String(msg.content);
+          // Combine the content with a newline separator
+          if (lastMsg.parts.length === 1 && lastMsg.parts[0].text) {
+            lastMsg.parts[0].text = lastMsg.parts[0].text + "\n\n" + contentText;
+          } else {
+            lastMsg.parts.push({ text: contentText });
+          }
+        } else {
+          // Add as a new message
+          const contentText = typeof msg.content === 'string' ? msg.content : String(msg.content);
+          processedMessages.push({
+            role: role,
+            parts: [{ text: contentText }]
           });
           previousRole = role;
         }

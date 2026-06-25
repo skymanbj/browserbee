@@ -31,13 +31,13 @@ import {
   getAgentForTab,
   isConnectionHealthy
 } from "./tabManager";
-import { ProviderType, AgentStatus, AgentStatusInfo } from "./types";
+import { ProviderType, AgentStatus, AgentStatusInfo, ContentBlock, FileAttachment } from "./types";
 import { sendUIMessage, logWithTimestamp, handleError } from "./utils";
 
 // Generic message format that works with all providers
 interface GenericMessage {
   role: string;
-  content: string | any;
+  content: string | ContentBlock[];
 }
 
 // Interface for structured message history
@@ -49,6 +49,26 @@ interface MessageHistory {
 
 // Define a maximum token budget for conversation history
 const MAX_CONVERSATION_TOKENS = 100000; // 100K tokens for conversation history
+
+// Build user message content from prompt and optional attachments
+function buildUserContent(prompt: string, attachments?: FileAttachment[]): string | ContentBlock[] {
+  if (!attachments || attachments.length === 0) return prompt;
+
+  const blocks: ContentBlock[] = [];
+  blocks.push({ type: 'text', text: prompt });
+
+  for (const att of attachments) {
+    if (att.type === 'image') {
+      blocks.push({ type: 'image', data: att.data, mimeType: att.mimeType });
+    } else if (att.type === 'pdf') {
+      blocks.push({ type: 'pdf', data: att.data, name: att.name });
+    } else if (att.type === 'text') {
+      blocks.push({ type: 'text', text: `[File: ${att.name}]\n${att.data}` });
+    }
+  }
+
+  return blocks;
+}
 
 // Message histories for conversation context (one per window)
 const windowMessageHistories = new Map<number, MessageHistory>();
@@ -216,6 +236,111 @@ export async function getMessageHistory(tabId: number): Promise<Anthropic.Messag
 }
 
 /**
+ * Convert ContentBlock[] to Anthropic-specific content blocks
+ */
+function convertContentBlocksToAnthropic(content: ContentBlock[]): any[] {
+  return content.map(block => {
+    if (block.type === 'text') {
+      return { type: 'text', text: block.text };
+    }
+    if (block.type === 'image') {
+      return {
+        type: 'image',
+        source: { type: 'base64', media_type: block.mimeType, data: block.data }
+      };
+    }
+    if (block.type === 'pdf') {
+      return { type: 'text', text: `[PDF file: ${block.name} - content cannot be displayed as image by this provider]` };
+    }
+    return { type: 'text', text: '' };
+  });
+}
+
+/**
+ * Convert ContentBlock[] to OpenAI-specific content blocks
+ */
+function convertContentBlocksToOpenAI(content: ContentBlock[]): any[] {
+  return content.map(block => {
+    if (block.type === 'text') {
+      return { type: 'text', text: block.text };
+    }
+    if (block.type === 'image') {
+      return {
+        type: 'image_url',
+        image_url: { url: `data:${block.mimeType};base64,${block.data}`, detail: 'auto' }
+      };
+    }
+    if (block.type === 'pdf') {
+      return { type: 'text', text: `[PDF file: ${block.name} - content cannot be displayed as image by this provider]` };
+    }
+    return { type: 'text', text: '' };
+  });
+}
+
+/**
+ * Convert ContentBlock[] to Gemini-specific parts
+ */
+function convertContentBlocksToGeminiParts(content: ContentBlock[]): any[] {
+  return content.map(block => {
+    if (block.type === 'text') {
+      return { text: block.text };
+    }
+    if (block.type === 'image') {
+      return { inline_data: { mime_type: block.mimeType, data: block.data } };
+    }
+    if (block.type === 'pdf') {
+      return { inline_data: { mime_type: 'application/pdf', data: block.data } };
+    }
+    return { text: '' };
+  });
+}
+
+/**
+ * Convert ContentBlock[] to Ollama message format (returns { content, images })
+ */
+function convertContentBlocksToOllama(content: ContentBlock[]): { content: string; images?: string[] } {
+  const textParts: string[] = [];
+  const images: string[] = [];
+
+  for (const block of content) {
+    if (block.type === 'text') {
+      textParts.push(block.text);
+    } else if (block.type === 'image') {
+      images.push(block.data);
+    } else if (block.type === 'pdf') {
+      textParts.push(`[PDF file: ${block.name} - content cannot be displayed as image by this provider]`);
+    }
+  }
+
+  return { content: textParts.join('\n'), images: images.length > 0 ? images : undefined };
+}
+
+/**
+ * Convert content (string or ContentBlock[]) for a specific provider
+ */
+function convertContentForProvider(
+  content: string | ContentBlock[],
+  provider: ProviderType
+): any {
+  if (typeof content === 'string') return content;
+
+  switch (provider) {
+    case 'anthropic':
+    case 'ollama':
+      return convertContentBlocksToAnthropic(content);
+    case 'openai':
+      return convertContentBlocksToOpenAI(content);
+    case 'gemini':
+      return convertContentBlocksToGeminiParts(content);
+    default:
+      if (provider.startsWith('openai-compatible')) {
+        return convertContentBlocksToOpenAI(content);
+      }
+      return content;
+  }
+}
+
+/**
  * Convert generic messages to provider-specific format
  * @param messages The generic messages to convert
  * @param provider The provider to convert to
@@ -224,61 +349,64 @@ export async function getMessageHistory(tabId: number): Promise<Anthropic.Messag
 function convertMessagesToProviderFormat(messages: GenericMessage[], provider: ProviderType): Anthropic.MessageParam[] {
   switch (provider) {
     case 'anthropic':
-      // Convert to Anthropic format
       return messages.map(msg => {
-        // Ensure role is either "user" or "assistant" for Anthropic
         const role = msg.role === "user" || msg.role === "assistant" 
           ? msg.role as "user" | "assistant"
-          : "user"; // Default to user for any other role
+          : "user";
         
         return {
           role,
-          content: msg.content
+          content: convertContentForProvider(msg.content, provider)
         };
       });
       
     case 'openai':
-      // Convert to OpenAI format (which is compatible with Anthropic's format for our purposes)
       return messages.map(msg => {
-        // Map roles: system -> user, user -> user, assistant -> assistant
         const role = msg.role === "assistant" ? "assistant" : "user";
         
         return {
           role,
-          content: msg.content
+          content: convertContentForProvider(msg.content, provider)
         };
       });
       
     case 'gemini':
-      // Convert to Gemini format (which is compatible with Anthropic's format for our purposes)
       return messages.map(msg => {
-        // Map roles: system -> user, user -> user, assistant -> assistant
         const role = msg.role === "assistant" ? "assistant" : "user";
         
         return {
           role,
-          content: msg.content
+          content: convertContentForProvider(msg.content, provider)
         };
       });
       
     case 'ollama':
       return messages.map(msg => {
         const role = msg.role === "assistant" ? "assistant" : "user";
-        return { role, content: msg.content };
+        return {
+          role,
+          content: convertContentForProvider(msg.content, provider)
+        };
       });
       
     default:
       if (provider.startsWith('openai-compatible')) {
         return messages.map(msg => {
           const role = msg.role === "assistant" ? "assistant" : "user";
-          return { role, content: msg.content };
+          return {
+            role,
+            content: convertContentForProvider(msg.content, provider)
+          };
         });
       }
       return messages.map(msg => {
         const role = msg.role === "user" || msg.role === "assistant" 
           ? msg.role as "user" | "assistant"
           : "user";
-        return { role, content: msg.content };
+        return {
+          role,
+          content: convertContentForProvider(msg.content, provider)
+        };
       });
   }
 }
@@ -321,7 +449,7 @@ export async function getStructuredMessageHistory(tabId: number): Promise<Messag
  * @param tabId The tab ID to identify the window
  * @param request The original request message
  */
-export async function setOriginalRequest(tabId: number, request: Anthropic.MessageParam): Promise<void> {
+export async function setOriginalRequest(tabId: number, request: GenericMessage): Promise<void> {
   // Get the window ID for this tab
   const windowId = getWindowForTab(tabId);
   if (!windowId) {
@@ -339,7 +467,7 @@ export async function setOriginalRequest(tabId: number, request: Anthropic.Messa
  * @param tabId The tab ID to identify the window
  * @param message The message to add
  */
-export async function addToConversationHistory(tabId: number, message: Anthropic.MessageParam): Promise<void> {
+export async function addToConversationHistory(tabId: number, message: GenericMessage): Promise<void> {
   // Get the window ID for this tab
   const windowId = getWindowForTab(tabId);
   if (!windowId) {
@@ -457,7 +585,7 @@ export function cancelExecution(tabId?: number): void {
  * @param tabId Optional tab ID to execute the prompt for
  * @param isReflectionPrompt Optional flag to indicate if this is a reflection prompt
  */
-export async function executePrompt(prompt: string, tabId?: number, isReflectionPrompt: boolean = false): Promise<void> {
+export async function executePrompt(prompt: string, tabId?: number, isReflectionPrompt: boolean = false, attachments?: FileAttachment[]): Promise<void> {
   try {
     // Get provider configuration from ConfigManager
     const configManager = ConfigManager.getInstance();
@@ -632,23 +760,25 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
     // Check if this is the first prompt (no original request yet)
     if (!history.originalRequest) {
       // Store this as the original request without adding any special tag
+      const userContent = buildUserContent(prompt, attachments);
       await setOriginalRequest(targetTabId, { 
         role: "user", 
-        content: prompt 
+        content: userContent
       });
       
       // Also add it to the conversation history to maintain the flow
       await addToConversationHistory(targetTabId, { 
         role: "user", 
-        content: prompt 
+        content: userContent
       });
       
-      logWithTimestamp(`Set original request for tab ${targetTabId}: "${prompt}"`);
+      logWithTimestamp(`Set original request for tab ${targetTabId}: "${prompt}"${attachments ? ` with ${attachments.length} attachment(s)` : ''}`);
     } else {
       // This is a follow-up prompt, add it to conversation history
+      const userContent = buildUserContent(prompt, attachments);
       await addToConversationHistory(targetTabId, { 
         role: "user", 
-        content: prompt 
+        content: userContent
       });
     }
     

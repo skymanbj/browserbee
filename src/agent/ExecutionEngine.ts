@@ -256,17 +256,20 @@ export class ExecutionEngine {
 
         // Only look for complete tool calls with all three required tags
         const completeToolCallRegex = /(```(?:xml|bash)\s*)?<tool>(.*?)<\/tool>\s*<input>([\s\S]*?)<\/input>\s*<requires_approval>(.*?)<\/requires_approval>(\s*```)?/;
+        const compatToolCallRegex = /(```(?:xml|bash)\s*)?<tool>(.*?)<\/tool>\s*<parameter=input>([\s\S]*?)<\/parameter>\s*<parameter=requires_approval>(.*?)<\/parameter>(?:\s*<\/function>)?(\s*```)?/;
 
-        // Try to match the complete tool call pattern
+        // Try to match standard or compatibility tool call patterns
         const completeToolCallMatch = streamBuffer.match(completeToolCallRegex);
+        const compatToolCallMatch = streamBuffer.match(compatToolCallRegex);
+        const match = completeToolCallMatch || compatToolCallMatch;
 
         // Only process complete tool calls with all three required tags
-        if (completeToolCallMatch && !toolCallDetected) {
+        if (match && !toolCallDetected) {
           toolCallDetected = true;
-          console.log("Complete tool call detected:", completeToolCallMatch);
+          console.log("Complete tool call detected:", match);
 
-          // Extract the tool call with requires_approval value
-          const [fullMatch, codeBlockStart, toolName, toolInput, requiresApprovalRaw] = completeToolCallMatch;
+          // Extract the tool call
+          const [fullMatch, codeBlockStart, toolName, toolInput, requiresApprovalRaw] = match;
 
           // Find the start of the tool call
           const matchIndex = codeBlockStart
@@ -350,18 +353,22 @@ export class ExecutionEngine {
           // Check for incomplete or malformed tool calls
           // This regex looks for tool calls that have <tool> and <input> but are missing <requires_approval>
           const incompleteApprovalRegex = /<tool>(.*?)<\/tool>\s*<input>([\s\S]*?)<\/input>(?!\s*<requires_approval>)/;
+          const incompleteCompatRegex = /<tool>(.*?)<\/tool>\s*<parameter=input>([\s\S]*?)<\/parameter>(?!\s*<parameter=requires_approval>)/;
           const incompleteApprovalMatch = accumulatedText.match(incompleteApprovalRegex);
+          const incompleteCompatMatch = accumulatedText.match(incompleteCompatRegex);
+          const incompleteMatch = incompleteApprovalMatch || incompleteCompatMatch;
 
           // Check for interrupted tool calls (has input tag but interrupted during requires_approval)
           const interruptedToolRegex = /<tool>(.*?)<\/tool>\s*<input>([\s\S]*?)<\/input>\s*<requires(_approval)?$/;
-          const interruptedToolMatch = accumulatedText.match(interruptedToolRegex);
+          const interruptedCompatToolRegex = /<tool>(.*?)<\/tool>\s*<parameter=input>([\s\S]*?)<\/parameter>\s*<parameter=requires(_approval)?$/;
+          const interruptedToolMatch = accumulatedText.match(interruptedToolRegex) || accumulatedText.match(interruptedCompatToolRegex);
 
           // Handle incomplete tool calls with missing requires_approval tag
-          if (incompleteApprovalMatch && !accumulatedText.includes("<requires_approval>")) {
-            const toolName = incompleteApprovalMatch[1].trim();
-            const toolInput = incompleteApprovalMatch[2].trim();
+          if (incompleteMatch && !accumulatedText.includes("<requires_approval>") && !accumulatedText.includes("<parameter=requires_approval>")) {
+            const toolName = incompleteMatch[1].trim();
+            const toolInput = incompleteMatch[2].trim();
 
-            console.log("Detected incomplete tool call missing requires_approval tag:", incompleteApprovalMatch[0]);
+            console.log("Detected incomplete tool call missing requires_approval tag:", incompleteMatch[0]);
 
             // Add a message to prompt the LLM to use the complete format
             messages.push(
@@ -408,16 +415,23 @@ The <requires_approval> tag is mandatory. Set it to "true" for purchases, data d
           }
 
           // ── 2. Parse for tool invocation ─────────────────────────────────────
-          // Only look for complete tool calls with all three required tags
-          const toolMatch = accumulatedText.match(
+          // Look for standard or compatibility tool call formats
+          let toolMatch = accumulatedText.match(
             /<tool>(.*?)<\/tool>\s*<input>([\s\S]*?)<\/input>\s*<requires_approval>(.*?)<\/requires_approval>/
           );
 
+          if (!toolMatch) {
+            toolMatch = accumulatedText.match(
+              /<tool>(.*?)<\/tool>\s*<parameter=input>([\s\S]*?)<\/parameter>\s*<parameter=requires_approval>(.*?)<\/parameter>/
+            );
+          }
+
           // Check for various types of incomplete tool calls
           // 1. Tool tag without input tag
-          const missingInputMatch = accumulatedText.match(/<tool>(.*?)<\/tool>(?!\s*<input>)/);
+          const missingInputMatch = accumulatedText.match(/<tool>(.*?)<\/tool>(?!\s*<input>)(?!\s*<parameter=input>)/);
           // 2. Tool and input tags without requires_approval tag
-          const missingApprovalMatch = accumulatedText.match(/<tool>(.*?)<\/tool>\s*<input>([\s\S]*?)<\/input>(?!\s*<requires_approval>)/);
+          const missingApprovalMatch = accumulatedText.match(/<tool>(.*?)<\/tool>\s*<input>([\s\S]*?)<\/input>(?!\s*<requires_approval>)/) ||
+                                       accumulatedText.match(/<tool>(.*?)<\/tool>\s*<parameter=input>([\s\S]*?)<\/parameter>(?!\s*<parameter=requires_approval>)/);
 
           if (missingInputMatch !== null && toolMatch === null) {
             // Handle tool call missing input tag

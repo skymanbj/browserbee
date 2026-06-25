@@ -9,11 +9,45 @@ export function saveMemory(page: Page) {
     description: "Save a memory of how to accomplish a specific task on a website. Use this when you want to remember a useful sequence of actions for future reference.",
     func: async (input: string): Promise<string> => {
       try {
-        const inputObj = JSON.parse(input);
+        let inputObj;
+        try {
+          inputObj = JSON.parse(input);
+        } catch (parseError) {
+          // Fallback parsing for text format: Domain: ... \n Task: ... \n Tools: ...
+          const lines = input.split('\n');
+          let textDomain = '';
+          let textTaskDescription = '';
+          const textToolSequence: string[] = [];
+          let inToolsSection = false;
+
+          lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            if (trimmed.toLowerCase().startsWith('domain:')) {
+              textDomain = trimmed.substring(7).trim();
+              inToolsSection = false;
+            } else if (trimmed.toLowerCase().startsWith('task:')) {
+              textTaskDescription = trimmed.substring(5).trim();
+              inToolsSection = false;
+            } else if (trimmed.toLowerCase().startsWith('tools:')) {
+              inToolsSection = true;
+            } else if (inToolsSection) {
+              textToolSequence.push(trimmed);
+            }
+          });
+
+          inputObj = {
+            domain: textDomain,
+            taskDescription: textTaskDescription,
+            toolSequence: textToolSequence
+          };
+        }
+
         const { taskDescription, toolSequence } = inputObj;
         let { domain } = inputObj;
 
-        if (!domain || !taskDescription || !toolSequence) {
+        if (!domain || !taskDescription || !toolSequence || toolSequence.length === 0) {
           return "Error: Missing required fields. Please provide domain, taskDescription, and toolSequence.";
         }
 

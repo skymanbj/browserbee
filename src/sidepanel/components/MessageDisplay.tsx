@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Message } from '../types';
+import { FileAttachment } from '../../background/types';
 import { LlmContent } from './LlmContent';
 import { ScreenshotMessage } from './ScreenshotMessage';
+import { AttachmentPreview } from './AttachmentPreview';
 
 interface MessageDisplayProps {
   messages: Message[];
@@ -15,6 +17,7 @@ interface MessageDisplayProps {
 interface ConversationTurn {
   prompt: string;
   promptMessageIndex: number;
+  attachments?: FileAttachment[];
   messages: { message: Message; originalIndex: number }[];
 }
 
@@ -77,16 +80,23 @@ const segmentConversations = (messages: Message[]): RenderItem[] => {
   let currentTurn: ConversationTurn | null = null;
 
   messages.forEach((msg, index) => {
-    const isNewPrompt = msg.type === 'system' && msg.content.startsWith('New prompt: "') && msg.content.endsWith('"');
+    const isNewPrompt = msg.type === 'system' && msg.content.startsWith('New prompt: "') && (msg.content.endsWith('"') || msg.content.includes('attachment'));
 
     if (isNewPrompt) {
       if (currentTurn) {
         items.push({ type: 'turn', turn: currentTurn });
       }
-      const promptText = msg.content.substring('New prompt: "'.length, msg.content.length - 1);
+      let promptText: string;
+      if (msg.content.endsWith('"')) {
+        promptText = msg.content.substring('New prompt: "'.length, msg.content.length - 1);
+      } else {
+        const match = msg.content.match(/New prompt: "(.*?)"(?:\s*\(\d+ attachment)/);
+        promptText = match ? match[1] : msg.content.substring('New prompt: "'.length);
+      }
       currentTurn = {
         prompt: promptText,
         promptMessageIndex: index,
+        attachments: msg.attachments,
         messages: []
       };
     } else {
@@ -240,6 +250,11 @@ const ConversationTurnComponent: React.FC<{
         <div className="flex items-center gap-2 flex-grow min-w-0 pr-2">
           <span className="text-primary font-bold flex-shrink-0">问:</span>
           <span className="truncate flex-grow text-gray-700 font-medium" title={turn.prompt}>{turn.prompt}</span>
+          {turn.attachments && turn.attachments.length > 0 && (
+            <span className="badge badge-sm badge-ghost flex-shrink-0 gap-1">
+              📎 {turn.attachments.length}
+            </span>
+          )}
           {isLast && isProcessing && (
             <span className="loading loading-double-ring loading-xs text-primary flex-shrink-0"></span>
           )}
@@ -260,6 +275,11 @@ const ConversationTurnComponent: React.FC<{
 
       {isOpen && (
         <div className="p-3 bg-base-100 bg-opacity-30 space-y-2 border-t border-base-content border-opacity-5">
+          {turn.attachments && turn.attachments.length > 0 && (
+            <div className="border-b border-base-content border-opacity-5 pb-2">
+              <AttachmentPreview attachments={turn.attachments} compact />
+            </div>
+          )}
           {turn.messages.length === 0 && !isProcessing && (
             <p className="text-gray-400 text-xs italic">无回答内容</p>
           )}

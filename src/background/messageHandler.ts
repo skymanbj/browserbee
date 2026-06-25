@@ -7,7 +7,7 @@ import { initializeAgent } from './agentController';
 import { getAgentStatus } from './agentController';
 import { triggerReflection } from './reflectionController';
 import { attachToTab, getTabState, getWindowForTab, forceResetPlaywright } from './tabManager';
-import { BackgroundMessage } from './types';
+import { BackgroundMessage, FileAttachment } from './types';
 import { logWithTimestamp, handleError } from './utils';
 
 /**
@@ -175,14 +175,14 @@ function isBackgroundMessage(message: any): message is BackgroundMessage {
  * @param sendResponse The function to send a response
  */
 function handleExecutePrompt(
-  message: Extract<BackgroundMessage, { action: 'executePrompt' }>,
+  message: Extract<BackgroundMessage, { action: 'executePrompt' }> & { attachments?: FileAttachment[] },
   sendResponse: (response?: any) => void
 ): void {
   // Use the tabId from the message if available
   if (message.tabId) {
-    executePrompt(message.prompt, message.tabId);
+    executePrompt(message.prompt, message.tabId, false, message.attachments);
   } else {
-    executePrompt(message.prompt);
+    executePrompt(message.prompt, undefined, false, message.attachments);
   }
   sendResponse({ success: true });
 }

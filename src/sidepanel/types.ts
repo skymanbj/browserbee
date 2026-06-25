@@ -1,4 +1,5 @@
-// Define message types
+import { FileAttachment } from '../background/types';
+
 export type MessageType = 'system' | 'llm' | 'screenshot';
 
 export interface Message {
@@ -9,6 +10,7 @@ export interface Message {
   isStreaming?: boolean;
   imageData?: string;
   mediaType?: string;
+  attachments?: FileAttachment[];
 }
 
 // Chrome message types
