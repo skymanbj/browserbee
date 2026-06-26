@@ -308,45 +308,61 @@ export function SidePanel() {
   };
 
   return (
-    <div className="flex flex-col h-screen p-4 bg-base-200">
-      <header className="mb-2">
+    <div className="flex flex-col h-screen bg-base-200" style={{ background: 'linear-gradient(160deg, #f0f2f7 0%, #e8eaf2 50%, #eef0f7 100%)' }}>
+      {/* 顶部状态栏 */}
+      <div style={{
+        padding: '7px 12px',
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,242,247,0.95) 100%)',
+        borderBottom: '1px solid rgba(245,166,35,0.2)',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        flexShrink: 0,
+      }}>
         <TabStatusBar
           tabId={tabId}
           tabTitle={tabTitle}
           tabStatus={tabStatus}
         />
-      </header>
+      </div>
 
       {hasConfiguredProviders ? (
-        <>
-          <div className="flex flex-col flex-grow gap-4 overflow-hidden md:flex-row shadow-sm">
-            <div className="card bg-base-100 shadow-md flex-1 flex flex-col overflow-hidden">
-              <OutputHeader
-                onClearHistory={handleClearHistory}
-                onReflectAndLearn={handleReflectAndLearn}
-                isProcessing={isProcessing}
+        <div className="flex flex-col flex-1 overflow-hidden" style={{ padding: '10px 12px 10px' }}>
+          {/* 输出区域 */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            borderRadius: '12px',
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: 'rgba(255,255,255,0.85)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+            marginBottom: '8px',
+          }}>
+            <OutputHeader
+              onClearHistory={handleClearHistory}
+              onReflectAndLearn={handleReflectAndLearn}
+              isProcessing={isProcessing}
+              messages={messages}
+            />
+            <div
+              ref={outputRef}
+              style={{ flex: 1, overflowY: 'auto', padding: '10px 12px' }}
+            >
+              <MessageDisplay
                 messages={messages}
+                streamingSegments={streamingSegments}
+                isStreaming={isStreaming}
+                onDeleteMessage={deleteMessage}
+                onDeleteTurn={deleteMultipleMessages}
+                isProcessing={isProcessing}
               />
-              <div
-                ref={outputRef}
-                className="card-body p-3 overflow-auto bg-base-100 flex-1"
-              >
-                <MessageDisplay
-                  messages={messages}
-                  streamingSegments={streamingSegments}
-                  isStreaming={isStreaming}
-                  onDeleteMessage={deleteMessage}
-                  onDeleteTurn={deleteMultipleMessages}
-                  isProcessing={isProcessing}
-                />
-              </div>
             </div>
           </div>
 
-          {/* Add Token Usage Display */}
+          {/* Token 使用量 */}
           <TokenUsageDisplay />
 
-          {/* Display approval requests */}
+          {/* 审批请求 */}
           {approvalRequests.map(req => (
             <ApprovalRequest
               key={req.requestId}
@@ -359,6 +375,7 @@ export function SidePanel() {
             />
           ))}
 
+          {/* 输入表单 */}
           <PromptForm
             onSubmit={handleSubmit}
             onCancel={handleCancel}
@@ -368,19 +385,39 @@ export function SidePanel() {
             onAttachmentsChange={setAttachments}
           />
           <ProviderSelector isProcessing={isProcessing} />
-        </>
+        </div>
       ) : (
-        <div className="flex flex-col flex-grow items-center justify-center">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">No LLM provider configured</h2>
-            <p className="text-gray-600 mb-4">
-              You need to configure an LLM provider before you can use BrowserBee.
+        <div className="flex flex-col flex-grow items-center justify-center" style={{ padding: '20px' }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '32px 24px',
+            borderRadius: '16px',
+            background: 'rgba(255,255,255,0.9)',
+            border: '1px solid rgba(245,166,35,0.25)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🐝</div>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '10px', color: '#1e293b' }}>
+              尚未配置 LLM 提供商
+            </h2>
+            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px', lineHeight: 1.6 }}>
+              使用 BrowserBee 前，<br/>请先配置一个 AI 提供商
             </p>
             <button
               onClick={navigateToOptions}
-              className="btn btn-primary"
+              style={{
+                padding: '10px 24px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #f5a623, #e8891a)',
+                color: '#1a1625',
+                fontWeight: 700,
+                fontSize: '14px',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(245,166,35,0.35)',
+              }}
             >
-              Configure Providers
+              ⚙️ 配置提供商
             </button>
           </div>
         </div>

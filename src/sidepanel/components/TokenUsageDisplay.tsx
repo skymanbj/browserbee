@@ -97,14 +97,40 @@ export function TokenUsageDisplay() {
   // };
 
   return (
-    <div className="card bg-base-100 shadow-sm p-3 mt-2 text-xs">
-      <div className="flex justify-between items-center">
-        <span className="font-medium">Token Usage:</span>
-        <span><FontAwesomeIcon icon={faArrowUp} /> {formatTokenCount(usage.inputTokens)} <FontAwesomeIcon icon={faArrowDown} /> {formatTokenCount(usage.outputTokens)}</span>
-      </div>
-      <div className="flex justify-between mt-1">
-        <span className="font-medium">Estimated Cost:</span>
-        <span>${usage.cost.toFixed(6)}</span>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '6px 10px',
+      borderRadius: '8px',
+      background: 'rgba(255,255,255,0.7)',
+      border: '1px solid rgba(0,0,0,0.07)',
+      marginBottom: '6px',
+      fontSize: '11px',
+      gap: '8px',
+    }}>
+      <span style={{ color: '#94a3b8', fontWeight: 600, fontSize: '10px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+        Tokens
+      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ color: '#94a3b8' }}>
+          <span style={{ color: '#60a5fa', fontWeight: 600 }}>↑</span>
+          {' '}{formatTokenCount(usage.inputTokens)}
+        </span>
+        <span style={{ color: '#94a3b8' }}>
+          <span style={{ color: '#4ade80', fontWeight: 600 }}>↓</span>
+          {' '}{formatTokenCount(usage.outputTokens)}
+        </span>
+        <span style={{
+          color: '#f5a623',
+          fontWeight: 600,
+          background: 'rgba(245,166,35,0.1)',
+          padding: '1px 7px',
+          borderRadius: '4px',
+          border: '1px solid rgba(245,166,35,0.2)',
+        }}>
+          ${usage.cost.toFixed(5)}
+        </span>
       </div>
     </div>
   );

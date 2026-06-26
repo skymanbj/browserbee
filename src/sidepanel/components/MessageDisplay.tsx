@@ -11,6 +11,7 @@ interface MessageDisplayProps {
   isStreaming: boolean;
   onDeleteMessage: (index: number) => void;
   onDeleteTurn: (indexes: number[]) => void;
+  onEditTurn: (promptIndex: number, newPrompt: string, attachments?: FileAttachment[]) => void;
   isProcessing: boolean;
 }
 
@@ -221,15 +222,22 @@ const ConversationTurnComponent: React.FC<{
   isProcessing: boolean;
   onDeleteTurn: (indexes: number[]) => void;
   onDeleteMessage: (index: number) => void;
-}> = ({ turn, isLast, isProcessing, onDeleteTurn, onDeleteMessage }) => {
+  onEditTurn: (promptIndex: number, newPrompt: string, attachments?: FileAttachment[]) => void;
+}> = ({ turn, isLast, isProcessing, onDeleteTurn, onDeleteMessage, onEditTurn }) => {
   const shouldDefaultOpen = isLast && isProcessing;
   const [isOpen, setIsOpen] = useState(shouldDefaultOpen);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editVal, setEditVal] = useState(turn.prompt);
 
   useEffect(() => {
     if (isLast) {
       setIsOpen(isProcessing);
     }
   }, [isProcessing, isLast]);
+
+  useEffect(() => {
+    setEditVal(turn.prompt);
+  }, [turn.prompt]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();

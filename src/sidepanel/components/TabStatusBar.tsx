@@ -66,72 +66,98 @@ export const TabStatusBar: React.FC<TabStatusBarProps> = ({
   }, [tabId]);
   
   if (!tabId) return null;
-  
+
   const handleTabClick = () => {
-    // Send message to background script to switch to this tab
-    chrome.runtime.sendMessage({ 
-      action: 'switchToTab', 
-      tabId 
-    });
+    chrome.runtime.sendMessage({ action: 'switchToTab', tabId });
   };
-  
+
   const handleRefresh = () => {
     setIsRefreshing(true);
-    
-    // Show a message to the user
     chrome.runtime.sendMessage({
       action: 'updateOutput',
-      content: {
-        type: 'system',
-        content: 'Refreshing connection to tab...'
-      }
+      content: { type: 'system', content: 'Refreshing connection to tab...' }
     });
-    
-    // Reload the page to reinitialize tab connection
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
+    setTimeout(() => { window.location.reload(); }, 500);
   };
-  
+
+  const statusConfig: Record<string, { color: string; label: string; glow: string }> = {
+    running: { color: '#60a5fa', label: '运行中', glow: 'rgba(96,165,250,0.4)' },
+    idle: { color: '#4ade80', label: '就绪', glow: 'rgba(74,222,128,0.35)' },
+    attached: { color: '#4ade80', label: '已连接', glow: 'rgba(74,222,128,0.35)' },
+    detached: { color: '#f87171', label: '已断开', glow: 'rgba(248,113,113,0.4)' },
+    error: { color: '#f87171', label: '错误', glow: 'rgba(248,113,113,0.4)' },
+    unknown: { color: '#94a3b8', label: '未知', glow: 'rgba(148,163,184,0.3)' },
+  };
+
+  const sc = statusConfig[tabStatus] || statusConfig.unknown;
+
+
   return (
-    <div className="text-sm bg-base-300 rounded-md px-2 py-1 border border-base-content border-opacity-10 flex items-center justify-between w-full">
-      <div className="flex items-center flex-grow overflow-hidden">
-        <div className={`w-2 h-2 rounded-full mr-2 flex-shrink-0 ${
-          tabStatus === 'attached' ? 'bg-green-500 animate-pulse' : 
-          tabStatus === 'detached' ? 'bg-red-500' : 
-          tabStatus === 'running' ? 'bg-blue-500 animate-pulse' :
-          tabStatus === 'idle' ? 'bg-green-500' :
-          tabStatus === 'error' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
-        }`} title={
-          tabStatus === 'attached' ? 'Connected' : 
-          tabStatus === 'detached' ? 'Disconnected' : 
-          tabStatus === 'running' ? 'Agent Running' :
-          tabStatus === 'idle' ? 'Agent Idle' :
-          tabStatus === 'error' ? 'Agent Error' : 'Unknown'
-        }></div>
-        <span 
-          className="cursor-pointer hover:underline hover:text-primary truncate"
-          onClick={handleTabClick}
-          title={`${tabTitle}${tabUrl ? `\n${tabUrl}` : ''}`}
-        > 
-          {tabTitle}
-        </span>
-      </div>
-      
-      <div className="flex items-center ml-2">
-          <button 
-            className="px-1.5 py-0.5 bg-base-200 hover:bg-primary hover:text-primary-content rounded text-xs border border-base-content border-opacity-20"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            title="Attach to current tab"
-          >
-            <FontAwesomeIcon 
-              icon={faSync} 
-              className={isRefreshing ? 'animate-spin' : ''} 
-              size="xs"
-            />
-          </button>
-      </div>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      background: 'rgba(255,255,255,0.6)',
+      borderRadius: '20px',
+      padding: '4px 8px 4px 6px',
+      border: '1px solid rgba(0,0,0,0.1)',
+      width: '100%',
+    }}>
+      {/* 状态点 */}
+      <span style={{
+        width: '7px',
+        height: '7px',
+        borderRadius: '50%',
+        background: sc.color,
+        boxShadow: `0 0 6px ${sc.glow}`,
+        flexShrink: 0,
+        animation: (tabStatus === 'running' || tabStatus === 'attached') ? 'bee-pulse 2s infinite' : 'none',
+      }} title={sc.label} />
+
+      {/* Tab 标题 */}
+      <span
+        style={{
+          fontSize: '11px',
+          color: '#475569',
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          cursor: 'pointer',
+        }}
+        onClick={handleTabClick}
+        title={`${tabTitle}${tabUrl ? `\n${tabUrl}` : ''}`}
+      >
+        {tabTitle || '无标签页'}
+      </span>
+
+      {/* 刷新按钮 */}
+      <button
+        style={{
+          width: '18px',
+          height: '18px',
+          borderRadius: '50%',
+          background: 'rgba(0,0,0,0.06)',
+          border: '1px solid rgba(0,0,0,0.1)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'background 0.2s',
+        }}
+        onClick={handleRefresh}
+        disabled={isRefreshing}
+        title="重新连接标签页"
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245,166,35,0.15)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.06)')}
+      >
+        <FontAwesomeIcon
+          icon={faSync}
+          style={{ fontSize: '9px', color: '#94a3b8' }}
+          className={isRefreshing ? 'animate-spin' : ''}
+        />
+      </button>
     </div>
   );
 };

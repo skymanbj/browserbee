@@ -261,86 +261,149 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col bg-base-300 border-b border-base-content border-opacity-10">
-      <div className="flex justify-between items-center p-3">
-        <div className="card-title text-base-content text-lg">
-          Output
+    <div style={{
+      borderBottom: '1px solid rgba(0,0,0,0.08)',
+      background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%)',
+      flexShrink: 0,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px' }}>
+        {/* 标题 */}
+        <div style={{
+          fontSize: '12px',
+          fontWeight: 700,
+          letterSpacing: '0.8px',
+          textTransform: 'uppercase',
+          color: '#f5a623',
+        }}>
+          对话输出
         </div>
-        <div className="flex items-center gap-2">
-          {/* Brain / Reflect */}
-          <div className="tooltip tooltip-bottom" data-tip="Reflect and learn from this session">
-            <button 
-              onClick={onReflectAndLearn}
-              className="btn btn-sm btn-outline btn-primary"
-              disabled={isProcessing}
-            >
-              <FontAwesomeIcon icon={faBrain} />
-            </button>
-          </div>
 
-          {/* Copy Button */}
-          <div className="tooltip tooltip-bottom" data-tip="Copy entire conversation">
-            <button 
-              onClick={handleCopy}
-              className={`btn btn-sm ${copied ? 'btn-success text-white' : 'btn-outline'}`}
-              disabled={isProcessing || !hasMessages}
-            >
-              <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
-            </button>
-          </div>
+        {/* 操作按钮组 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {/* 反思学习 */}
+          <button
+            onClick={onReflectAndLearn}
+            disabled={isProcessing}
+            title="反思并学习此次会话"
+            style={{
+              width: '28px', height: '28px',
+              borderRadius: '8px',
+              background: 'rgba(124,58,237,0.15)',
+              border: '1px solid rgba(124,58,237,0.3)',
+              color: '#a78bfa',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+              opacity: isProcessing ? 0.4 : 1,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.15)'; e.currentTarget.style.transform = ''; }}
+          >
+            <FontAwesomeIcon icon={faBrain} style={{ fontSize: '11px' }} />
+          </button>
 
-          {/* Export Button */}
-          <div className="tooltip tooltip-bottom" data-tip="Export conversation">
-            <button 
-              onClick={() => setShowExport(!showExport)}
-              className={`btn btn-sm ${showExport ? 'btn-active btn-primary' : 'btn-outline'}`}
-              disabled={isProcessing || !hasMessages}
-            >
-              <FontAwesomeIcon icon={faDownload} />
-            </button>
-          </div>
+          {/* 复制 */}
+          <button
+            onClick={handleCopy}
+            disabled={isProcessing || !hasMessages}
+            title="复制全部对话"
+            style={{
+              width: '28px', height: '28px',
+              borderRadius: '8px',
+              background: copied ? 'rgba(34,197,94,0.12)' : 'rgba(0,0,0,0.05)',
+              border: `1px solid ${copied ? 'rgba(34,197,94,0.3)' : 'rgba(0,0,0,0.1)'}`,
+              color: copied ? '#16a34a' : '#64748b',
+              cursor: (!isProcessing && hasMessages) ? 'pointer' : 'not-allowed',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+              opacity: (!isProcessing && hasMessages) ? 1 : 0.35,
+            }}
+            onMouseEnter={e => { if (!isProcessing && hasMessages) e.currentTarget.style.background = 'rgba(0,0,0,0.08)'; }}
+            onMouseLeave={e => { if (!isProcessing && hasMessages) e.currentTarget.style.background = copied ? 'rgba(34,197,94,0.12)' : 'rgba(0,0,0,0.05)'; }}
+          >
+            <FontAwesomeIcon icon={copied ? faCheck : faCopy} style={{ fontSize: '11px' }} />
+          </button>
 
-          {/* Clear Button */}
-          <div className="tooltip tooltip-bottom" data-tip="Clear conversation history and LLM context">
-            <button 
-              onClick={onClearHistory}
-              className="btn btn-sm btn-outline btn-error"
-              disabled={isProcessing}
-            >
-              <FontAwesomeIcon icon={faTrash} />
-            </button>
-          </div>
+          {/* 导出 */}
+          <button
+            onClick={() => setShowExport(!showExport)}
+            disabled={isProcessing || !hasMessages}
+            title="导出对话"
+            style={{
+              width: '28px', height: '28px',
+              borderRadius: '8px',
+              background: showExport ? 'rgba(245,166,35,0.12)' : 'rgba(0,0,0,0.05)',
+              border: `1px solid ${showExport ? 'rgba(245,166,35,0.35)' : 'rgba(0,0,0,0.1)'}`,
+              color: showExport ? '#d97706' : '#64748b',
+              cursor: (!isProcessing && hasMessages) ? 'pointer' : 'not-allowed',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+              opacity: (!isProcessing && hasMessages) ? 1 : 0.35,
+            }}
+            onMouseEnter={e => { if (!isProcessing && hasMessages) e.currentTarget.style.background = 'rgba(245,166,35,0.2)'; }}
+            onMouseLeave={e => { if (!isProcessing && hasMessages) e.currentTarget.style.background = showExport ? 'rgba(245,166,35,0.12)' : 'rgba(0,0,0,0.05)'; }}
+          >
+            <FontAwesomeIcon icon={faDownload} style={{ fontSize: '11px' }} />
+          </button>
+
+          {/* 清除 */}
+          <button
+            onClick={onClearHistory}
+            disabled={isProcessing}
+            title="清除对话历史和LLM上下文"
+            style={{
+              width: '28px', height: '28px',
+              borderRadius: '8px',
+              background: 'rgba(239,68,68,0.07)',
+              border: '1px solid rgba(239,68,68,0.18)',
+              color: '#dc2626',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+              opacity: isProcessing ? 0.4 : 1,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.22)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.transform = ''; }}
+          >
+            <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} />
+          </button>
         </div>
       </div>
 
-      {/* Expandable Export Options */}
+      {/* 导出格式展开区 */}
       {showExport && hasMessages && (
-        <div className="flex items-center justify-around bg-base-200 px-3 py-2 border-t border-base-content border-opacity-10 text-xs">
-          <span className="text-gray-500 font-medium mr-1">格式:</span>
-          <button 
-            onClick={() => handleExportClick('md')} 
-            className="btn btn-xs btn-outline btn-primary"
-          >
-            Markdown (.md)
-          </button>
-          <button 
-            onClick={() => handleExportClick('pdf')} 
-            className="btn btn-xs btn-outline btn-primary"
-          >
-            PDF (.pdf)
-          </button>
-          <button 
-            onClick={() => handleExportClick('txt')} 
-            className="btn btn-xs btn-outline btn-primary"
-          >
-            TXT (.txt)
-          </button>
-          <button 
-            onClick={() => handleExportClick('json')} 
-            className="btn btn-xs btn-outline btn-primary"
-          >
-            JSON (.json)
-          </button>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '7px 12px',
+          borderTop: '1px solid rgba(0,0,0,0.06)',
+          background: '#f8f9fc',
+          flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: '11px', color: '#64748b', marginRight: '2px' }}>导出为:</span>
+          {(['md', 'pdf', 'txt', 'json'] as const).map(fmt => (
+            <button
+              key={fmt}
+              onClick={() => handleExportClick(fmt)}
+              style={{
+                padding: '3px 10px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: 600,
+                background: 'rgba(245,166,35,0.1)',
+                border: '1px solid rgba(245,166,35,0.25)',
+                color: '#f5a623',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                textTransform: 'uppercase',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,166,35,0.25)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,166,35,0.1)'; }}
+            >
+              {fmt}
+            </button>
+          ))}
         </div>
       )}
     </div>
