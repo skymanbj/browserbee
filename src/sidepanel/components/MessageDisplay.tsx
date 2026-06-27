@@ -251,35 +251,94 @@ const ConversationTurnComponent: React.FC<{
 
   return (
     <div className="border border-base-content border-opacity-10 rounded-lg overflow-hidden my-3 shadow-sm bg-base-100">
-      <div 
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between px-3 py-2.5 cursor-pointer bg-base-200 hover:bg-opacity-80 text-sm font-medium text-base-content select-none"
-      >
-        <div className="flex items-center gap-2 flex-grow min-w-0 pr-2">
-          <span className="text-primary font-bold flex-shrink-0">问:</span>
-          <span className="truncate flex-grow text-gray-700 font-medium" title={turn.prompt}>{turn.prompt}</span>
-          {turn.attachments && turn.attachments.length > 0 && (
-            <span className="badge badge-sm badge-ghost flex-shrink-0 gap-1">
-              📎 {turn.attachments.length}
+      {isEditing ? (
+        <div 
+          className="p-3 bg-base-200 border-b border-base-content border-opacity-5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
+            <span>✏️ 编辑提问:</span>
+          </div>
+          <textarea
+            value={editVal}
+            onChange={(e) => setEditVal(e.target.value)}
+            className="w-full text-sm p-2 rounded border border-gray-300 focus:outline-none focus:border-primary bg-white text-gray-800"
+            rows={3}
+            style={{ resize: 'vertical' }}
+            autoFocus
+          />
+          <div className="flex gap-2 justify-end mt-2">
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setEditVal(turn.prompt);
+              }}
+              className="btn btn-ghost btn-xs"
+            >
+              取消
+            </button>
+            <button
+              onClick={() => {
+                if (editVal.trim()) {
+                  onEditTurn(turn.promptMessageIndex, editVal.trim(), turn.attachments);
+                  setIsEditing(false);
+                }
+              }}
+              className="btn btn-primary btn-xs text-white"
+              disabled={!editVal.trim() || isProcessing}
+            >
+              保存并提交
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div 
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center justify-between px-3 py-2.5 cursor-pointer bg-base-200 hover:bg-opacity-80 text-sm font-medium text-base-content select-none"
+        >
+          <div className="flex items-center gap-2 flex-grow min-w-0 pr-2">
+            <span className="text-primary font-bold flex-shrink-0">问:</span>
+            <span className="truncate flex-grow text-gray-700 font-medium" title={turn.prompt}>{turn.prompt}</span>
+            {turn.attachments && turn.attachments.length > 0 && (
+              <span className="badge badge-sm badge-ghost flex-shrink-0 gap-1">
+                📎 {turn.attachments.length}
+              </span>
+            )}
+            {isLast && isProcessing && (
+              <span className="loading loading-double-ring loading-xs text-primary flex-shrink-0"></span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* 编辑按钮 - 铅笔图标 + "编辑" 文字 */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+              disabled={isProcessing}
+              className="btn btn-ghost btn-xs flex items-center gap-1 opacity-60 hover:opacity-100 text-primary font-medium"
+              title="编辑此提问"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+              <span>编辑</span>
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              disabled={isProcessing}
+              className="btn btn-ghost btn-xs btn-circle opacity-30 hover:opacity-100 text-error"
+              title="删除本轮对话"
+            >
+              ✕
+            </button>
+            <span className="text-gray-400 text-xs font-bold">
+              {isOpen ? '收起 ↑' : '答 ↓'}
             </span>
-          )}
-          {isLast && isProcessing && (
-            <span className="loading loading-double-ring loading-xs text-primary flex-shrink-0"></span>
-          )}
+          </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={handleDeleteClick}
-            className="btn btn-ghost btn-xs btn-circle opacity-30 hover:opacity-100 text-error"
-            title="删除本轮对话"
-          >
-            ✕
-          </button>
-          <span className="text-gray-400 text-xs font-bold">
-            {isOpen ? '收起 ↑' : '答 ↓'}
-          </span>
-        </div>
-      </div>
+      )}
 
       {isOpen && (
         <div className="p-3 bg-base-100 bg-opacity-30 space-y-2 border-t border-base-content border-opacity-5">
@@ -358,6 +417,7 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({
   isStreaming,
   onDeleteMessage,
   onDeleteTurn,
+  onEditTurn,
   isProcessing
 }) => {
   if (messages.length === 0 && Object.keys(streamingSegments).length === 0) {
@@ -379,6 +439,7 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({
               isProcessing={isProcessing}
               onDeleteTurn={onDeleteTurn}
               onDeleteMessage={onDeleteMessage}
+              onEditTurn={onEditTurn}
             />
           );
         }

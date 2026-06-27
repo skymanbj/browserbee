@@ -241,6 +241,31 @@ export function SidePanel() {
     }
   };
 
+  // Handle editing a prompt (re-run starting from this prompt)
+  const handleEditTurn = async (promptIndex: number, newPrompt: string, turnAttachments?: FileAttachment[]) => {
+    // Truncate history from promptIndex onwards
+    const indexesToDelete = messages.map((_, idx) => idx).filter(idx => idx >= promptIndex);
+    deleteMultipleMessages(indexesToDelete);
+
+    setIsProcessing(true);
+    setTabStatus('running');
+
+    const currentAttachments = turnAttachments || [];
+    const attachmentNote = currentAttachments.length > 0
+      ? ` (${currentAttachments.length} attachment${currentAttachments.length > 1 ? 's' : ''})`
+      : '';
+    addSystemMessage(`New prompt: "${newPrompt}"${attachmentNote}`, currentAttachments.length > 0 ? currentAttachments : undefined);
+
+    try {
+      await executePrompt(newPrompt, currentAttachments.length > 0 ? currentAttachments : undefined);
+    } catch (error) {
+      console.error('Error:', error);
+      addSystemMessage('Error: ' + (error instanceof Error ? error.message : String(error)));
+      setIsProcessing(false);
+      setTabStatus('error');
+    }
+  };
+
   // Handle cancellation - also reject any pending approval requests
   const handleCancel = () => {
     // If there are any pending approval requests, reject them all
@@ -308,13 +333,12 @@ export function SidePanel() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-base-200" style={{ background: 'linear-gradient(160deg, #f0f2f7 0%, #e8eaf2 50%, #eef0f7 100%)' }}>
-      {/* 顶部状态栏 */}
+    <div className="flex flex-col h-screen" style={{ background: '#edeff4' }}>
+      {/* 顶部状态栏 - 不使用白色背景，与全局背景 #edeff4 一体化 */}
       <div style={{
-        padding: '7px 12px',
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,242,247,0.95) 100%)',
-        borderBottom: '1px solid rgba(245,166,35,0.2)',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        padding: '8px 12px 6px',
+        background: '#edeff4',
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
         flexShrink: 0,
       }}>
         <TabStatusBar
@@ -325,7 +349,7 @@ export function SidePanel() {
       </div>
 
       {hasConfiguredProviders ? (
-        <div className="flex flex-col flex-1 overflow-hidden" style={{ padding: '10px 12px 10px' }}>
+        <div className="flex flex-col flex-1 overflow-hidden" style={{ padding: '8px 12px 10px' }}>
           {/* 输出区域 */}
           <div style={{
             flex: 1,
@@ -333,9 +357,9 @@ export function SidePanel() {
             flexDirection: 'column',
             overflow: 'hidden',
             borderRadius: '12px',
-            border: '1px solid rgba(0,0,0,0.08)',
-            background: 'rgba(255,255,255,0.85)',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+            border: '1px solid #cbd5e1', // 下面卡片区域赋予清晰的灰色外边框，与背景协调一体
+            background: 'rgba(255,255,255,0.9)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
             marginBottom: '8px',
           }}>
             <OutputHeader
@@ -354,6 +378,7 @@ export function SidePanel() {
                 isStreaming={isStreaming}
                 onDeleteMessage={deleteMessage}
                 onDeleteTurn={deleteMultipleMessages}
+                onEditTurn={handleEditTurn}
                 isProcessing={isProcessing}
               />
             </div>
