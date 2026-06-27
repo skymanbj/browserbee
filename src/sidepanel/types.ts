@@ -39,3 +39,25 @@ export interface ChromeMessage {
   oldTabId?: number;
   newTabId?: number;
 }
+
+// History conversation types
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  preview: string;
+  messageCount: number;
+  createdAt: number;
+  updatedAt: number;
+  provider: string;
+  model: string;
+}
+
+export interface SavedConversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: number;
+  updatedAt: number;
+  provider: string;
+  model: string;
+}

@@ -3,6 +3,7 @@ import { ConfigManager } from '../background/configManager';
 import { FileAttachment } from '../background/types';
 import { TokenTrackingService } from '../tracking/tokenTrackingService';
 import { ApprovalRequest } from './components/ApprovalRequest';
+import { HistoryPanel } from './components/HistoryPanel';
 import { MessageDisplay } from './components/MessageDisplay';
 import { OutputHeader } from './components/OutputHeader';
 import { PromptForm } from './components/PromptForm';
@@ -12,6 +13,7 @@ import { TokenUsageDisplay } from './components/TokenUsageDisplay';
 import { useChromeMessaging } from './hooks/useChromeMessaging';
 import { useMessageManagement } from './hooks/useMessageManagement';
 import { useTabManagement } from './hooks/useTabManagement';
+import { Message } from './types';
 
 export function SidePanel() {
   // State for tab status
@@ -30,6 +32,12 @@ export function SidePanel() {
 
   // State for file attachments
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+
+  // State for history panel
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Track current conversation ID for auto-save updates
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
   // Check if any providers are configured when component mounts
   useEffect(() => {
@@ -297,6 +305,58 @@ export function SidePanel() {
     // Reset token tracking
     const tokenTracker = TokenTrackingService.getInstance();
     tokenTracker.reset();
+
+    // Reset conversation tracking
+    setCurrentConversationId(null);
+  };
+
+  // Handle saving current conversation to history
+  const handleSaveToHistory = () => {
+    if (messages.length === 0) return;
+    chrome.runtime.sendMessage({
+      action: 'saveConversation',
+      messages: messages.map(m => ({
+        type: m.type,
+        content: m.content,
+        imageData: m.imageData,
+        mediaType: m.mediaType,
+        timestamp: Date.now(),
+      })),
+      provider: '',
+      model: '',
+      existingId: currentConversationId || undefined,
+    }, (response) => {
+      if (response?.success && response.id) {
+        setCurrentConversationId(response.id);
+      }
+    });
+  };
+
+  // Auto-save when processing completes (conversation has new content)
+  // We watch for the transition from isProcessing=true to isProcessing=false
+  const [wasProcessing, setWasProcessing] = useState(false);
+  React.useEffect(() => {
+    if (wasProcessing && !isProcessing && messages.length > 0) {
+      // Processing just completed, auto-save
+      handleSaveToHistory();
+    }
+    setWasProcessing(isProcessing);
+  }, [isProcessing]);
+
+  // Handle opening history panel
+  const handleOpenHistory = () => {
+    setShowHistory(true);
+  };
+
+  // Handle restoring a conversation from history
+  const handleRestoreConversation = (restoredMessages: Message[]) => {
+    clearMessages();
+    clearHistory();
+    // Add each restored message
+    restoredMessages.forEach(m => {
+      addMessage(m);
+    });
+    setShowHistory(false);
   };
 
   // Handle reflect and learn
@@ -365,6 +425,7 @@ export function SidePanel() {
             <OutputHeader
               onClearHistory={handleClearHistory}
               onReflectAndLearn={handleReflectAndLearn}
+              onOpenHistory={handleOpenHistory}
               isProcessing={isProcessing}
               messages={messages}
             />
@@ -410,6 +471,13 @@ export function SidePanel() {
             onAttachmentsChange={setAttachments}
           />
           <ProviderSelector isProcessing={isProcessing} />
+
+          {/* 历史会话面板 */}
+          <HistoryPanel
+            visible={showHistory}
+            onClose={() => setShowHistory(false)}
+            onRestore={handleRestoreConversation}
+          />
         </div>
       ) : (
         <div className="flex flex-col flex-grow items-center justify-center" style={{ padding: '20px' }}>

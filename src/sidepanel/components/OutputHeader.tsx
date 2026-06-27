@@ -1,4 +1,4 @@
-import { faTrash, faBrain, faCopy, faDownload, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faBrain, faCopy, faDownload, faCheck, faClock } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useState } from 'react';
 import { Message } from '../types';
@@ -6,6 +6,7 @@ import { Message } from '../types';
 interface OutputHeaderProps {
   onClearHistory: () => void;
   onReflectAndLearn: () => void;
+  onOpenHistory: () => void;
   isProcessing: boolean;
   messages: Message[];
 }
@@ -225,6 +226,7 @@ const exportToText = (messages: Message[]) => {
 export const OutputHeader: React.FC<OutputHeaderProps> = ({
   onClearHistory,
   onReflectAndLearn,
+  onOpenHistory,
   isProcessing,
   messages
 }) => {
@@ -300,6 +302,28 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.15)'; e.currentTarget.style.transform = ''; }}
           >
             <FontAwesomeIcon icon={faBrain} style={{ fontSize: '11px' }} />
+          </button>
+
+          {/* 历史记录 */}
+          <button
+            onClick={onOpenHistory}
+            disabled={isProcessing}
+            title="历史会话"
+            style={{
+              width: '28px', height: '28px',
+              borderRadius: '8px',
+              background: 'rgba(245,166,35,0.1)',
+              border: '1px solid rgba(245,166,35,0.25)',
+              color: '#f5a623',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+              opacity: isProcessing ? 0.4 : 1,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,166,35,0.25)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,166,35,0.1)'; e.currentTarget.style.transform = ''; }}
+          >
+            <FontAwesomeIcon icon={faClock} style={{ fontSize: '11px' }} />
           </button>
 
           {/* 复制 */}

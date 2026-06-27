@@ -9,6 +9,15 @@ import { triggerReflection } from './reflectionController';
 import { attachToTab, getTabState, getWindowForTab, forceResetPlaywright } from './tabManager';
 import { BackgroundMessage, FileAttachment } from './types';
 import { logWithTimestamp, handleError } from './utils';
+import {
+  saveConversation,
+  getConversationList,
+  getConversation,
+  deleteConversation,
+  clearAllConversations,
+  searchConversations,
+  SavedMessage,
+} from './conversationStorage';
 
 /**
  * Handle messages from the UI
@@ -118,6 +127,30 @@ export function handleMessage(
           });
         return true; // Keep the message channel open for async response
 
+      case 'saveConversation':
+        handleSaveConversation(message, sendResponse);
+        return true;
+
+      case 'getConversations':
+        handleGetConversations(sendResponse);
+        return true;
+
+      case 'getConversation':
+        handleGetConversation(message, sendResponse);
+        return true;
+
+      case 'deleteConversation':
+        handleDeleteConversation(message, sendResponse);
+        return true;
+
+      case 'clearAllConversations':
+        handleClearAllConversations(sendResponse);
+        return true;
+
+      case 'searchConversations':
+        handleSearchConversations(message, sendResponse);
+        return true;
+
       default:
         // This should never happen due to the type guard, but TypeScript requires it
         logWithTimestamp(`Unhandled message action: ${(message as any).action}`, 'warn');
@@ -164,7 +197,13 @@ function isBackgroundMessage(message: any): message is BackgroundMessage {
       message.action === 'pageError' ||
       message.action === 'forceResetPlaywright' ||
       message.action === 'requestApproval' ||  // Add support for request approval messages
-      message.action === 'checkAgentStatus'  // Add support for agent status check
+      message.action === 'checkAgentStatus' ||  // Add support for agent status check
+      message.action === 'saveConversation' ||
+      message.action === 'getConversations' ||
+      message.action === 'getConversation' ||
+      message.action === 'deleteConversation' ||
+      message.action === 'clearAllConversations' ||
+      message.action === 'searchConversations'
     )
   );
 }
@@ -447,6 +486,124 @@ async function handleCheckAgentStatus(
     logWithTimestamp(`Error checking agent status: ${errorMessage}`, 'error');
     sendResponse({ success: false, error: errorMessage });
   }
+}
+
+/**
+ * Handle saveConversation message
+ */
+function handleSaveConversation(
+  message: any,
+  sendResponse: (response?: any) => void
+): void {
+  (async () => {
+    try {
+      const { messages, provider, model, existingId } = message;
+      if (!messages || !Array.isArray(messages)) {
+        sendResponse({ success: false, error: 'No messages provided' });
+        return;
+      }
+      const savedMessages: SavedMessage[] = messages.map((m: any) => ({
+        type: m.type || 'system',
+        content: m.content || '',
+        imageData: m.imageData,
+        mediaType: m.mediaType,
+        timestamp: m.timestamp || Date.now(),
+      }));
+      const id = await saveConversation(savedMessages, provider || '', model || '', existingId);
+      sendResponse({ success: true, id });
+    } catch (error) {
+      const errorMessage = handleError(error, 'saving conversation');
+      sendResponse({ success: false, error: errorMessage });
+    }
+  })();
+}
+
+/**
+ * Handle getConversations message
+ */
+function handleGetConversations(
+  sendResponse: (response?: any) => void
+): void {
+  (async () => {
+    try {
+      const list = await getConversationList();
+      sendResponse({ success: true, conversations: list });
+    } catch (error) {
+      const errorMessage = handleError(error, 'getting conversations');
+      sendResponse({ success: false, error: errorMessage });
+    }
+  })();
+}
+
+/**
+ * Handle getConversation message
+ */
+function handleGetConversation(
+  message: any,
+  sendResponse: (response?: any) => void
+): void {
+  (async () => {
+    try {
+      const conv = await getConversation(message.conversationId);
+      sendResponse({ success: true, conversation: conv });
+    } catch (error) {
+      const errorMessage = handleError(error, 'getting conversation');
+      sendResponse({ success: false, error: errorMessage });
+    }
+  })();
+}
+
+/**
+ * Handle deleteConversation message
+ */
+function handleDeleteConversation(
+  message: any,
+  sendResponse: (response?: any) => void
+): void {
+  (async () => {
+    try {
+      const result = await deleteConversation(message.conversationId);
+      sendResponse({ success: result });
+    } catch (error) {
+      const errorMessage = handleError(error, 'deleting conversation');
+      sendResponse({ success: false, error: errorMessage });
+    }
+  })();
+}
+
+/**
+ * Handle clearAllConversations message
+ */
+function handleClearAllConversations(
+  sendResponse: (response?: any) => void
+): void {
+  (async () => {
+    try {
+      const result = await clearAllConversations();
+      sendResponse({ success: result });
+    } catch (error) {
+      const errorMessage = handleError(error, 'clearing all conversations');
+      sendResponse({ success: false, error: errorMessage });
+    }
+  })();
+}
+
+/**
+ * Handle searchConversations message
+ */
+function handleSearchConversations(
+  message: any,
+  sendResponse: (response?: any) => void
+): void {
+  (async () => {
+    try {
+      const results = await searchConversations(message.keyword || '');
+      sendResponse({ success: true, conversations: results });
+    } catch (error) {
+      const errorMessage = handleError(error, 'searching conversations');
+      sendResponse({ success: false, error: errorMessage });
+    }
+  })();
 }
 
 /**

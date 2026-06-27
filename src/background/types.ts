@@ -227,6 +227,46 @@ export interface CheckAgentStatusMessage {
   windowId?: number;
 }
 
+// History conversation messages
+export interface SaveConversationMessage {
+  action: 'saveConversation';
+  tabId?: number;
+  windowId?: number;
+}
+
+export interface GetConversationsMessage {
+  action: 'getConversations';
+  tabId?: number;
+  windowId?: number;
+}
+
+export interface GetConversationMessage {
+  action: 'getConversation';
+  conversationId: string;
+  tabId?: number;
+  windowId?: number;
+}
+
+export interface DeleteConversationMessage {
+  action: 'deleteConversation';
+  conversationId: string;
+  tabId?: number;
+  windowId?: number;
+}
+
+export interface ClearAllConversationsMessage {
+  action: 'clearAllConversations';
+  tabId?: number;
+  windowId?: number;
+}
+
+export interface SearchConversationsMessage {
+  action: 'searchConversations';
+  keyword: string;
+  tabId?: number;
+  windowId?: number;
+}
+
 export interface AgentStatusUpdateMessage {
   action: 'agentStatusUpdate';
   status: AgentStatus;
@@ -250,7 +290,13 @@ export type BackgroundMessage =
   | ProviderConfigChangedMessage
   | ForceResetPlaywrightMessage
   | RequestApprovalMessage
-  | CheckAgentStatusMessage;
+  | CheckAgentStatusMessage
+  | SaveConversationMessage
+  | GetConversationsMessage
+  | GetConversationMessage
+  | DeleteConversationMessage
+  | ClearAllConversationsMessage
+  | SearchConversationsMessage;
 
 // New message types for enhanced tab management
 export interface TabStatusChangedMessage {
