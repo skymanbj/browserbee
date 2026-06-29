@@ -67,17 +67,17 @@ export const useMessageManagement = () => {
   }, [tabInfo]);
 
   // Create a new session
-  // Create a new session
-  const createNewSession = async (title?: string) => {
+  const createNewSession = async (title?: any) => {
     const tabId = tabInfo?.tabId;
     const windowId = tabInfo?.windowId;
+    const sessionTitle = typeof title === 'string' ? title : undefined;
     
-    console.log("Session debug: createNewSession called", { tabId, windowId, tabInfo });
+    console.log("Session debug: createNewSession called", { tabId, windowId, tabInfo, sessionTitle });
 
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
         action: 'createSession',
-        title,
+        title: sessionTitle,
         tabId,
         windowId
       }, (response) => {

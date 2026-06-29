@@ -334,7 +334,7 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
           <div className="flex gap-0.5 flex-shrink-0">
             {/* 新建会话 */}
             <button
-              onClick={onNewSession}
+              onClick={() => onNewSession()}
               disabled={isProcessing}
               className="btn btn-ghost btn-xs btn-circle hover:bg-base-200"
               title="新建会话"
