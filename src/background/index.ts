@@ -10,6 +10,12 @@ import { logWithTimestamp } from "./utils";
 function initializeExtension(): void {
   logWithTimestamp("BrowserBee 🐝 extension initialized");
 
+  // Configure side panel to open on action click (Chrome 116+)
+  if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+      .catch((error) => logWithTimestamp(`Error setting panel behavior: ${error}`, 'error'));
+  }
+
   // Set up message listeners
   setupMessageListeners();
 

@@ -27,6 +27,9 @@
       "run_at": "document_end"
     }
   ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
   "options_page": "options.html",
   "permissions": ["debugger", "tabs", "sidePanel", "storage", "activeTab", "commands"],
   "host_permissions": ["<all_urls>"],
