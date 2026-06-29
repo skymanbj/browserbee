@@ -72,6 +72,8 @@ export const useMessageManagement = () => {
     const tabId = tabInfo?.tabId;
     const windowId = tabInfo?.windowId;
     
+    console.log("Session debug: createNewSession called", { tabId, windowId, tabInfo });
+
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
         action: 'createSession',
@@ -79,6 +81,14 @@ export const useMessageManagement = () => {
         tabId,
         windowId
       }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Session debug: SendMessage failed", chrome.runtime.lastError);
+          alert("蜂之助手（BrowserBee）插件已更新。为使新功能生效，请点击侧边栏右上角的“刷新 🔄”按钮，重新连接会话。");
+          resolve();
+          return;
+        }
+
+        console.log("Session debug: createNewSession response received", response);
         if (response && response.success && response.session) {
           const newSession = response.session;
           setSessions(prev => [newSession, ...prev]);
@@ -95,6 +105,8 @@ export const useMessageManagement = () => {
     const tabId = tabInfo?.tabId;
     const windowId = tabInfo?.windowId;
 
+    console.log("Session debug: switchSession called", { sessionId, tabId, windowId });
+
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
         action: 'setActiveSession',
@@ -102,6 +114,13 @@ export const useMessageManagement = () => {
         tabId,
         windowId
       }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Session debug: SwitchSession failed", chrome.runtime.lastError);
+          resolve();
+          return;
+        }
+
+        console.log("Session debug: SwitchSession response received", response);
         if (response && response.success && response.session) {
           setActiveSessionId(sessionId);
           setMessages(response.session.messages || []);
@@ -116,6 +135,8 @@ export const useMessageManagement = () => {
     const tabId = tabInfo?.tabId;
     const windowId = tabInfo?.windowId;
 
+    console.log("Session debug: deleteSession called", { sessionId, tabId, windowId });
+
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
         action: 'deleteSession',
@@ -123,6 +144,13 @@ export const useMessageManagement = () => {
         tabId,
         windowId
       }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Session debug: DeleteSession failed", chrome.runtime.lastError);
+          resolve();
+          return;
+        }
+
+        console.log("Session debug: DeleteSession response received", response);
         if (response && response.success) {
           setSessions(response.sessions || []);
           if (response.activeSessionId) {
@@ -144,6 +172,8 @@ export const useMessageManagement = () => {
     const tabId = tabInfo?.tabId;
     const windowId = tabInfo?.windowId;
 
+    console.log("Session debug: renameSession called", { sessionId, title, tabId, windowId });
+
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
         action: 'renameSession',
@@ -152,6 +182,13 @@ export const useMessageManagement = () => {
         tabId,
         windowId
       }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Session debug: RenameSession failed", chrome.runtime.lastError);
+          resolve();
+          return;
+        }
+
+        console.log("Session debug: RenameSession response received", response);
         if (response && response.success) {
           setSessions(response.sessions || []);
         }
