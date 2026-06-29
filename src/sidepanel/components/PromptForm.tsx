@@ -9,6 +9,7 @@ interface PromptFormProps {
   onCancel: () => void;
   isProcessing: boolean;
   tabStatus: 'attached' | 'detached' | 'unknown' | 'running' | 'idle' | 'error';
+  theme?: 'dark' | 'light';
 }
 
 const DEFAULT_SKILLS: UserSkill[] = [
@@ -36,7 +37,8 @@ export const PromptForm: React.FC<PromptFormProps> = ({
   onSubmit,
   onCancel,
   isProcessing,
-  tabStatus
+  tabStatus,
+  theme = 'dark'
 }) => {
   const [prompt, setPrompt] = useState('');
   const [skills, setSkills] = useState<UserSkill[]>(DEFAULT_SKILLS);
@@ -108,7 +110,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
     <div className="mt-4 flex flex-col gap-2">
       {/* 常用技能快捷栏 */}
       <div className="flex flex-wrap items-center gap-1 text-xs">
-        <span className="text-gray-400 font-medium select-none mr-0.5">常用技能:</span>
+        <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} font-medium select-none mr-0.5`}>常用技能:</span>
         <div className="flex flex-wrap gap-1 items-center max-w-full">
           {skills.map(skill => (
             <div key={skill.id} className="relative group">
@@ -116,7 +118,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
                 type="button"
                 onClick={() => handleApplySkill(skill.prompt)}
                 disabled={isProcessing || tabStatus === 'detached'}
-                className="btn btn-[10px] h-6 min-h-[24px] btn-outline btn-neutral rounded-full px-2 py-0 font-medium lowercase select-none"
+                className={`btn btn-[10px] h-6 min-h-[24px] ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} rounded-full px-2.5 py-0 font-medium lowercase select-none`}
                 title={skill.prompt}
               >
                 {skill.name}
@@ -127,7 +129,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
                 <button
                   type="button"
                   onClick={(e) => handleDeleteSkill(e, skill.id)}
-                  className="absolute -top-1 -right-1 hidden group-hover:flex items-center justify-center w-3.5 h-3.5 rounded-full bg-error text-white font-bold text-[8px] cursor-pointer"
+                  className="absolute -top-1 -right-1 hidden group-hover:flex items-center justify-center w-3.5 h-3.5 rounded-full bg-rose-500 text-white font-bold text-[8px] cursor-pointer"
                   title="删除技能"
                 >
                   ✕
@@ -142,7 +144,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
           <button
             type="button"
             onClick={() => setIsSaving(true)}
-            className="btn btn-xs btn-ghost text-primary font-bold ml-auto min-h-[24px] h-6 px-1.5"
+            className={`btn btn-xs btn-ghost ${theme === 'dark' ? 'text-indigo-400 hover:bg-white/5' : 'text-indigo-600 hover:bg-black/5'} font-bold ml-auto min-h-[24px] h-6 px-1.5`}
             title="将输入框的指令保存为常用技能"
           >
             ⭐ 存为技能
@@ -152,14 +154,14 @@ export const PromptForm: React.FC<PromptFormProps> = ({
 
       {/* 新建技能面板 */}
       {isSaving && (
-        <div className="flex items-center gap-1.5 p-1.5 bg-base-300 rounded-md text-xs animate-fade-in">
-          <span className="font-semibold text-gray-500 flex-shrink-0">技能名称:</span>
+        <div className={`flex items-center gap-1.5 p-1.5 ${theme === 'dark' ? 'bg-indigo-950/40 border border-white/5' : 'bg-slate-200/50 border border-black/5'} rounded-md text-xs animate-fade-in`}>
+          <span className={`font-semibold ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} flex-shrink-0`}>技能名称:</span>
           <input
             type="text"
             placeholder="如: 翻译成日文"
             value={newSkillName}
             onChange={(e) => setNewSkillName(e.target.value)}
-            className="input input-xs input-bordered flex-grow text-xs h-6"
+            className={`input input-xs ${theme === 'dark' ? 'glass-input' : 'glass-input-light'} flex-grow text-xs h-6`}
             autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSaveSkill();
@@ -172,7 +174,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
           <button
             type="button"
             onClick={handleSaveSkill}
-            className="btn btn-xs btn-primary h-6 min-h-[24px] px-2"
+            className={`btn btn-xs ${theme === 'dark' ? 'glass-btn-primary' : 'glass-btn-primary-light'} h-6 min-h-[24px] px-2`}
             disabled={!newSkillName.trim()}
           >
             保存
@@ -183,7 +185,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
               setIsSaving(false);
               setNewSkillName('');
             }}
-            className="btn btn-xs btn-ghost h-6 min-h-[24px] px-2"
+            className={`btn btn-xs ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} h-6 min-h-[24px] px-2`}
           >
             取消
           </button>
@@ -194,7 +196,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
       <form onSubmit={handleSubmit} className="relative">
         <div className="w-full">
           <TextareaAutosize
-            className="textarea textarea-bordered w-full pr-12"
+            className={`${theme === 'dark' ? 'glass-input' : 'glass-input-light'} textarea w-full pr-12`}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => {
@@ -214,7 +216,8 @@ export const PromptForm: React.FC<PromptFormProps> = ({
               resize: 'none',
               minHeight: '40px',
               maxHeight: '300px',
-              overflow: 'auto'
+              overflow: 'auto',
+              border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0,0,0,0.08)'
             } as any}
           />
           {isProcessing ? (
@@ -230,7 +233,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
           ) : (
             <button 
               type="submit" 
-              className="btn btn-sm btn-circle btn-primary absolute"
+              className={`btn btn-sm btn-circle ${theme === 'dark' ? 'glass-btn-primary' : 'glass-btn-primary-light'} absolute`}
               style={{ bottom: '5px', right: '5px' }}
               disabled={!prompt.trim() || tabStatus === 'detached'}
               title={tabStatus === 'detached' ? "Refresh tab to continue" : "Execute"}

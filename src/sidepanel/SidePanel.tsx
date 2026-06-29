@@ -13,6 +13,24 @@ import { useMessageManagement } from './hooks/useMessageManagement';
 import { useTabManagement } from './hooks/useTabManagement';
 
 export function SidePanel() {
+  // Theme state
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  // Load initial theme from storage
+  useEffect(() => {
+    chrome.storage.local.get('browserbee_theme', (result) => {
+      if (result['browserbee_theme']) {
+        setTheme(result['browserbee_theme'] as 'dark' | 'light');
+      }
+    });
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    chrome.storage.local.set({ 'browserbee_theme': newTheme });
+  };
+
   // State for tab status
   const [tabStatus, setTabStatus] = useState<'attached' | 'detached' | 'unknown' | 'running' | 'idle' | 'error'>('unknown');
 
@@ -315,19 +333,33 @@ export function SidePanel() {
   };
 
   return (
-    <div className="flex flex-col h-screen p-4 bg-base-200">
-      <header className="mb-2">
+    <div className={`flex flex-col h-screen p-4 relative transition-colors duration-300 ${theme === 'dark' ? 'glass-container' : 'glass-container-light'}`}>
+      {/* 背景霓虹光球 */}
+      {theme === 'dark' ? (
+        <>
+          <div className="absolute top-[-10%] left-[-20%] w-[80vw] h-[80vw] rounded-full bg-indigo-500/15 blur-[120px] pointer-events-none z-0" />
+          <div className="absolute bottom-[-10%] right-[-20%] w-[80vw] h-[80vw] rounded-full bg-purple-500/15 blur-[120px] pointer-events-none z-0" />
+        </>
+      ) : (
+        <>
+          <div className="absolute top-[-10%] left-[-20%] w-[80vw] h-[80vw] rounded-full bg-blue-400/20 blur-[100px] pointer-events-none z-0" />
+          <div className="absolute bottom-[-10%] right-[-20%] w-[80vw] h-[80vw] rounded-full bg-pink-400/20 blur-[100px] pointer-events-none z-0" />
+        </>
+      )}
+
+      <header className="mb-2 relative z-10">
         <TabStatusBar
           tabId={tabId}
           tabTitle={tabTitle}
           tabStatus={tabStatus}
+          theme={theme}
         />
       </header>
 
       {hasConfiguredProviders ? (
         <>
-          <div className="flex flex-col flex-grow gap-4 overflow-hidden md:flex-row shadow-sm">
-            <div className="card bg-base-100 shadow-md flex-1 flex flex-col overflow-hidden">
+          <div className="flex flex-col flex-grow gap-4 overflow-hidden md:flex-row shadow-sm relative z-10">
+            <div className={`${theme === 'dark' ? 'glass-card' : 'glass-card-light'} flex-1 flex flex-col overflow-hidden`}>
               <OutputHeader
                 onClearHistory={handleClearHistory}
                 onReflectAndLearn={handleReflectAndLearn}
@@ -339,10 +371,12 @@ export function SidePanel() {
                 onNewSession={createNewSession}
                 onDeleteSession={deleteSession}
                 onRenameSession={renameSession}
+                theme={theme}
+                onToggleTheme={toggleTheme}
               />
               <div
                 ref={outputRef}
-                className="card-body p-3 overflow-auto bg-base-100 flex-1"
+                className="p-3 overflow-auto flex-1 bg-transparent"
               >
                 <MessageDisplay
                   messages={messages}
@@ -357,39 +391,48 @@ export function SidePanel() {
           </div>
 
           {/* Add Token Usage Display */}
-          <TokenUsageDisplay />
+          <div className="relative z-10">
+            <TokenUsageDisplay theme={theme} />
+          </div>
 
           {/* Display approval requests */}
-          {approvalRequests.map(req => (
-            <ApprovalRequest
-              key={req.requestId}
-              requestId={req.requestId}
-              toolName={req.toolName}
-              toolInput={req.toolInput}
-              reason={req.reason}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
-          ))}
+          <div className="relative z-10">
+            {approvalRequests.map(req => (
+              <ApprovalRequest
+                key={req.requestId}
+                requestId={req.requestId}
+                toolName={req.toolName}
+                toolInput={req.toolInput}
+                reason={req.reason}
+                onApprove={handleApprove}
+                onReject={handleReject}
+              />
+            ))}
+          </div>
 
-          <PromptForm
-            onSubmit={handleSubmit}
-            onCancel={handleCancel}
-            isProcessing={isProcessing}
-            tabStatus={tabStatus}
-          />
-          <ProviderSelector isProcessing={isProcessing} />
+          <div className="relative z-10">
+            <PromptForm
+              onSubmit={handleSubmit}
+              onCancel={handleCancel}
+              isProcessing={isProcessing}
+              tabStatus={tabStatus}
+              theme={theme}
+            />
+          </div>
+          <div className="relative z-10">
+            <ProviderSelector isProcessing={isProcessing} />
+          </div>
         </>
       ) : (
-        <div className="flex flex-col flex-grow items-center justify-center">
-          <div className="text-center mb-6">
+        <div className="flex flex-col flex-grow items-center justify-center relative z-10">
+          <div className={`text-center mb-6 p-6 max-w-sm ${theme === 'dark' ? 'glass-card' : 'glass-card-light'}`}>
             <h2 className="text-xl font-semibold mb-2">No LLM provider configured</h2>
-            <p className="text-gray-600 mb-4">
+            <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mb-4 text-sm`}>
               You need to configure an LLM provider before you can use BrowserBee.
             </p>
             <button
               onClick={navigateToOptions}
-              className="btn btn-primary"
+              className={`btn glass-btn px-6 ${theme === 'dark' ? 'glass-btn-primary' : 'glass-btn-primary-light'}`}
             >
               Configure Providers
             </button>

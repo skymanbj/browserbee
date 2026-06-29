@@ -1,4 +1,4 @@
-import { faTrash, faBrain, faCopy, faDownload, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faBrain, faCopy, faDownload, faCheck, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useState } from 'react';
 import { Message } from '../types';
@@ -15,6 +15,8 @@ interface OutputHeaderProps {
   onNewSession: () => void;
   onDeleteSession: (sessionId: string) => void;
   onRenameSession: (sessionId: string, newTitle: string) => void;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 const formatToMarkdown = (messages: Message[]): string => {
@@ -239,7 +241,9 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
   onSwitchSession,
   onNewSession,
   onDeleteSession,
-  onRenameSession
+  onRenameSession,
+  theme = 'dark',
+  onToggleTheme
 }) => {
   const [copied, setCopied] = useState(false);
   const [showExport, setShowExport] = useState(false);
@@ -300,9 +304,9 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col bg-base-300 border-b border-base-content border-opacity-10">
+    <div className={`flex flex-col border-b ${theme === 'dark' ? 'border-white/5 bg-white/2' : 'border-black/5 bg-black/2'}`}>
       <div className="flex justify-between items-center p-3">
-        <div className="flex items-center gap-1.5 max-w-[65%] min-w-0">
+        <div className="flex items-center gap-1.5 max-w-[60%] min-w-0">
           {isEditingTitle ? (
             <input
               type="text"
@@ -313,18 +317,29 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
                 if (e.key === 'Enter') handleSaveTitle();
                 if (e.key === 'Escape') setIsEditingTitle(false);
               }}
-              className="input input-xs input-bordered w-full max-w-[140px] font-semibold"
+              className={`${theme === 'dark' ? 'glass-input' : 'glass-input-light'} text-xs w-full max-w-[140px] px-2 py-0.5 h-6 font-semibold`}
               autoFocus
             />
           ) : (
             <select
               value={activeSessionId || ''}
               onChange={(e) => onSwitchSession(e.target.value)}
-              className="select select-xs select-bordered font-semibold text-xs max-w-[130px] truncate"
+              className={`${theme === 'dark' ? 'glass-input' : 'glass-input-light'} select-xs font-semibold text-xs max-w-[130px] px-2 py-0.5 h-6 truncate`}
               disabled={isProcessing}
+              style={{ 
+                background: theme === 'dark' ? 'rgba(25,20,40,0.85)' : 'rgba(255,255,255,0.85)', 
+                color: theme === 'dark' ? '#f1f5f9' : '#1e293b' 
+              }}
             >
               {sessions.map((s) => (
-                <option key={s.id} value={s.id}>
+                <option 
+                  key={s.id} 
+                  value={s.id} 
+                  style={{ 
+                    background: theme === 'dark' ? '#1e1b4b' : '#ffffff', 
+                    color: theme === 'dark' ? '#f1f5f9' : '#1e293b' 
+                  }}
+                >
                   {s.title}
                 </option>
               ))}
@@ -336,7 +351,7 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
             <button
               onClick={() => onNewSession()}
               disabled={isProcessing}
-              className="btn btn-ghost btn-xs btn-circle hover:bg-base-200"
+              className={`btn btn-ghost btn-xs btn-circle ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-black/5 text-gray-800'} flex items-center justify-center text-[10px]`}
               title="新建会话"
             >
               ➕
@@ -347,7 +362,7 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
               <button
                 onClick={handleStartEditTitle}
                 disabled={isProcessing}
-                className="btn btn-ghost btn-xs btn-circle hover:bg-base-200"
+                className={`btn btn-ghost btn-xs btn-circle ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-black/5 text-gray-800'} flex items-center justify-center text-[10px]`}
                 title="重命名会话"
               >
                 ✏️
@@ -359,7 +374,7 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
               <button
                 onClick={handleDeleteClick}
                 disabled={isProcessing}
-                className="btn btn-ghost btn-xs btn-circle text-error hover:bg-base-200"
+                className={`btn btn-ghost btn-xs btn-circle ${theme === 'dark' ? 'hover:bg-white/10 text-white' : 'hover:bg-black/5 text-gray-800'} flex items-center justify-center text-[10px]`}
                 title="删除此会话"
               >
                 🗑️
@@ -367,12 +382,24 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {/* Theme Toggle */}
+          {onToggleTheme && (
+            <div className="tooltip tooltip-bottom" data-tip={theme === 'dark' ? '切换成亮色模式' : '切换成暗色模式'}>
+              <button 
+                onClick={onToggleTheme}
+                className={`btn btn-sm ${theme === 'dark' ? 'glass-btn text-amber-300' : 'glass-btn-light text-amber-600'} min-h-[32px] h-[32px] w-[36px]`}
+              >
+                <FontAwesomeIcon icon={theme === 'dark' ? faSun : faMoon} />
+              </button>
+            </div>
+          )}
+
           {/* Brain / Reflect */}
           <div className="tooltip tooltip-bottom" data-tip="Reflect and learn from this session">
             <button 
               onClick={onReflectAndLearn}
-              className="btn btn-sm btn-outline btn-primary"
+              className={`btn btn-sm ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} min-h-[32px] h-[32px] w-[36px]`}
               disabled={isProcessing}
             >
               <FontAwesomeIcon icon={faBrain} />
@@ -383,7 +410,7 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
           <div className="tooltip tooltip-bottom" data-tip="Copy entire conversation">
             <button 
               onClick={handleCopy}
-              className={`btn btn-sm ${copied ? 'btn-success text-white' : 'btn-outline'}`}
+              className={`btn btn-sm ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} min-h-[32px] h-[32px] w-[36px] ${copied ? (theme === 'dark' ? 'glass-btn-primary' : 'glass-btn-primary-light') : ''}`}
               disabled={isProcessing || !hasMessages}
             >
               <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
@@ -394,7 +421,7 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
           <div className="tooltip tooltip-bottom" data-tip="Export conversation">
             <button 
               onClick={() => setShowExport(!showExport)}
-              className={`btn btn-sm ${showExport ? 'btn-active btn-primary' : 'btn-outline'}`}
+              className={`btn btn-sm ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} min-h-[32px] h-[32px] w-[36px] ${showExport ? (theme === 'dark' ? 'glass-btn-primary' : 'glass-btn-primary-light') : ''}`}
               disabled={isProcessing || !hasMessages}
             >
               <FontAwesomeIcon icon={faDownload} />
@@ -405,7 +432,7 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
           <div className="tooltip tooltip-bottom" data-tip="Clear conversation history and LLM context">
             <button 
               onClick={onClearHistory}
-              className="btn btn-sm btn-outline btn-error"
+              className={`btn btn-sm ${theme === 'dark' ? 'glass-btn text-rose-400 border-rose-500/20 hover:bg-rose-500/10' : 'glass-btn-light text-rose-600 border-rose-600/20 hover:bg-rose-100/30'} min-h-[32px] h-[32px] w-[36px]`}
               disabled={isProcessing}
             >
               <FontAwesomeIcon icon={faTrash} />
@@ -416,29 +443,29 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
 
       {/* Expandable Export Options */}
       {showExport && hasMessages && (
-        <div className="flex items-center justify-around bg-base-200 px-3 py-2 border-t border-base-content border-opacity-10 text-xs">
-          <span className="text-gray-500 font-medium mr-1">格式:</span>
+        <div className={`flex items-center justify-around px-3 py-2 border-t ${theme === 'dark' ? 'border-white/5 bg-white/2' : 'border-black/5 bg-black/2'} text-xs`}>
+          <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} font-medium mr-1`}>格式:</span>
           <button 
             onClick={() => handleExportClick('md')} 
-            className="btn btn-xs btn-outline btn-primary"
+            className={`btn btn-xs ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} px-2 h-6 min-h-[24px]`}
           >
             Markdown (.md)
           </button>
           <button 
             onClick={() => handleExportClick('pdf')} 
-            className="btn btn-xs btn-outline btn-primary"
+            className={`btn btn-xs ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} px-2 h-6 min-h-[24px]`}
           >
             PDF (.pdf)
           </button>
           <button 
             onClick={() => handleExportClick('txt')} 
-            className="btn btn-xs btn-outline btn-primary"
+            className={`btn btn-xs ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} px-2 h-6 min-h-[24px]`}
           >
             TXT (.txt)
           </button>
           <button 
             onClick={() => handleExportClick('json')} 
-            className="btn btn-xs btn-outline btn-primary"
+            className={`btn btn-xs ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} px-2 h-6 min-h-[24px]`}
           >
             JSON (.json)
           </button>

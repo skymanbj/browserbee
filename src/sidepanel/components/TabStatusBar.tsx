@@ -6,12 +6,14 @@ interface TabStatusBarProps {
   tabId: number | null;
   tabTitle: string;
   tabStatus: 'attached' | 'detached' | 'unknown' | 'running' | 'idle' | 'error';
+  theme?: 'dark' | 'light';
 }
 
 export const TabStatusBar: React.FC<TabStatusBarProps> = ({
   tabId,
   tabTitle,
-  tabStatus
+  tabStatus,
+  theme = 'dark'
 }) => {
   const [tabUrl, setTabUrl] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -94,7 +96,7 @@ export const TabStatusBar: React.FC<TabStatusBarProps> = ({
   };
   
   return (
-    <div className="text-sm bg-base-300 rounded-md px-2 py-1 border border-base-content border-opacity-10 flex items-center justify-between w-full">
+    <div className={`text-sm px-3 py-1.5 flex items-center justify-between w-full ${theme === 'dark' ? 'glass-card' : 'glass-card-light'}`}>
       <div className="flex items-center flex-grow overflow-hidden">
         <div className={`w-2 h-2 rounded-full mr-2 flex-shrink-0 ${
           tabStatus === 'attached' ? 'bg-green-500 animate-pulse' : 
@@ -110,7 +112,7 @@ export const TabStatusBar: React.FC<TabStatusBarProps> = ({
           tabStatus === 'error' ? 'Agent Error' : 'Unknown'
         }></div>
         <span 
-          className="cursor-pointer hover:underline hover:text-primary truncate"
+          className={`cursor-pointer hover:underline ${theme === 'dark' ? 'hover:text-indigo-400 text-slate-200' : 'hover:text-indigo-600 text-slate-800'} truncate`}
           onClick={handleTabClick}
           title={`${tabTitle}${tabUrl ? `\n${tabUrl}` : ''}`}
         > 
@@ -120,7 +122,7 @@ export const TabStatusBar: React.FC<TabStatusBarProps> = ({
       
       <div className="flex items-center ml-2">
           <button 
-            className="px-1.5 py-0.5 bg-base-200 hover:bg-primary hover:text-primary-content rounded text-xs border border-base-content border-opacity-20"
+            className={`btn ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} btn-xs min-h-[22px] h-[22px] px-2 flex items-center justify-center text-xs`}
             onClick={handleRefresh}
             disabled={isRefreshing}
             title="Attach to current tab"
