@@ -68,7 +68,14 @@ export function SidePanel() {
     clearMessages,
     deleteMessage,
     deleteMultipleMessages,
-    currentSegmentId
+    currentSegmentId,
+    sessions,
+    activeSessionId,
+    initSessions,
+    createNewSession,
+    switchSession,
+    deleteSession,
+    renameSession
   } = useMessageManagement();
 
   const {
@@ -77,6 +84,13 @@ export function SidePanel() {
     tabTitle,
     setTabTitle
   } = useTabManagement(isProcessing);
+
+  // Initialize sessions when tabId and windowId are available
+  useEffect(() => {
+    if (tabId !== null && windowId !== null) {
+      initSessions(tabId, windowId);
+    }
+  }, [tabId, windowId]);
 
   // Heartbeat interval for checking agent status
   useEffect(() => {
@@ -319,6 +333,12 @@ export function SidePanel() {
                 onReflectAndLearn={handleReflectAndLearn}
                 isProcessing={isProcessing}
                 messages={messages}
+                sessions={sessions}
+                activeSessionId={activeSessionId}
+                onSwitchSession={switchSession}
+                onNewSession={createNewSession}
+                onDeleteSession={deleteSession}
+                onRenameSession={renameSession}
               />
               <div
                 ref={outputRef}

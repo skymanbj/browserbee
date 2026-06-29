@@ -202,6 +202,41 @@ export interface AgentStatusUpdateMessage {
   windowId?: number;
 }
 
+export interface GetSessionsMessage {
+  action: 'getSessions';
+  tabId?: number;
+  windowId?: number;
+}
+
+export interface CreateSessionMessage {
+  action: 'createSession';
+  title?: string;
+  tabId?: number;
+  windowId?: number;
+}
+
+export interface SetActiveSessionMessage {
+  action: 'setActiveSession';
+  sessionId: string;
+  tabId?: number;
+  windowId?: number;
+}
+
+export interface DeleteSessionMessage {
+  action: 'deleteSession';
+  sessionId: string;
+  tabId?: number;
+  windowId?: number;
+}
+
+export interface RenameSessionMessage {
+  action: 'renameSession';
+  sessionId: string;
+  title: string;
+  tabId?: number;
+  windowId?: number;
+}
+
 export type BackgroundMessage = 
   | ExecutePromptMessage
   | CancelExecutionMessage
@@ -216,7 +251,12 @@ export type BackgroundMessage =
   | ProviderConfigChangedMessage
   | ForceResetPlaywrightMessage
   | RequestApprovalMessage
-  | CheckAgentStatusMessage;
+  | CheckAgentStatusMessage
+  | GetSessionsMessage
+  | CreateSessionMessage
+  | SetActiveSessionMessage
+  | DeleteSessionMessage
+  | RenameSessionMessage;
 
 // New message types for enhanced tab management
 export interface TabStatusChangedMessage {

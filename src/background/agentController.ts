@@ -34,27 +34,61 @@ import {
 import { ProviderType, AgentStatus, AgentStatusInfo } from "./types";
 import { sendUIMessage, logWithTimestamp, handleError } from "./utils";
 
-// Generic message format that works with all providers
-interface GenericMessage {
-  role: string;
-  content: string | any;
-}
-
-// Interface for structured message history
-interface MessageHistory {
-  provider: ProviderType;
-  originalRequest: GenericMessage | null;
-  conversationHistory: GenericMessage[];
-}
+import { SessionManager } from "./sessionManager";
+import { Session, GenericMessage } from "../types/session";
 
 // Define a maximum token budget for conversation history
 const MAX_CONVERSATION_TOKENS = 100000; // 100K tokens for conversation history
 
-// Message histories for conversation context (one per window)
-const windowMessageHistories = new Map<number, MessageHistory>();
+// Active session ID by window ID
+const windowActiveSessions = new Map<number, string>();
 
 // Map to track agent status by window ID
 const agentStatusMap = new Map<number, AgentStatusInfo>();
+
+/**
+ * Get or create the active session for a tab's window
+ */
+export async function getOrCreateActiveSession(tabId: number): Promise<Session> {
+  const windowId = getWindowForTab(tabId);
+  if (!windowId) {
+    const session = await SessionManager.createSession();
+    return session;
+  }
+
+  let sessionId: string | null = windowActiveSessions.get(windowId) || null;
+  if (!sessionId) {
+    sessionId = await SessionManager.getActiveSessionId(windowId);
+  }
+
+  let session: Session | null = null;
+  if (sessionId) {
+    session = await SessionManager.getSession(sessionId);
+  }
+
+  if (!session) {
+    session = await SessionManager.createSession();
+    await SessionManager.setActiveSessionId(windowId, session.id);
+  }
+
+  windowActiveSessions.set(windowId, session.id);
+  return session;
+}
+
+/**
+ * Get active session ID for a window
+ */
+export function getActiveSessionIdForWindow(windowId: number): string | null {
+  return windowActiveSessions.get(windowId) || null;
+}
+
+/**
+ * Set active session ID for a window
+ */
+export function setActiveSessionIdForWindow(windowId: number, sessionId: string): void {
+  windowActiveSessions.set(windowId, sessionId);
+}
+
 
 /**
  * Set the agent status for a window
@@ -121,38 +155,27 @@ async function getCurrentProvider(): Promise<ProviderType> {
 export async function clearMessageHistory(tabId?: number, windowId?: number): Promise<void> {
   // Get the screenshot manager
   const screenshotManager = ScreenshotManager.getInstance();
-  
-  // Get current provider
-  const provider = await getCurrentProvider();
+  screenshotManager.clear();
   
   // If windowId is not provided but tabId is, try to get the window ID
   if (tabId && !windowId) {
     windowId = getWindowForTab(tabId);
   }
   
-  // If we have a window ID, clear that specific window's history
   if (windowId) {
-    // Clear message history for a specific window
-    windowMessageHistories.set(windowId, { provider, originalRequest: null, conversationHistory: [] });
-    // Clear screenshots
-    screenshotManager.clear();
-    logWithTimestamp(`Message history and screenshots cleared for window ${windowId}`);
-  } else if (getCurrentTabId()) {
-    // Try to get the window ID for the current tab
-    const currentWindowId = getWindowForTab(getCurrentTabId()!);
-    if (currentWindowId) {
-      // Clear message history for the current window
-      windowMessageHistories.set(currentWindowId, { provider, originalRequest: null, conversationHistory: [] });
-      // Clear screenshots
-      screenshotManager.clear();
-      logWithTimestamp(`Message history and screenshots cleared for current window ${currentWindowId}`);
+    const sessionId = windowActiveSessions.get(windowId) || await SessionManager.getActiveSessionId(windowId);
+    if (sessionId) {
+      // Reset current session's messages and agentHistory
+      await SessionManager.updateSession(sessionId, [], { originalRequest: null, conversationHistory: [] });
+      logWithTimestamp(`Message history and screenshots cleared for session ${sessionId}`);
     }
   } else {
-    // Clear all message histories if no window ID is specified
-    windowMessageHistories.clear();
-    // Clear screenshots
-    screenshotManager.clear();
-    logWithTimestamp("All message histories and screenshots cleared");
+    // Clear all sessions
+    const sessions = await SessionManager.getAllSessions();
+    for (const s of sessions) {
+      await SessionManager.updateSession(s.id, [], { originalRequest: null, conversationHistory: [] });
+    }
+    logWithTimestamp("All chat sessions cleared");
   }
 }
 
@@ -162,27 +185,11 @@ export async function clearMessageHistory(tabId?: number, windowId?: number): Pr
  * @returns The combined message history for the window (original request + conversation)
  */
 export async function getMessageHistory(tabId: number): Promise<Anthropic.MessageParam[]> {
-  // Get the window ID for this tab
-  const windowId = getWindowForTab(tabId);
-  if (!windowId) {
-    logWithTimestamp(`Cannot get message history: No window ID found for tab ${tabId}`, 'warn');
-    return [];
-  }
+  const session = await getOrCreateActiveSession(tabId);
   
   // Get current provider
   const provider = await getCurrentProvider();
-  
-  if (!windowMessageHistories.has(windowId)) {
-    windowMessageHistories.set(windowId, { provider, originalRequest: null, conversationHistory: [] });
-  }
-  
-  const history = windowMessageHistories.get(windowId)!;
-  
-  // Update provider if it has changed
-  if (history.provider !== provider) {
-    history.provider = provider;
-    windowMessageHistories.set(windowId, history);
-  }
+  const history = session.agentHistory;
   
   // Check if we need to avoid duplication of the first message
   let messagesToConvert: GenericMessage[] = [];
@@ -288,32 +295,9 @@ function convertMessagesToProviderFormat(messages: GenericMessage[], provider: P
  * @param tabId The tab ID to identify the window
  * @returns The structured message history object
  */
-export async function getStructuredMessageHistory(tabId: number): Promise<MessageHistory> {
-  // Get the window ID for this tab
-  const windowId = getWindowForTab(tabId);
-  if (!windowId) {
-    logWithTimestamp(`Cannot get structured message history: No window ID found for tab ${tabId}`, 'warn');
-    // Return an empty history if no window ID is found
-    const provider = await getCurrentProvider();
-    return { provider, originalRequest: null, conversationHistory: [] };
-  }
-  
-  // Get current provider
-  const provider = await getCurrentProvider();
-  
-  if (!windowMessageHistories.has(windowId)) {
-    windowMessageHistories.set(windowId, { provider, originalRequest: null, conversationHistory: [] });
-  }
-  
-  const history = windowMessageHistories.get(windowId)!;
-  
-  // Update provider if it has changed
-  if (history.provider !== provider) {
-    history.provider = provider;
-    windowMessageHistories.set(windowId, history);
-  }
-  
-  return history;
+export async function getStructuredMessageHistory(tabId: number): Promise<Session['agentHistory']> {
+  const session = await getOrCreateActiveSession(tabId);
+  return session.agentHistory;
 }
 
 /**
@@ -322,16 +306,9 @@ export async function getStructuredMessageHistory(tabId: number): Promise<Messag
  * @param request The original request message
  */
 export async function setOriginalRequest(tabId: number, request: Anthropic.MessageParam): Promise<void> {
-  // Get the window ID for this tab
-  const windowId = getWindowForTab(tabId);
-  if (!windowId) {
-    logWithTimestamp(`Cannot set original request: No window ID found for tab ${tabId}`, 'warn');
-    return;
-  }
-  
-  const history = await getStructuredMessageHistory(tabId);
-  history.originalRequest = request;
-  windowMessageHistories.set(windowId, history);
+  const session = await getOrCreateActiveSession(tabId);
+  session.agentHistory.originalRequest = request;
+  await SessionManager.updateSession(session.id, session.messages, session.agentHistory);
 }
 
 /**
@@ -340,16 +317,26 @@ export async function setOriginalRequest(tabId: number, request: Anthropic.Messa
  * @param message The message to add
  */
 export async function addToConversationHistory(tabId: number, message: Anthropic.MessageParam): Promise<void> {
-  // Get the window ID for this tab
-  const windowId = getWindowForTab(tabId);
-  if (!windowId) {
-    logWithTimestamp(`Cannot add to conversation history: No window ID found for tab ${tabId}`, 'warn');
-    return;
+  const session = await getOrCreateActiveSession(tabId);
+  session.agentHistory.conversationHistory.push(message);
+  
+  // Trim conversation history if it exceeds the token budget
+  const conversationTokens = contextTokenCount(session.agentHistory.conversationHistory);
+  
+  // If we're over budget, trim from the oldest messages until we're under budget
+  if (conversationTokens > MAX_CONVERSATION_TOKENS) {
+    logWithTimestamp(`Conversation history exceeds token budget (${conversationTokens}/${MAX_CONVERSATION_TOKENS}), trimming oldest messages`);
+    
+    // Remove oldest messages until we're under the token budget
+    while (contextTokenCount(session.agentHistory.conversationHistory) > MAX_CONVERSATION_TOKENS && 
+           session.agentHistory.conversationHistory.length > 1) {
+      // Remove the oldest message
+      session.agentHistory.conversationHistory.shift();
+    }
+    logWithTimestamp(`Trimmed conversation history to ${session.agentHistory.conversationHistory.length} messages (${contextTokenCount(session.agentHistory.conversationHistory)} tokens)`);
   }
   
-  const history = await getStructuredMessageHistory(tabId);
-  history.conversationHistory.push(message);
-  windowMessageHistories.set(windowId, history);
+  await SessionManager.updateSession(session.id, session.messages, session.agentHistory);
 }
 
 // No replacement - removing the isNewTaskRequest function
@@ -626,31 +613,33 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
     // Reset streaming buffer and segment ID
     resetStreamingState();
     
-    // Get the structured message history
-    const history = await getStructuredMessageHistory(targetTabId);
+    // Get active session
+    const session = await getOrCreateActiveSession(targetTabId);
     
-    // Check if this is the first prompt (no original request yet)
-    if (!history.originalRequest) {
-      // Store this as the original request without adding any special tag
-      await setOriginalRequest(targetTabId, { 
+    // Add user prompt as system message (New prompt: "...") for UI MessageDisplay rendering
+    session.messages.push({
+      type: 'system',
+      content: `New prompt: "${prompt}"`
+    });
+    
+    if (!session.agentHistory.originalRequest) {
+      session.agentHistory.originalRequest = { 
+        role: "user", 
+        content: prompt 
+      };
+      session.agentHistory.conversationHistory.push({ 
         role: "user", 
         content: prompt 
       });
-      
-      // Also add it to the conversation history to maintain the flow
-      await addToConversationHistory(targetTabId, { 
-        role: "user", 
-        content: prompt 
-      });
-      
       logWithTimestamp(`Set original request for tab ${targetTabId}: "${prompt}"`);
     } else {
-      // This is a follow-up prompt, add it to conversation history
-      await addToConversationHistory(targetTabId, { 
+      session.agentHistory.conversationHistory.push({ 
         role: "user", 
         content: prompt 
       });
     }
+    
+    await SessionManager.updateSession(session.id, session.messages, session.agentHistory);
     
     // Create callbacks for the agent
     const callbacks: ExecutionCallbacks = {
@@ -699,44 +688,34 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
           // Add the assistant's response to conversation history
           await addToConversationHistory(targetTabId, { role: "assistant", content: content });
           
-          // Trim conversation history if it exceeds the token budget
-          const history = await getStructuredMessageHistory(targetTabId);
-          
-          // Calculate the current token count of the conversation history
-          const conversationTokens = contextTokenCount(history.conversationHistory);
-          
-          // If we're over budget, trim from the oldest messages until we're under budget
-          if (conversationTokens > MAX_CONVERSATION_TOKENS) {
-            logWithTimestamp(`Conversation history exceeds token budget (${conversationTokens}/${MAX_CONVERSATION_TOKENS}), trimming oldest messages`);
-            
-            // Remove oldest messages until we're under the token budget
-            while (contextTokenCount(history.conversationHistory) > MAX_CONVERSATION_TOKENS && 
-                   history.conversationHistory.length > 1) {
-              // Remove the oldest message
-              history.conversationHistory.shift();
-            }
-            
-            // Get the window ID for this tab
-            const windowId = getWindowForTab(targetTabId);
-            if (windowId) {
-              // Update the message history
-              windowMessageHistories.set(windowId, history);
-            }
-            
-            logWithTimestamp(`Trimmed conversation history to ${history.conversationHistory.length} messages (${contextTokenCount(history.conversationHistory)} tokens)`);
+          // In non-streaming mode, we need to add the LLM response to messages
+          if (!useStreaming) {
+            const session = await getOrCreateActiveSession(targetTabId);
+            session.messages.push({
+              type: 'llm',
+              content: content
+            });
+            await SessionManager.updateSession(session.id, session.messages, session.agentHistory);
           }
         } catch (error) {
           logWithTimestamp(`Error updating conversation history: ${error instanceof Error ? error.message : String(error)}`, 'error');
         }
       },
-      onToolOutput: (content) => {
+      onToolOutput: async (content) => {
         // Normal handling for tool outputs
         sendUIMessage('updateOutput', {
           type: 'system',
           content: content
         }, targetTabId);
+
+        const session = await getOrCreateActiveSession(targetTabId);
+        session.messages.push({
+          type: 'system',
+          content: content
+        });
+        await SessionManager.updateSession(session.id, session.messages, session.agentHistory);
       },
-      onToolEnd: (result) => {
+      onToolEnd: async (result) => {
         // Check if this is a screenshot result by trying to parse it as JSON
         try {
           const data = JSON.parse(result);
@@ -753,15 +732,27 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
                 screenshotData.source && 
                 screenshotData.source.data) {
               
+              const imageData = screenshotData.source.data;
+              const mediaType = screenshotData.source.media_type || 'image/jpeg';
+
               // Send special screenshot message to UI
               sendUIMessage('updateScreenshot', {
                 type: 'screenshot',
                 content: data.note || "Screenshot captured",
-                imageData: screenshotData.source.data,
-                mediaType: screenshotData.source.media_type || 'image/jpeg'
+                imageData,
+                mediaType
               }, targetTabId);
               
               logWithTimestamp(`Sent screenshot ${data.id} to UI for tab ${targetTabId}`);
+
+              const session = await getOrCreateActiveSession(targetTabId);
+              session.messages.push({
+                type: 'screenshot',
+                content: data.note || "Screenshot captured",
+                imageData,
+                mediaType
+              });
+              await SessionManager.updateSession(session.id, session.messages, session.agentHistory);
             } else {
               logWithTimestamp(`Screenshot data not found for ID ${data.id}`, 'warn');
             }
@@ -799,7 +790,7 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
           isRetrying: true
         }, targetTabId);
       },
-      onSegmentComplete: (segment) => {
+      onSegmentComplete: async (segment) => {
         if (useStreaming) {
           // Get the window ID for this tab
           const windowId = getWindowForTab(targetTabId);
@@ -807,6 +798,14 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
           // Finalize the current streaming segment
           finalizeStreamingSegment(getCurrentSegmentId(), segment, targetTabId, windowId);
           
+          const session = await getOrCreateActiveSession(targetTabId);
+          session.messages.push({
+            type: 'llm',
+            content: segment,
+            segmentId: getCurrentSegmentId()
+          });
+          await SessionManager.updateSession(session.id, session.messages, session.agentHistory);
+
           // Increment segment ID for the next segment
           incrementSegmentId();
         }
@@ -820,7 +819,7 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
           startNewSegment(getCurrentSegmentId(), targetTabId, windowId);
         }
       },
-      onComplete: () => {
+      onComplete: async () => {
         // Get the window ID for this tab
         const windowId = getWindowForTab(targetTabId);
         
@@ -833,6 +832,14 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
           // If it doesn't have a tool call, it's likely the final output
           if (!hasToolCall) {
             finalizeStreamingSegment(getCurrentSegmentId(), getStreamingBuffer(), targetTabId, windowId);
+
+            const session = await getOrCreateActiveSession(targetTabId);
+            session.messages.push({
+              type: 'llm',
+              content: getStreamingBuffer(),
+              segmentId: getCurrentSegmentId()
+            });
+            await SessionManager.updateSession(session.id, session.messages, session.agentHistory);
           }
         }
         

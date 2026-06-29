@@ -2,12 +2,19 @@ import { faTrash, faBrain, faCopy, faDownload, faCheck } from '@fortawesome/free
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useState } from 'react';
 import { Message } from '../types';
+import { Session } from '../../types/session';
 
 interface OutputHeaderProps {
   onClearHistory: () => void;
   onReflectAndLearn: () => void;
   isProcessing: boolean;
   messages: Message[];
+  sessions: Session[];
+  activeSessionId: string | null;
+  onSwitchSession: (sessionId: string) => void;
+  onNewSession: () => void;
+  onDeleteSession: (sessionId: string) => void;
+  onRenameSession: (sessionId: string, newTitle: string) => void;
 }
 
 const formatToMarkdown = (messages: Message[]): string => {
@@ -226,10 +233,42 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
   onClearHistory,
   onReflectAndLearn,
   isProcessing,
-  messages
+  messages,
+  sessions,
+  activeSessionId,
+  onSwitchSession,
+  onNewSession,
+  onDeleteSession,
+  onRenameSession
 }) => {
   const [copied, setCopied] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editingTitleText, setEditingTitleText] = useState('');
+
+  const handleStartEditTitle = () => {
+    if (!activeSessionId) return;
+    const currentSession = sessions.find(s => s.id === activeSessionId);
+    if (currentSession) {
+      setEditingTitleText(currentSession.title);
+      setIsEditingTitle(true);
+    }
+  };
+
+  const handleSaveTitle = () => {
+    if (activeSessionId && editingTitleText.trim()) {
+      onRenameSession(activeSessionId, editingTitleText.trim());
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleDeleteClick = () => {
+    if (!activeSessionId) return;
+    const currentSession = sessions.find(s => s.id === activeSessionId);
+    if (currentSession && confirm(`确定要删除会话“${currentSession.title}”吗？`)) {
+      onDeleteSession(activeSessionId);
+    }
+  };
 
   const handleCopy = () => {
     if (messages.length === 0) return;
@@ -263,8 +302,70 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
   return (
     <div className="flex flex-col bg-base-300 border-b border-base-content border-opacity-10">
       <div className="flex justify-between items-center p-3">
-        <div className="card-title text-base-content text-lg">
-          Output
+        <div className="flex items-center gap-1.5 max-w-[65%] min-w-0">
+          {isEditingTitle ? (
+            <input
+              type="text"
+              value={editingTitleText}
+              onChange={(e) => setEditingTitleText(e.target.value)}
+              onBlur={handleSaveTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveTitle();
+                if (e.key === 'Escape') setIsEditingTitle(false);
+              }}
+              className="input input-xs input-bordered w-full max-w-[140px] font-semibold"
+              autoFocus
+            />
+          ) : (
+            <select
+              value={activeSessionId || ''}
+              onChange={(e) => onSwitchSession(e.target.value)}
+              className="select select-xs select-bordered font-semibold text-xs max-w-[130px] truncate"
+              disabled={isProcessing}
+            >
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          )}
+          
+          <div className="flex gap-0.5 flex-shrink-0">
+            {/* 新建会话 */}
+            <button
+              onClick={onNewSession}
+              disabled={isProcessing}
+              className="btn btn-ghost btn-xs btn-circle hover:bg-base-200"
+              title="新建会话"
+            >
+              ➕
+            </button>
+
+            {/* 编辑标题 */}
+            {!isEditingTitle && activeSessionId && (
+              <button
+                onClick={handleStartEditTitle}
+                disabled={isProcessing}
+                className="btn btn-ghost btn-xs btn-circle hover:bg-base-200"
+                title="重命名会话"
+              >
+                ✏️
+              </button>
+            )}
+
+            {/* 删除会话 */}
+            {activeSessionId && sessions.length > 1 && (
+              <button
+                onClick={handleDeleteClick}
+                disabled={isProcessing}
+                className="btn btn-ghost btn-xs btn-circle text-error hover:bg-base-200"
+                title="删除此会话"
+              >
+                🗑️
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {/* Brain / Reflect */}

@@ -5,6 +5,8 @@ import { cancelExecution } from './agentController';
 import { clearMessageHistory } from './agentController';
 import { initializeAgent } from './agentController';
 import { getAgentStatus } from './agentController';
+import { getOrCreateActiveSession, setActiveSessionIdForWindow } from './agentController';
+import { SessionManager } from './sessionManager';
 import { triggerReflection } from './reflectionController';
 import { attachToTab, getTabState, getWindowForTab, forceResetPlaywright } from './tabManager';
 import { BackgroundMessage } from './types';
@@ -118,6 +120,26 @@ export function handleMessage(
           });
         return true; // Keep the message channel open for async response
 
+      case 'getSessions':
+        handleGetSessions(message, sendResponse);
+        return true;
+
+      case 'createSession':
+        handleCreateSession(message, sendResponse);
+        return true;
+
+      case 'setActiveSession':
+        handleSetActiveSession(message, sendResponse);
+        return true;
+
+      case 'deleteSession':
+        handleDeleteSession(message, sendResponse);
+        return true;
+
+      case 'renameSession':
+        handleRenameSession(message, sendResponse);
+        return true;
+
       default:
         // This should never happen due to the type guard, but TypeScript requires it
         logWithTimestamp(`Unhandled message action: ${(message as any).action}`, 'warn');
@@ -164,7 +186,12 @@ function isBackgroundMessage(message: any): message is BackgroundMessage {
       message.action === 'pageError' ||
       message.action === 'forceResetPlaywright' ||
       message.action === 'requestApproval' ||  // Add support for request approval messages
-      message.action === 'checkAgentStatus'  // Add support for agent status check
+      message.action === 'checkAgentStatus' ||  // Add support for agent status check
+      message.action === 'getSessions' ||
+      message.action === 'createSession' ||
+      message.action === 'setActiveSession' ||
+      message.action === 'deleteSession' ||
+      message.action === 'renameSession'
     )
   );
 }
@@ -445,6 +472,163 @@ async function handleCheckAgentStatus(
   } catch (error) {
     const errorMessage = handleError(error, 'checking agent status');
     logWithTimestamp(`Error checking agent status: ${errorMessage}`, 'error');
+    sendResponse({ success: false, error: errorMessage });
+  }
+}
+
+/**
+ * Handle getSessions message
+ */
+async function handleGetSessions(
+  message: any,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessions = await SessionManager.getAllSessions();
+    
+    // Find the active session ID for this window/tab
+    let activeSessionId: string | null = null;
+    const windowId = message.windowId || (message.tabId ? getWindowForTab(message.tabId) : null);
+    if (windowId) {
+      activeSessionId = await SessionManager.getActiveSessionId(windowId);
+      
+      // If there is an active session id but it's not in the sessions list, default it to null
+      if (activeSessionId && !sessions.some(s => s.id === activeSessionId)) {
+        activeSessionId = null;
+      }
+      
+      // If no active session ID, but sessions exist, default to the first one
+      if (!activeSessionId && sessions.length > 0) {
+        activeSessionId = sessions[0].id;
+        await SessionManager.setActiveSessionId(windowId, activeSessionId);
+        setActiveSessionIdForWindow(windowId, activeSessionId);
+      }
+    }
+    
+    sendResponse({ success: true, sessions, activeSessionId });
+  } catch (error) {
+    const errorMessage = handleError(error, 'getting sessions');
+    sendResponse({ success: false, error: errorMessage });
+  }
+}
+
+/**
+ * Handle createSession message
+ */
+async function handleCreateSession(
+  message: any,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const title = message.title || '新会话';
+    const newSession = await SessionManager.createSession(title);
+    
+    const windowId = message.windowId || (message.tabId ? getWindowForTab(message.tabId) : null);
+    if (windowId) {
+      await SessionManager.setActiveSessionId(windowId, newSession.id);
+      setActiveSessionIdForWindow(windowId, newSession.id);
+    }
+    
+    sendResponse({ success: true, session: newSession });
+  } catch (error) {
+    const errorMessage = handleError(error, 'creating session');
+    sendResponse({ success: false, error: errorMessage });
+  }
+}
+
+/**
+ * Handle setActiveSession message
+ */
+async function handleSetActiveSession(
+  message: any,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionId = message.sessionId;
+    const windowId = message.windowId || (message.tabId ? getWindowForTab(message.tabId) : null);
+    
+    if (!windowId) {
+      sendResponse({ success: false, error: 'No window ID found' });
+      return;
+    }
+    
+    await SessionManager.setActiveSessionId(windowId, sessionId);
+    setActiveSessionIdForWindow(windowId, sessionId);
+    
+    const session = await SessionManager.getSession(sessionId);
+    sendResponse({ success: true, session });
+  } catch (error) {
+    const errorMessage = handleError(error, 'setting active session');
+    sendResponse({ success: false, error: errorMessage });
+  }
+}
+
+/**
+ * Handle deleteSession message
+ */
+async function handleDeleteSession(
+  message: any,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionId = message.sessionId;
+    await SessionManager.deleteSession(sessionId);
+    
+    const windowId = message.windowId || (message.tabId ? getWindowForTab(message.tabId) : null);
+    let nextActiveSessionId: string | null = null;
+    
+    if (windowId) {
+      const currentActiveId = await SessionManager.getActiveSessionId(windowId);
+      
+      // If the deleted session was the active one, switch it
+      if (currentActiveId === sessionId) {
+        const sessions = await SessionManager.getAllSessions();
+        if (sessions.length > 0) {
+          nextActiveSessionId = sessions[0].id;
+          await SessionManager.setActiveSessionId(windowId, nextActiveSessionId);
+          setActiveSessionIdForWindow(windowId, nextActiveSessionId);
+        } else {
+          // If no sessions left, create a default one
+          const newSession = await SessionManager.createSession();
+          nextActiveSessionId = newSession.id;
+          await SessionManager.setActiveSessionId(windowId, nextActiveSessionId);
+          setActiveSessionIdForWindow(windowId, nextActiveSessionId);
+        }
+      } else {
+        nextActiveSessionId = currentActiveId;
+      }
+    }
+    
+    const sessions = await SessionManager.getAllSessions();
+    sendResponse({ success: true, sessions, activeSessionId: nextActiveSessionId });
+  } catch (error) {
+    const errorMessage = handleError(error, 'deleting session');
+    sendResponse({ success: false, error: errorMessage });
+  }
+}
+
+/**
+ * Handle renameSession message
+ */
+async function handleRenameSession(
+  message: any,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionId = message.sessionId;
+    const title = message.title;
+    
+    const session = await SessionManager.getSession(sessionId);
+    if (!session) {
+      sendResponse({ success: false, error: 'Session not found' });
+      return;
+    }
+    
+    const updated = await SessionManager.updateSession(sessionId, session.messages, session.agentHistory, title);
+    const sessions = await SessionManager.getAllSessions();
+    sendResponse({ success: true, session: updated, sessions });
+  } catch (error) {
+    const errorMessage = handleError(error, 'renaming session');
     sendResponse({ success: false, error: errorMessage });
   }
 }
