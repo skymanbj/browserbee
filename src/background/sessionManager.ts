@@ -118,8 +118,9 @@ export class SessionManager {
   /**
    * Get the active session ID for a specific window
    */
-  static async getActiveSessionId(windowId: number): Promise<string | null> {
-    const key = `${this.ACTIVE_SESSION_KEY_PREFIX}${windowId}`;
+  static async getActiveSessionId(windowId?: number | null): Promise<string | null> {
+    const wId = windowId || 0;
+    const key = `${this.ACTIVE_SESSION_KEY_PREFIX}${wId}`;
     return new Promise((resolve) => {
       chrome.storage.local.get(key, (result) => {
         resolve(result[key] || null);
@@ -130,8 +131,9 @@ export class SessionManager {
   /**
    * Set the active session ID for a specific window
    */
-  static async setActiveSessionId(windowId: number, sessionId: string | null): Promise<void> {
-    const key = `${this.ACTIVE_SESSION_KEY_PREFIX}${windowId}`;
+  static async setActiveSessionId(windowId: number | null | undefined, sessionId: string | null): Promise<void> {
+    const wId = windowId || 0;
+    const key = `${this.ACTIVE_SESSION_KEY_PREFIX}${wId}`;
     return new Promise((resolve) => {
       if (sessionId) {
         chrome.storage.local.set({ [key]: sessionId }, () => {

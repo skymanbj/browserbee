@@ -67,9 +67,10 @@ export const useMessageManagement = () => {
   }, [tabInfo]);
 
   // Create a new session
+  // Create a new session
   const createNewSession = async (title?: string) => {
-    if (!tabInfo) return;
-    const { tabId, windowId } = tabInfo;
+    const tabId = tabInfo?.tabId;
+    const windowId = tabInfo?.windowId;
     
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
@@ -91,8 +92,8 @@ export const useMessageManagement = () => {
 
   // Switch to a different session
   const switchSession = async (sessionId: string) => {
-    if (!tabInfo) return;
-    const { tabId, windowId } = tabInfo;
+    const tabId = tabInfo?.tabId;
+    const windowId = tabInfo?.windowId;
 
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
@@ -112,8 +113,8 @@ export const useMessageManagement = () => {
 
   // Delete a session
   const deleteSession = async (sessionId: string) => {
-    if (!tabInfo) return;
-    const { tabId, windowId } = tabInfo;
+    const tabId = tabInfo?.tabId;
+    const windowId = tabInfo?.windowId;
 
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
@@ -140,8 +141,8 @@ export const useMessageManagement = () => {
 
   // Rename a session
   const renameSession = async (sessionId: string, title: string) => {
-    if (!tabInfo) return;
-    const { tabId, windowId } = tabInfo;
+    const tabId = tabInfo?.tabId;
+    const windowId = tabInfo?.windowId;
 
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
