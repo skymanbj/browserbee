@@ -39,7 +39,6 @@
     "alarms",
     "debugger"
   ],
-  "optional_permissions": []
   "side_panel": {
     "default_path": "sidepanel.html"
   },
