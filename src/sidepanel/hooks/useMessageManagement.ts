@@ -72,10 +72,13 @@ export const useMessageManagement = () => {
     if (!tabInfo) return;
     const { tabId, windowId } = tabInfo;
     
+    // Ensure title is a string, filtering out potential React MouseEvents
+    const cleanTitle = typeof title === 'string' ? title : undefined;
+
     return new Promise<void>((resolve) => {
       chrome.runtime.sendMessage({
         action: 'createSession',
-        title,
+        title: cleanTitle,
         tabId,
         windowId
       }, (response) => {
