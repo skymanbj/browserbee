@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AgentMemory } from '../../tracking/memoryService';
+import { useLanguage } from '../LanguageContext';
 
 export interface MemoryEditModalProps {
     /** Whether the modal is open */
@@ -16,6 +17,7 @@ export interface MemoryEditModalProps {
  * Modal dialog for editing memory task description and tool sequence.
  */
 export function MemoryEditModal({ open, memory, onSave, onCancel }: MemoryEditModalProps) {
+    const { t } = useLanguage();
     const [taskDescription, setTaskDescription] = useState('');
     const [toolSequenceText, setToolSequenceText] = useState('');
     const [error, setError] = useState('');
@@ -59,24 +61,24 @@ export function MemoryEditModal({ open, memory, onSave, onCancel }: MemoryEditMo
     const handleSave = () => {
         // Validate
         if (!taskDescription.trim()) {
-            setError('Task description is required.');
+            setError(t('Task description is required.'));
             return;
         }
 
         const steps = toolSequenceText
-            .split('\n')
-            .map(s => s.trim())
-            .filter(s => s.length > 0);
+             .split('\n')
+             .map(s => s.trim())
+             .filter(s => s.length > 0);
 
         if (steps.length === 0) {
-            setError('At least one tool step is required.');
-            return;
+             setError(t('At least one tool step is required.'));
+             return;
         }
 
         setError('');
         onSave({
-            taskDescription: taskDescription.trim(),
-            toolSequence: steps,
+             taskDescription: taskDescription.trim(),
+             toolSequence: steps,
         });
     };
 
@@ -92,14 +94,14 @@ export function MemoryEditModal({ open, memory, onSave, onCancel }: MemoryEditMo
             <div className="modal-box max-w-xl">
                 <h3 id="edit-memory-title" className="text-lg font-bold flex items-center gap-2">
                     <span aria-hidden="true">✏️</span>
-                    Edit Memory
+                    {t('Edit Memory')}
                 </h3>
 
                 <div className="py-4 space-y-4">
                     {/* Domain (read-only) */}
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text font-medium">Domain</span>
+                            <span className="label-text font-medium">{t('Domain')}</span>
                         </label>
                         <input
                             type="text"
@@ -109,7 +111,7 @@ export function MemoryEditModal({ open, memory, onSave, onCancel }: MemoryEditMo
                         />
                         <label className="label">
                             <span className="label-text-alt text-base-content/50">
-                                Domain cannot be changed here.
+                                {t('Domain cannot be changed here.')}
                             </span>
                         </label>
                     </div>
@@ -117,7 +119,7 @@ export function MemoryEditModal({ open, memory, onSave, onCancel }: MemoryEditMo
                     {/* Task Description */}
                     <div className="form-control">
                         <label className="label" htmlFor="memory-task-desc">
-                            <span className="label-text font-medium">Task Description</span>
+                            <span className="label-text font-medium">{t('Task Description')}</span>
                         </label>
                         <input
                             id="memory-task-desc"
@@ -136,9 +138,9 @@ export function MemoryEditModal({ open, memory, onSave, onCancel }: MemoryEditMo
                     {/* Tool Sequence */}
                     <div className="form-control">
                         <label className="label" htmlFor="memory-tool-seq">
-                            <span className="label-text font-medium">Tool Sequence</span>
+                            <span className="label-text font-medium">{t('Tool Sequence')}</span>
                             <span className="label-text-alt text-base-content/50">
-                                One step per line
+                                {t('One step per line')}
                             </span>
                         </label>
                         <textarea
@@ -166,18 +168,18 @@ export function MemoryEditModal({ open, memory, onSave, onCancel }: MemoryEditMo
                     <button
                         className="btn btn-ghost"
                         onClick={onCancel}
-                        aria-label="Cancel"
+                        aria-label={t('Cancel')}
                     >
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button
                         className="btn btn-primary"
                         onClick={handleSave}
-                        aria-label="Save changes"
+                        aria-label={t('Save')}
                         autoFocus
                     >
                         <span aria-hidden="true">💾</span>
-                        Save
+                        {t('Save')}
                     </button>
                 </div>
             </div>

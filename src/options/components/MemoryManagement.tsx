@@ -50,7 +50,7 @@ function formatDate(timestamp: number): string {
 }
 
 export function MemoryManagement() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   // ── Data state ────────────────────────────────────────────
   const [allMemories, setAllMemories] = useState<AgentMemory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +61,15 @@ export function MemoryManagement() {
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+
+  // ── Pagination state ──────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
+  const DOMAINS_PER_PAGE = 5;
+
+  // Reset page when searchQuery or filterMode changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterMode]);
 
   // ── Modal state ───────────────────────────────────────────
   const [editingMemory, setEditingMemory] = useState<AgentMemory | null>(null);
@@ -497,6 +506,20 @@ export function MemoryManagement() {
     );
   };
 
+  // Paginate grouped memories by domains
+  const groupedEntries = useMemo(() => Object.entries(groupedMemories), [groupedMemories]);
+  const totalPages = Math.ceil(groupedEntries.length / DOMAINS_PER_PAGE);
+  const paginatedEntries = useMemo(() => {
+    const start = (currentPage - 1) * DOMAINS_PER_PAGE;
+    return groupedEntries.slice(start, start + DOMAINS_PER_PAGE);
+  }, [groupedEntries, currentPage]);
+
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="space-y-4">
@@ -701,16 +724,42 @@ export function MemoryManagement() {
             /* No results for filter */
             <div className="text-center py-8 text-base-content/50">
               <div className="text-3xl mb-3" aria-hidden="true">🔍</div>
-              <p className="font-medium text-lg mb-1">No matching memories</p>
+              <p className="font-medium text-lg mb-1">{t('No matching memories')}</p>
               <p className="text-sm">
-                Try a different search term or filter selection.
+                {t('Try a different search term or filter selection.')}
               </p>
             </div>
           ) : (
-            /* Grouped memory sections */
-            <div className="space-y-2">
-              {Object.entries(groupedMemories).map(([domain, memories]) =>
-                renderGroupSection(domain, memories)
+            /* Grouped memory sections with pagination */
+            <div className="space-y-4">
+              <div className="space-y-2">
+                {paginatedEntries.map(([domain, memories]) =>
+                  renderGroupSection(domain, memories)
+                )}
+              </div>
+              
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-4">
+                  <div className="join">
+                    <button
+                      className="join-item btn btn-sm btn-outline"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      «
+                    </button>
+                    <span className="join-item btn btn-sm btn-disabled font-medium">
+                      {t('Page')} {currentPage} / {totalPages}{language === 'zh' ? ' 页' : ''}
+                    </span>
+                    <button
+                      className="join-item btn btn-sm btn-outline"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                    >
+                      »
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -722,19 +771,19 @@ export function MemoryManagement() {
         open={deleteTarget !== null}
         title={
           deleteTarget?.type === 'all'
-            ? 'Clear All Memories'
+            ? t('Clear All Memories')
             : deleteTarget?.type === 'batch'
-              ? `Delete ${deleteTarget.ids.length} Memories`
-              : 'Delete Memory'
+              ? t('Delete Memories')
+              : t('Delete Memory')
         }
         description={
           deleteTarget?.type === 'all'
-            ? 'This will permanently remove all stored memories.'
+            ? t('This will permanently remove all stored memories.')
             : undefined
         }
         items={deleteTarget?.items || []}
         confirmLabel={
-          deleteTarget?.type === 'all' ? 'Clear All' : 'Delete'
+          deleteTarget?.type === 'all' ? t('Clear All') : t('Delete')
         }
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
@@ -743,13 +792,13 @@ export function MemoryManagement() {
       {/* ── Clear All Confirm ── */}
       <MemoryDeleteConfirm
         open={showClearConfirm}
-        title="Clear All Memories"
-        description="This will permanently remove all stored memories across all domains."
+        title={t('Clear All Memories')}
+        description={t('This will permanently remove all stored memories across all domains.')}
         items={allMemories.slice(0, 5).map(m => ({
           domain: m.domain,
           taskDescription: m.taskDescription,
         }))}
-        confirmLabel="Clear All"
+        confirmLabel={t('Clear All')}
         onConfirm={confirmClearAll}
         onCancel={() => setShowClearConfirm(false)}
       />

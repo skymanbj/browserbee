@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLanguage } from '../LanguageContext';
 
 export interface MemoryDeleteConfirmProps {
     /** Whether the dialog is open */
@@ -28,11 +29,13 @@ export function MemoryDeleteConfirm({
     title,
     description,
     items,
-    confirmLabel = 'Delete',
-    cancelLabel = 'Cancel',
+    confirmLabel,
+    cancelLabel,
     onConfirm,
     onCancel,
 }: MemoryDeleteConfirmProps) {
+    const { t } = useLanguage();
+    
     // Close on Escape key
     useEffect(() => {
         if (!open) return;
@@ -48,6 +51,9 @@ export function MemoryDeleteConfirm({
     }, [open, onCancel]);
 
     if (!open) return null;
+
+    const finalConfirmLabel = confirmLabel || t('Delete');
+    const finalCancelLabel = cancelLabel || t('Cancel');
 
     // Limit the number of displayed items to avoid an overly tall dialog
     const maxDisplay = 5;
@@ -74,7 +80,7 @@ export function MemoryDeleteConfirm({
                 {items.length > 0 && (
                     <div className="py-2">
                         <div className="text-xs font-semibold uppercase text-base-content/50 mb-2">
-                            Memories to be deleted ({items.length}):
+                            {t('Memories to be deleted')} ({items.length}):
                         </div>
                         <ul className="max-h-48 overflow-y-auto space-y-1">
                             {displayedItems.map((item, idx) => (
@@ -87,36 +93,36 @@ export function MemoryDeleteConfirm({
                                     </span>
                                     <span className="truncate">{item.taskDescription}</span>
                                 </li>
-                            ))}
-                            {remainingCount > 0 && (
+                             ))}
+                             {remainingCount > 0 && (
                                 <li className="text-sm text-base-content/50 italic px-2">
-                                    ...and {remainingCount} more
+                                    {t('...and {count} more').replace('{count}', String(remainingCount))}
                                 </li>
-                            )}
+                             )}
                         </ul>
                     </div>
                 )}
 
                 <div className="text-sm text-warning bg-warning/10 rounded px-3 py-2 mt-2">
-                    This action cannot be undone.
+                    {t('This action cannot be undone.')}
                 </div>
 
                 <div className="modal-action">
                     <button
                         className="btn btn-ghost"
                         onClick={onCancel}
-                        aria-label={cancelLabel}
+                        aria-label={finalCancelLabel}
                     >
-                        {cancelLabel}
+                        {finalCancelLabel}
                     </button>
                     <button
                         className="btn btn-error"
                         onClick={onConfirm}
-                        aria-label={confirmLabel}
+                        aria-label={finalConfirmLabel}
                         autoFocus
                     >
                         <span aria-hidden="true">🗑️</span>
-                        {confirmLabel}
+                        {finalConfirmLabel}
                     </button>
                 </div>
             </div>

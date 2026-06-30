@@ -168,6 +168,53 @@ const translationDict: Record<string, Record<Language, string>> = {
     zh: 'BrowserBee 在网站上完成任务时会自动创建记忆。您也可以从 JSON 备份中导入记忆。',
     en: 'Memories will be created automatically when BrowserBee completes tasks on websites. You can also import memories from a JSON backup.'
   },
+  'No matching memories': { zh: '未找到匹配的记忆数据', en: 'No matching memories' },
+  'Try a different search term or filter selection.': {
+    zh: '请尝试不同的搜索词或筛选条件。',
+    en: 'Try a different search term or filter selection.'
+  },
+  'Unknown': { zh: '未知', en: 'Unknown' },
+  'Invalid date': { zh: '无效日期', en: 'Invalid date' },
+  'Dismiss': { zh: '关闭', en: 'Dismiss' },
+  'Clear All Memories': { zh: '清空全部记忆', en: 'Clear All Memories' },
+  'This will permanently remove all stored memories.': {
+    zh: '这将永久删除所有已存储的记忆。',
+    en: 'This will permanently remove all stored memories.'
+  },
+  'Delete Memories': { zh: '删除所选记忆', en: 'Delete Memories' },
+  'Delete Memory': { zh: '删除单个记忆', en: 'Delete Memory' },
+  'This will permanently remove all stored memories across all domains.': {
+    zh: '这将永久删除所有域名下的全部记忆数据。',
+    en: 'This will permanently remove all stored memories across all domains.'
+  },
+  'Cancel': { zh: '取消', en: 'Cancel' },
+  'Save': { zh: '保存', en: 'Save' },
+  'Edit Memory': { zh: '编辑记忆', en: 'Edit Memory' },
+  'Domain': { zh: '所属域名', en: 'Domain' },
+  'Domain cannot be changed here.': {
+    zh: '此处无法修改所属域名。',
+    en: 'Domain cannot be changed here.'
+  },
+  'Task Description': { zh: '任务描述', en: 'Task Description' },
+  'Tool Sequence': { zh: '工具操作步骤序列', en: 'Tool Sequence' },
+  'One step per line': { zh: '每行一个步骤', en: 'One step per line' },
+  'Task description is required.': {
+    zh: '任务描述不能为空。',
+    en: 'Task description is required.'
+  },
+  'At least one tool step is required.': {
+    zh: '至少需要包含一个步骤。',
+    en: 'At least one tool step is required.'
+  },
+  'Memories to be deleted': { zh: '待删除的记忆数据', en: 'Memories to be deleted' },
+  '...and {count} more': { zh: '...以及另外 {count} 项', en: '...and {count} more' },
+  'This action cannot be undone.': {
+    zh: '此操作无法撤销。',
+    en: 'This action cannot be undone.'
+  },
+  'Tool Sequence:': { zh: '工具操作步骤:', en: 'Tool Sequence:' },
+  'No steps recorded': { zh: '未记录任何步骤', en: 'No steps recorded' },
+  'Page': { zh: '第', en: 'Page' },
 
   // Sessions Tab
   'Session Management': { zh: '会话管理', en: 'Session Management' },
