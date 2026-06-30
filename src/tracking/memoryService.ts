@@ -561,4 +561,138 @@ export class MemoryService {
       return 0;
     }
   }
+
+  /**
+   * Get all unique domains that have memories stored
+   * @returns Promise resolving to an array of unique domain strings
+   */
+  public async getDomains(): Promise<string[]> {
+    await this.ensureInitialized();
+
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = this.db!.transaction([this.STORE_NAME], 'readonly');
+        const store = transaction.objectStore(this.STORE_NAME);
+        const index = store.index('domain');
+
+        // Use a cursor to collect unique keys from the domain index
+        const uniqueDomains = new Set<string>();
+        const request = index.openKeyCursor();
+
+        request.onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest<IDBCursor>).result;
+          if (cursor) {
+            uniqueDomains.add(cursor.key as string);
+            cursor.continue();
+          } else {
+            resolve(Array.from(uniqueDomains).sort());
+          }
+        };
+
+        request.onerror = (event) => {
+          const error = (event.target as IDBRequest).error;
+          logWithTimestamp(`Error retrieving domains: ${error?.message || 'Unknown error'}`, 'error');
+          reject(error);
+        };
+      } catch (error) {
+        logWithTimestamp(`Exception retrieving domains: ${error instanceof Error ? error.message : String(error)}`, 'error');
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Count the total number of memories stored
+   * @returns Promise resolving to the count of memories
+   */
+  public async countMemories(): Promise<number> {
+    await this.ensureInitialized();
+
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = this.db!.transaction([this.STORE_NAME], 'readonly');
+        const store = transaction.objectStore(this.STORE_NAME);
+
+        const request = store.count();
+
+        request.onsuccess = (event) => {
+          const count = (event.target as IDBRequest<number>).result;
+          resolve(count);
+        };
+
+        request.onerror = (event) => {
+          const error = (event.target as IDBRequest).error;
+          logWithTimestamp(`Error counting memories: ${error?.message || 'Unknown error'}`, 'error');
+          reject(error);
+        };
+      } catch (error) {
+        logWithTimestamp(`Exception counting memories: ${error instanceof Error ? error.message : String(error)}`, 'error');
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Delete multiple memories by their IDs in a single transaction
+   * @param ids Array of memory IDs to delete
+   */
+  public async deleteMemories(ids: number[]): Promise<void> {
+    await this.ensureInitialized();
+
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
+    if (ids.length === 0) {
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const transaction = this.db!.transaction([this.STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(this.STORE_NAME);
+
+        let completed = 0;
+        let hasError = false;
+
+        for (const id of ids) {
+          const request = store.delete(id);
+
+          request.onsuccess = () => {
+            completed++;
+            if (completed === ids.length && !hasError) {
+              logWithTimestamp(`Successfully deleted ${ids.length} memories`);
+              resolve();
+            }
+          };
+
+          request.onerror = (event) => {
+            if (!hasError) {
+              hasError = true;
+              const error = (event.target as IDBRequest).error;
+              logWithTimestamp(`Error deleting memory with ID ${id}: ${error?.message || 'Unknown error'}`, 'error');
+              reject(error);
+            }
+          };
+        }
+
+        transaction.onerror = (event) => {
+          const error = (event.target as IDBTransaction).error;
+          logWithTimestamp(`Transaction error during batch delete: ${error?.message || 'Unknown error'}`, 'error');
+          reject(error);
+        };
+      } catch (error) {
+        logWithTimestamp(`Exception during batch delete: ${error instanceof Error ? error.message : String(error)}`, 'error');
+        reject(error);
+      }
+    });
+  }
 }

@@ -1,2 +1,188 @@
 @import "tailwindcss";
 @plugin "daisyui";
+
+/* Glassmorphism Design System */
+.glass-container {
+  background: radial-gradient(circle at top left, rgba(30, 27, 75, 0.5), rgba(15, 23, 42, 0.95)),
+              radial-gradient(circle at bottom right, rgba(88, 28, 135, 0.4), rgba(15, 23, 42, 0.95)) !important;
+  color: #f1f5f9;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.2) !important;
+  outline: none !important;
+}
+
+.glass-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+  border-radius: 9999px !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.glass-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-1px);
+}
+
+.glass-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.glass-btn-primary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(168, 85, 247, 0.5)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+}
+
+.glass-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.7), rgba(168, 85, 247, 0.7)) !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5) !important;
+}
+
+.glass-badge {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 9999px !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+  color: #e2e8f0 !important;
+}
+
+/* Custom Scrollbar for Glass UI */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Glassmorphism Light Mode Definitions */
+.glass-container-light {
+  background: radial-gradient(circle at top left, rgba(220, 225, 245, 0.85), rgba(240, 243, 248, 0.95)),
+              radial-gradient(circle at bottom right, rgba(235, 220, 248, 0.8), rgba(240, 243, 248, 0.95)) !important;
+  color: #1e293b;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  color: #1e293b !important;
+}
+
+.glass-card-light:hover {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.glass-input-light {
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #1e293b !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.glass-input-light:focus {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.1) !important;
+  outline: none !important;
+}
+
+.glass-btn-light {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #1e293b !important;
+  border-radius: 9999px !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.glass-btn-light:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px);
+}
+
+.glass-btn-light:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.glass-btn-primary-light {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(168, 85, 247, 0.6)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15) !important;
+}
+
+.glass-btn-primary-light:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.75), rgba(168, 85, 247, 0.75)) !important;
+  box-shadow: 0 6px 15px rgba(99, 102, 241, 0.25) !important;
+}
+
+.glass-badge-light {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 9999px !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+  color: #334155 !important;
+}
+
+

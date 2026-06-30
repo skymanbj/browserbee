@@ -23,6 +23,10 @@ export default defineConfig({
         background: path.resolve(__dirname, "src/background.ts"),
         sidepanel: path.resolve(__dirname, "src/sidepanel/index.tsx"),
         options: path.resolve(__dirname, "src/options/index.tsx"),
+        "content-script": path.resolve(
+          __dirname,
+          "src/content-script/index.tsx",
+        ),
       },
       output: {
         entryFileNames: "[name].js",

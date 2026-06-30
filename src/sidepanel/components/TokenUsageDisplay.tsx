@@ -12,7 +12,11 @@ const formatTokenCount = (count: number): string => {
   return (count / 1000).toFixed(1) + 'k';
 };
 
-export function TokenUsageDisplay() {
+interface TokenUsageDisplayProps {
+  theme?: 'dark' | 'light';
+}
+
+export function TokenUsageDisplay({ theme = 'dark' }: TokenUsageDisplayProps) {
   const [usage, setUsage] = useState<TokenUsage>({ inputTokens: 0, outputTokens: 0, cost: 0 });
   const [providerConfig, setProviderConfig] = useState<ProviderConfig | null>(null);
 
@@ -97,7 +101,7 @@ export function TokenUsageDisplay() {
   // };
 
   return (
-    <div className="card bg-base-100 shadow-sm p-3 mt-2 text-xs">
+    <div className={`p-3 mt-2 text-xs ${theme === 'dark' ? 'glass-card' : 'glass-card-light'}`}>
       <div className="flex justify-between items-center">
         <span className="font-medium">Token Usage:</span>
         <span><FontAwesomeIcon icon={faArrowUp} /> {formatTokenCount(usage.inputTokens)} <FontAwesomeIcon icon={faArrowDown} /> {formatTokenCount(usage.outputTokens)}</span>
