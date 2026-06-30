@@ -220,7 +220,13 @@ const translationDict: Record<string, Record<Language, string>> = {
   'Auto-pulling...': { zh: '正在自动拉取模型...', en: 'Auto-pulling...' },
   'Failed to pull models': { zh: '拉取模型失败', en: 'Failed to pull models' },
   'Models pulled successfully!': { zh: '模型拉取成功！', en: 'Models pulled successfully!' },
-  'Test Connection': { zh: '测试连接', en: 'Test Connection' }
+  'Test Connection': { zh: '测试连接', en: 'Test Connection' },
+  'Current Model': { zh: '默认使用的模型', en: 'Default Model' },
+  'Select a model': { zh: '选择一个模型', en: 'Select a model' },
+  '当前尚未自动拉取模型列表。请填写 Base URL 和 API Key 后，点击上方「自动拉取已下载模型/自动拉取模型列表」按钮一键获取模型。': {
+    zh: '当前尚未自动拉取模型列表。请填写 Base URL 和 API Key 后，点击上方「自动拉取已下载模型/自动拉取模型列表」按钮一键获取模型。',
+    en: 'Model list is currently empty. Please fill in Base URL & API Key, then click the "Auto-pull Models" button above to fetch.'
+  }
 };
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

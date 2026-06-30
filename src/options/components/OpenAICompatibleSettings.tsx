@@ -167,34 +167,28 @@ export function OpenAICompatibleSettings({
           <span className="label-text-alt">The API endpoint URL (must be OpenAI-compatible)</span>
         </label>
       </div>
-      
-      <ModelList
-        models={models}
-        setModels={setModels}
-        newModel={newModel}
-        setNewModel={setNewModel}
-        handleAddModel={handleAddModel}
-        handleRemoveModel={handleRemoveModel}
-        handleEditModel={handleEditModel}
-      />
-      
-      {models.length > 0 && (
-        <div className="form-control mb-4">
-          <label className="label">
-            <span className="label-text">Current Model:</span>
-          </label>
+      {/* 砍掉繁琐的 ModelList，直接展示简洁的默认模型选择框 */}
+      <div className="form-control mb-4">
+        <label className="label">
+          <span className="label-text font-medium">{t('Current Model')}:</span>
+        </label>
+        {models.length > 0 ? (
           <select
             className="select select-bordered w-full"
             value={modelId}
             onChange={e => setModelId(e.target.value)}
           >
-            <option value="">Select a model</option>
+            <option value="">{t('Select a model')}</option>
             {models.map(m => (
               <option key={m.id} value={m.id}>{m.name} ({m.id})</option>
             ))}
           </select>
-        </div>
-      )}
+        ) : (
+          <div className="alert alert-warning text-xs py-2 px-3">
+            <span>⚠️ {t('当前尚未自动拉取模型列表。请填写 Base URL 和 API Key 后，点击上方「自动拉取已下载模型/自动拉取模型列表」按钮一键获取模型。')}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

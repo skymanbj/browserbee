@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
 import { OpenAICompatibleSettings } from './OpenAICompatibleSettings';
 import { Model } from './ModelList';
+import { useLanguage } from '../LanguageContext';
 
 interface OpenAICompatibleInstanceManagerProps {
   instances: OpenAICompatibleInstance[];
@@ -56,43 +57,44 @@ export function OpenAICompatibleInstanceManager({
     }
   };
 
+  const { t } = useLanguage();
+
   return (
-    <div className="border rounded-lg p-4 mb-4">
-      <h3 className="font-bold mb-2">OpenAI Compatible Instances</h3>
-      <p className="text-sm mb-4">
-        Configure multiple OpenAI-compatible API services (DeepSeek, SiliconFlow, GLM, Qwen, etc.). 
-        Each instance has its own API key, base URL, and model list.
+    <div className="border rounded-lg p-4 mb-4 bg-base-100/50">
+      <h3 className="font-bold mb-2 text-sm opacity-80">{t('OpenAI Compatible Instances')}</h3>
+      <p className="text-xs mb-4 text-base-content/60">
+        {t('Configure multiple OpenAI-compatible API services (DeepSeek, SiliconFlow, GLM, Qwen, etc.). Each instance has its own API key, base URL, and model list.')}
       </p>
 
       <div className="flex gap-4">
-        <div className="w-1/3">
-          <div className="mb-2">
-            <div className="flex gap-2 mb-2">
+        <div className="w-1/3 border-r border-base-content/10 pr-4">
+          <div className="mb-4">
+            <div className="form-control mb-2">
               <input
-                className="input input-bordered input-sm flex-1"
-                value={newInstance.id}
-                onChange={e => setNewInstance({ ...newInstance, id: e.target.value.replace(/[^a-zA-Z0-9_-]/g, '') })}
-                placeholder="Instance ID (e.g. deepseek)"
-              />
-              <input
-                className="input input-bordered input-sm flex-1"
+                className="input input-bordered input-sm w-full"
                 value={newInstance.name}
-                onChange={e => setNewInstance({ ...newInstance, name: e.target.value })}
-                placeholder="Display Name"
+                onChange={e => {
+                  const name = e.target.value;
+                  // 自动生成安全且唯一的 ID
+                  const safeId = name.toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'custom';
+                  const uniqueId = `${safeId}-${Math.random().toString(36).substring(2, 6)}`;
+                  setNewInstance({ id: uniqueId, name });
+                }}
+                placeholder={t('提供商名称 (如 SiliconFlow)')}
               />
             </div>
             <button
               className="btn btn-sm btn-primary w-full"
               onClick={handleAddInstance}
-              disabled={!newInstance.id.trim() || !newInstance.name.trim()}
+              disabled={!newInstance.name.trim()}
             >
-              Add Instance
+              ➕ {t('Add Instance')}
             </button>
           </div>
 
-          <ul className="menu bg-base-200 rounded-box w-full">
+          <ul className="menu bg-base-200/50 rounded-box w-full p-1">
             {instances.length === 0 && (
-              <li className="text-sm text-gray-500 p-2">No instances configured. Add one above.</li>
+              <li className="text-xs text-base-content/50 p-2 text-center">{t('No instances configured. Add one above.')}</li>
             )}
             {instances.map(inst => (
               <li key={inst.id}>
