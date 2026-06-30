@@ -44,6 +44,12 @@ export function OpenAICompatibleSettings({
   const { t } = useLanguage();
   const [pulling, setPulling] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [modelSearch, setModelSearch] = useState('');
+
+  const filteredModels = models.filter(m => 
+    m.id.toLowerCase().includes(modelSearch.toLowerCase()) || 
+    m.name.toLowerCase().includes(modelSearch.toLowerCase())
+  );
 
   const handleAutoPull = async () => {
     if (!baseUrl) {
@@ -177,16 +183,34 @@ export function OpenAICompatibleSettings({
           <span className="label-text font-medium">{t('Current Model')}:</span>
         </label>
         {models.length > 0 ? (
-          <select
-            className="select select-bordered w-full"
-            value={modelId}
-            onChange={e => setModelId(e.target.value)}
-          >
-            <option value="">{t('Select a model')}</option>
-            {models.map(m => (
-              <option key={m.id} value={m.id}>{m.name} ({m.id})</option>
-            ))}
-          </select>
+          <>
+            {/* 搜索过滤框 */}
+            <div className="relative mb-2">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40 text-xs" aria-hidden="true">🔍</span>
+              <input
+                type="text"
+                className="input input-bordered input-xs w-full pl-7 text-xs"
+                placeholder={t('搜索模型名称...')}
+                value={modelSearch}
+                onChange={e => setModelSearch(e.target.value)}
+              />
+            </div>
+            
+            <select
+              className="select select-bordered w-full"
+              value={modelId}
+              onChange={e => setModelId(e.target.value)}
+            >
+              <option value="">{t('Select a model')}</option>
+              {/* 如果当前选中的模型不在过滤列表中，强制追加在第一项显示，防止下拉框空白 */}
+              {modelId && !filteredModels.some(m => m.id === modelId) && (
+                <option value={modelId}>{modelId}</option>
+              )}
+              {filteredModels.map(m => (
+                <option key={m.id} value={m.id}>{m.name} ({m.id})</option>
+              ))}
+            </select>
+          </>
         ) : (
           <div className="alert alert-warning text-xs py-2 px-3">
             <span>⚠️ {t('当前尚未自动拉取模型列表。请填写 Base URL 和 API Key 后，点击上方「自动拉取已下载模型/自动拉取模型列表」按钮一键获取模型。')}</span>

@@ -226,7 +226,8 @@ const translationDict: Record<string, Record<Language, string>> = {
   '当前尚未自动拉取模型列表。请填写 Base URL 和 API Key 后，点击上方「自动拉取已下载模型/自动拉取模型列表」按钮一键获取模型。': {
     zh: '当前尚未自动拉取模型列表。请填写 Base URL 和 API Key 后，点击上方「自动拉取已下载模型/自动拉取模型列表」按钮一键获取模型。',
     en: 'Model list is currently empty. Please fill in Base URL & API Key, then click the "Auto-pull Models" button above to fetch.'
-  }
+  },
+  '搜索模型名称...': { zh: '搜索模型名称...', en: 'Search models...' }
 };
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
