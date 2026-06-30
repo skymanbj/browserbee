@@ -269,6 +269,87 @@ export interface SessionClearAllMessage {
   action: 'sessionClearAll';
 }
 
+// ==================== Scheduled Task Message Types ====================
+
+export interface ScheduledTaskCreateMessage {
+  action: 'scheduledTaskCreate';
+  task: import('../types/scheduledTask').CreateScheduledTaskInput;
+}
+
+export interface ScheduledTaskUpdateMessage {
+  action: 'scheduledTaskUpdate';
+  taskId: string;
+  updates: import('../types/scheduledTask').UpdateScheduledTaskInput;
+}
+
+export interface ScheduledTaskDeleteMessage {
+  action: 'scheduledTaskDelete';
+  taskId: string;
+}
+
+export interface ScheduledTaskDeleteManyMessage {
+  action: 'scheduledTaskDeleteMany';
+  taskIds: string[];
+}
+
+export interface ScheduledTaskGetAllMessage {
+  action: 'scheduledTaskGetAll';
+}
+
+export interface ScheduledTaskGetByIdMessage {
+  action: 'scheduledTaskGetById';
+  taskId: string;
+}
+
+export interface ScheduledTaskEnableMessage {
+  action: 'scheduledTaskEnable';
+  taskId: string;
+}
+
+export interface ScheduledTaskPauseMessage {
+  action: 'scheduledTaskPause';
+  taskId: string;
+}
+
+export interface ScheduledTaskRunNowMessage {
+  action: 'scheduledTaskRunNow';
+  taskId: string;
+}
+
+export interface ScheduledTaskExportMessage {
+  action: 'scheduledTaskExport';
+}
+
+export interface ScheduledTaskImportMessage {
+  action: 'scheduledTaskImport';
+  json: string;
+}
+
+export interface ScheduledTaskGetLogsMessage {
+  action: 'scheduledTaskGetLogs';
+  taskId: string;
+  limit?: number;
+}
+
+export interface ScheduledTaskGetStatsMessage {
+  action: 'scheduledTaskGetStats';
+}
+
+// Scheduled task status broadcast (UI -> Background, or Background -> UI)
+export interface ScheduledTaskStatusMessage {
+  action: 'scheduledTaskStatus';
+  content: {
+    taskId: string;
+    taskName: string;
+    phase: 'started' | 'completed' | 'error';
+    duration?: number;
+    error?: string;
+    timestamp: number;
+  };
+  tabId?: number;
+  windowId?: number;
+}
+
 export type BackgroundMessage =
   | ExecutePromptMessage
   | CancelExecutionMessage
@@ -295,7 +376,21 @@ export type BackgroundMessage =
   | SessionExportMessage
   | SessionImportMessage
   | SessionGetStatsMessage
-  | SessionClearAllMessage;
+  | SessionClearAllMessage
+  | ScheduledTaskCreateMessage
+  | ScheduledTaskUpdateMessage
+  | ScheduledTaskDeleteMessage
+  | ScheduledTaskDeleteManyMessage
+  | ScheduledTaskGetAllMessage
+  | ScheduledTaskGetByIdMessage
+  | ScheduledTaskEnableMessage
+  | ScheduledTaskPauseMessage
+  | ScheduledTaskRunNowMessage
+  | ScheduledTaskExportMessage
+  | ScheduledTaskImportMessage
+  | ScheduledTaskGetLogsMessage
+  | ScheduledTaskGetStatsMessage
+  | ScheduledTaskStatusMessage;
 
 // New message types for enhanced tab management
 export interface TabStatusChangedMessage {

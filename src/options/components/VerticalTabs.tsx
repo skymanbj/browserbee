@@ -4,6 +4,7 @@ import { OllamaModel } from './OllamaModelList';
 import { GeneralTab } from './tabs/GeneralTab';
 import { MemoryTab } from './tabs/MemoryTab';
 import { ProvidersTab } from './tabs/ProvidersTab';
+import { ScheduledTaskTab } from './tabs/ScheduledTaskTab';
 import { SessionTab } from './tabs/SessionTab';
 
 interface VerticalTabsProps {
@@ -64,6 +65,7 @@ export function VerticalTabs(props: VerticalTabsProps) {
     { id: 'providers', label: 'LLM Configuration', icon: '🤖' },
     { id: 'memory', label: 'Memory', icon: '🧠' },
     { id: 'sessions', label: 'Sessions', icon: '💬' },
+    { id: 'scheduledTasks', label: 'Scheduled Tasks', icon: '⏰' },
   ];
 
   const renderTabContent = () => {
@@ -126,6 +128,8 @@ export function VerticalTabs(props: VerticalTabsProps) {
         return <MemoryTab />;
       case 'sessions':
         return <SessionTab />;
+      case 'scheduledTasks':
+        return <ScheduledTaskTab />;
       default:
         return <GeneralTab />;
     }

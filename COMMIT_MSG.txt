@@ -1,0 +1,15 @@
+fix: resolve race condition in ScheduledTaskService initialization
+
+The ScheduledTaskService was not properly handling concurrent access during
+initialization. When the UI sent a 'scheduledTaskGetAll' message before the
+service finished initializing, it would return an empty task list.
+
+Changes:
+- Added initPromise to track ongoing initialization
+- Added ensureInitialized() helper to wait for init completion
+- Made getAll(), getById(), getEnabled(), and getStats() async methods
+- Updated message handlers to properly await async operations
+- Added proper error handling for async message handlers
+
+This ensures that all task data is loaded from storage before being returned
+to the UI, preventing the "tasks disappeared" issue.
