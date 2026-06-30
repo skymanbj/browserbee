@@ -219,10 +219,77 @@
 /* Ensure proper background for body based on theme */
 html[data-theme="dark"] body {
   background: #0f172a;
+  color: #e2e8f0;
 }
 
 html[data-theme="light"] body {
   background: #f0f4f8;
+  color: #1e293b;
+}
+
+/* ── Light Mode Text Colors ──────────────────────────── */
+
+/* Ensure all text is visible in light mode */
+html[data-theme="light"] {
+  color: #1e293b;
+}
+
+html[data-theme="light"] .text-primary {
+  color: #6366f1 !important;
+}
+
+html[data-theme="light"] .text-secondary {
+  color: #f59e0b !important;
+}
+
+html[data-theme="light"] .text-accent {
+  color: #10b981 !important;
+}
+
+html[data-theme="light"] .text-neutral {
+  color: #3d4450 !important;
+}
+
+html[data-theme="light"] .text-base-content {
+  color: #1e293b !important;
+}
+
+html[data-theme="light"] .text-base-content\/40,
+html[data-theme="light"] .text-base-content\/50,
+html[data-theme="light"] .text-base-content\/60,
+html[data-theme="light"] .text-base-content\/70 {
+  color: rgba(30, 41, 59, var(--tw-text-opacity)) !important;
+}
+
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3,
+html[data-theme="light"] h4,
+html[data-theme="light"] h5,
+html[data-theme="light"] h6 {
+  color: #1e293b !important;
+}
+
+html[data-theme="light"] .font-bold,
+html[data-theme="light"] .font-semibold,
+html[data-theme="light"] .font-medium {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .label-text {
+  color: #3d4450 !important;
+}
+
+html[data-theme="light"] .label-text-alt {
+  color: #6b7280 !important;
+}
+
+html[data-theme="light"] .placeholder\:text-base-content\/30 ::-moz-placeholder {
+  color: rgba(107, 114, 128, 0.3) !important;
+}
+
+html[data-theme="light"] .placeholder\:text-base-content\/30::placeholder {
+  color: rgba(107, 114, 128, 0.3) !important;
 }
 
 /* ── Utility Animations ──────────────────────────────── */
