@@ -1,7 +1,13 @@
-import { useTheme } from '../../context/ThemeContext';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { setTheme } from '../../store/slices/settingsSlice';
 
 export function ThemeToggle() {
-    const { themeMode, toggleTheme } = useTheme();
+    const dispatch = useAppDispatch();
+    const themeMode = useAppSelector((state) => state.settings.theme);
+
+    const toggleTheme = () => {
+        dispatch(setTheme(themeMode === 'light' ? 'dark' : 'light'));
+    };
 
     return (
         <button

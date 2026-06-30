@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { setLanguage } from '../../store/slices/settingsSlice';
 import { OllamaModel } from './OllamaModelList';
 import { ThemeToggle } from './ThemeToggle';
 import { GeneralTab } from './tabs/GeneralTab';
@@ -9,7 +11,6 @@ import { ProvidersTab } from './tabs/ProvidersTab';
 import { ScheduledTaskTab } from './tabs/ScheduledTaskTab';
 import { SessionTab } from './tabs/SessionTab';
 import { SyncTab } from './tabs/SyncTab';
-import { useLanguage } from '../LanguageContext';
 
 interface VerticalTabsProps {
   provider: string;
@@ -63,7 +64,23 @@ interface VerticalTabsProps {
 
 export function VerticalTabs(props: VerticalTabsProps) {
   const [activeTab, setActiveTab] = useState('general');
-  const { t, language, setLanguage } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+  const dispatch = useAppDispatch();
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'General': { zh: '通用设置', en: 'General' },
+      'LLM Configuration': { zh: '大模型配置', en: 'LLM Configuration' },
+      'Memory': { zh: '记忆管理', en: 'Memory' },
+      'Sessions': { zh: '会话管理', en: 'Sessions' },
+      'Scheduled Tasks': { zh: '定时任务', en: 'Scheduled Tasks' },
+      'Prompt Templates': { zh: '提示词模板', en: 'Prompt Templates' },
+      'Cloud Sync': { zh: '云同步', en: 'Cloud Sync' }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
 
   const tabs = [
     { id: 'general', label: t('General'), icon: '🏠' },
@@ -173,14 +190,14 @@ export function VerticalTabs(props: VerticalTabsProps) {
           <div className="flex items-center justify-between px-2 text-xs">
             <span className="opacity-70">{language === 'zh' ? '界面语言' : 'Language'}</span>
             <div className="join">
-              <button 
-                onClick={() => setLanguage('zh')} 
+              <button
+                onClick={() => setLanguage('zh')}
                 className={`join-item btn btn-xs btn-outline ${language === 'zh' ? 'btn-active btn-primary' : 'opacity-70'}`}
               >
                 中文
               </button>
-              <button 
-                onClick={() => setLanguage('en')} 
+              <button
+                onClick={() => setLanguage('en')}
                 className={`join-item btn btn-xs btn-outline ${language === 'en' ? 'btn-active btn-primary' : 'opacity-70'}`}
               >
                 EN

@@ -38,6 +38,7 @@
     "@langchain/anthropic": "^0.3.18",
     "@langchain/core": "^0.3.45",
     "@langchain/langgraph": "^0.2.64",
+    "@reduxjs/toolkit": "^2.12.0",
     "langchain": "^0.3.22",
     "ollama": "^0.5.15",
     "openai": "^4.28.0",
@@ -46,6 +47,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
+    "react-redux": "^9.3.0",
     "react-textarea-autosize": "^8.5.9",
     "remark-gfm": "^4.0.1",
     "zod": "^3.22.4"
