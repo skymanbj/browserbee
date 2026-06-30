@@ -198,55 +198,61 @@ export const PromptForm: React.FC<PromptFormProps> = ({
 
   return (
     <div className="mt-4 flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-1 text-xs">
-        <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} font-medium select-none mr-0.5`}>常用技能:</span>
-        {skills.map(skill => (
-          <div key={skill.id} className="relative group">
-            <button
-              type="button"
-              onClick={() => handleApplySkill(skill.prompt)}
-              disabled={isProcessing || tabStatus === 'detached'}
-              className={`btn btn-[10px] h-6 min-h-[24px] ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} rounded-full px-2.5 py-0 font-medium lowercase select-none`}
-              title={skill.prompt}
-            >
-              {skill.name}
-            </button>
-
-            {/* 删除自定义技能按钮 (Hover 时显示) */}
-            {!skill.id.startsWith('default_') && (
+      <div className="flex items-center gap-1 text-xs w-full overflow-hidden select-none">
+        {/* 左侧“常用技能”与可滑动技能按钮列表 */}
+        <div className="flex items-center gap-1 overflow-x-auto flex-grow [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-0.5">
+          <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} font-medium select-none mr-0.5 shrink-0`}>常用技能:</span>
+          {skills.map(skill => (
+            <div key={skill.id} className="relative group shrink-0">
               <button
                 type="button"
-                onClick={(e) => handleDeleteSkill(e, skill.id)}
-                className="absolute -top-1 -right-1 hidden group-hover:flex items-center justify-center w-3.5 h-3.5 rounded-full bg-rose-500 text-white font-bold text-[8px] cursor-pointer"
-                title="删除技能"
+                onClick={() => handleApplySkill(skill.prompt)}
+                disabled={isProcessing || tabStatus === 'detached'}
+                className={`btn btn-[10px] h-6 min-h-[24px] ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} rounded-full px-2.5 py-0 font-medium lowercase select-none`}
+                title={skill.prompt}
               >
-                ✕
+                {skill.name}
               </button>
-            )}
-          </div>
-        ))}
 
-        {/* Show template picker button */}
-        <button
-          type="button"
-          onClick={() => setShowTemplatePicker(!showTemplatePicker)}
-          className={`btn btn-xs btn-ghost ${theme === 'dark' ? 'text-amber-400 hover:bg-white/5' : 'text-amber-600 hover:bg-black/5'} font-bold min-h-[24px] h-6 px-1.5 ${showTemplatePicker ? 'opacity-70' : ''}`}
-          title="从提示词模板库选择"
-        >
-          📋 模板
-        </button>
+              {/* 删除自定义技能按钮 (Hover 时显示) */}
+              {!skill.id.startsWith('default_') && (
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteSkill(e, skill.id)}
+                  className="absolute -top-1 -right-1 hidden group-hover:flex items-center justify-center w-3.5 h-3.5 rounded-full bg-rose-500 text-white font-bold text-[8px] cursor-pointer"
+                  title="删除技能"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
 
-        {/* 如果当前输入框有内容，且未处于保存面板状态，显示“⭐ 存为技能”按钮 */}
-        {prompt.trim() && !isSaving && (
+        {/* 右侧固定操作区 */}
+        <div className="flex items-center gap-1 shrink-0 ml-auto">
+          {/* Show template picker button */}
           <button
             type="button"
-            onClick={() => setIsSaving(true)}
-            className={`btn btn-xs btn-ghost ${theme === 'dark' ? 'text-indigo-400 hover:bg-white/5' : 'text-indigo-600 hover:bg-black/5'} font-bold ml-auto min-h-[24px] h-6 px-1.5`}
-            title="将输入框的指令保存为常用技能"
+            onClick={() => setShowTemplatePicker(!showTemplatePicker)}
+            className={`btn btn-xs btn-ghost ${theme === 'dark' ? 'text-amber-400 hover:bg-white/5' : 'text-amber-600 hover:bg-black/5'} font-bold min-h-[24px] h-6 px-1.5 ${showTemplatePicker ? 'opacity-70' : ''}`}
+            title="从提示词模板库选择"
           >
-            ⭐ 存为技能
+            📋 模板
           </button>
-        )}
+
+          {/* 如果当前输入框有内容，且未处于保存面板状态，显示“⭐ 存为技能”按钮 */}
+          {prompt.trim() && !isSaving && (
+            <button
+              type="button"
+              onClick={() => setIsSaving(true)}
+              className={`btn btn-xs btn-ghost ${theme === 'dark' ? 'text-indigo-400 hover:bg-white/5' : 'text-indigo-600 hover:bg-black/5'} font-bold min-h-[24px] h-6 px-1.5`}
+              title="将输入框的指令保存为常用技能"
+            >
+              ⭐ 存为技能
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Prompt Template Picker Panel ── */}
