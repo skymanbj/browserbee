@@ -1,14 +1,11 @@
 import { handleApprovalResponse } from '../agent/approvalManager';
 import { TokenTrackingService } from '../tracking/tokenTrackingService';
-import { executePrompt } from './agentController';
-import { cancelExecution } from './agentController';
-import { clearMessageHistory } from './agentController';
-import { initializeAgent } from './agentController';
-import { getAgentStatus } from './agentController';
+import { cancelExecution, clearMessageHistory, executePrompt, getAgentStatus, initializeAgent } from './agentController';
 import { triggerReflection } from './reflectionController';
-import { attachToTab, getTabState, getWindowForTab, forceResetPlaywright } from './tabManager';
+import { SessionService } from './sessionService';
+import { attachToTab, forceResetPlaywright, getTabState, getWindowForTab } from './tabManager';
 import { BackgroundMessage } from './types';
-import { logWithTimestamp, handleError } from './utils';
+import { handleError, logWithTimestamp } from './utils';
 
 /**
  * Handle messages from the UI
@@ -43,7 +40,7 @@ export function handleMessage(
       case 'clearHistory':
         // Handle async function and keep message channel open
         handleClearHistory(message, sendResponse)
-          .catch(error => {
+          .catch((error: any) => {
             const errorMessage = handleError(error, 'clearing history');
             logWithTimestamp(`Error in async handleClearHistory: ${errorMessage}`, 'error');
             sendResponse({ success: false, error: errorMessage });
@@ -95,7 +92,7 @@ export function handleMessage(
       case 'forceResetPlaywright':
         // Handle async function and keep message channel open
         handleForceResetPlaywright(message, sendResponse)
-          .catch(error => {
+          .catch((error: any) => {
             const errorMessage = handleError(error, 'force resetting Playwright');
             logWithTimestamp(`Error in async handleForceResetPlaywright: ${errorMessage}`, 'error');
             sendResponse({ success: false, error: errorMessage });
@@ -111,12 +108,120 @@ export function handleMessage(
       case 'checkAgentStatus':
         // Handle async function and keep message channel open
         handleCheckAgentStatus(message, sendResponse)
-          .catch(error => {
+          .catch((error: any) => {
             const errorMessage = handleError(error, 'checking agent status');
             logWithTimestamp(`Error in async handleCheckAgentStatus: ${errorMessage}`, 'error');
             sendResponse({ success: false, error: errorMessage });
           });
         return true; // Keep the message channel open for async response
+
+      case 'sessionCreate':
+        handleSessionCreate(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'creating session');
+            logWithTimestamp(`Error in handleSessionCreate: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionUpdate':
+        handleSessionUpdate(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'updating session');
+            logWithTimestamp(`Error in handleSessionUpdate: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionDelete':
+        handleSessionDelete(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'deleting session');
+            logWithTimestamp(`Error in handleSessionDelete: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionDeleteMany':
+        handleSessionDeleteMany(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'deleting multiple sessions');
+            logWithTimestamp(`Error in handleSessionDeleteMany: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionGetAll':
+        handleSessionGetAll(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'getting all sessions');
+            logWithTimestamp(`Error in handleSessionGetAll: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionGetById':
+        handleSessionGetById(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'getting session by id');
+            logWithTimestamp(`Error in handleSessionGetById: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionRename':
+        handleSessionRename(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'renaming session');
+            logWithTimestamp(`Error in handleSessionRename: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionSearch':
+        handleSessionSearch(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'searching sessions');
+            logWithTimestamp(`Error in handleSessionSearch: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionExport':
+        handleSessionExport(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'exporting sessions');
+            logWithTimestamp(`Error in handleSessionExport: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionImport':
+        handleSessionImport(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'importing sessions');
+            logWithTimestamp(`Error in handleSessionImport: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionGetStats':
+        handleSessionGetStats(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'getting session stats');
+            logWithTimestamp(`Error in handleSessionGetStats: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
+      case 'sessionClearAll':
+        handleSessionClearAll(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'clearing all sessions');
+            logWithTimestamp(`Error in handleSessionClearAll: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
 
       default:
         // This should never happen due to the type guard, but TypeScript requires it
@@ -151,9 +256,9 @@ function isBackgroundMessage(message: any): message is BackgroundMessage {
       message.action === 'getTokenUsage' ||
       message.action === 'approvalResponse' ||
       message.action === 'reflectAndLearn' ||
-      message.action === 'tokenUsageUpdated' ||  // Add support for token usage updates
-      message.action === 'updateOutput' ||  // Add support for output updates
-      message.action === 'providerConfigChanged' ||  // Add support for provider config changes
+      message.action === 'tokenUsageUpdated' ||
+      message.action === 'updateOutput' ||
+      message.action === 'providerConfigChanged' ||
       message.action === 'tabStatusChanged' ||
       message.action === 'targetCreated' ||
       message.action === 'targetDestroyed' ||
@@ -163,8 +268,20 @@ function isBackgroundMessage(message: any): message is BackgroundMessage {
       message.action === 'pageConsole' ||
       message.action === 'pageError' ||
       message.action === 'forceResetPlaywright' ||
-      message.action === 'requestApproval' ||  // Add support for request approval messages
-      message.action === 'checkAgentStatus'  // Add support for agent status check
+      message.action === 'requestApproval' ||
+      message.action === 'checkAgentStatus' ||
+      message.action === 'sessionCreate' ||
+      message.action === 'sessionUpdate' ||
+      message.action === 'sessionDelete' ||
+      message.action === 'sessionDeleteMany' ||
+      message.action === 'sessionGetAll' ||
+      message.action === 'sessionGetById' ||
+      message.action === 'sessionRename' ||
+      message.action === 'sessionSearch' ||
+      message.action === 'sessionExport' ||
+      message.action === 'sessionImport' ||
+      message.action === 'sessionGetStats' ||
+      message.action === 'sessionClearAll'
     )
   );
 }
@@ -446,6 +563,176 @@ async function handleCheckAgentStatus(
     const errorMessage = handleError(error, 'checking agent status');
     logWithTimestamp(`Error checking agent status: ${errorMessage}`, 'error');
     sendResponse({ success: false, error: errorMessage });
+  }
+}
+
+// --- Session handlers ---
+
+async function handleSessionCreate(
+  message: Extract<BackgroundMessage, { action: 'sessionCreate' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const session = await sessionService.create({
+      name: message.name,
+      tabId: message.tabId,
+      tabTitle: message.tabTitle,
+      windowId: message.windowId,
+      url: message.url,
+      provider: message.provider,
+      modelId: message.modelId,
+    });
+    sendResponse({ success: true, session });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionUpdate(
+  message: Extract<BackgroundMessage, { action: 'sessionUpdate' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const session = await sessionService.update(message.sessionId, {
+      name: message.name,
+      tabTitle: message.tabTitle,
+      url: message.url,
+    });
+    sendResponse({ success: true, session });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionDelete(
+  message: Extract<BackgroundMessage, { action: 'sessionDelete' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const deleted = await sessionService.delete(message.sessionId);
+    sendResponse({ success: deleted });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionDeleteMany(
+  message: Extract<BackgroundMessage, { action: 'sessionDeleteMany' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const count = await sessionService.deleteMany(message.sessionIds);
+    sendResponse({ success: true, count });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionGetAll(
+  message: Extract<BackgroundMessage, { action: 'sessionGetAll' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const sessions = await sessionService.getAll();
+    sendResponse({ success: true, sessions });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionGetById(
+  message: Extract<BackgroundMessage, { action: 'sessionGetById' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const session = await sessionService.getById(message.sessionId);
+    sendResponse({ success: true, session });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionRename(
+  message: Extract<BackgroundMessage, { action: 'sessionRename' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const session = await sessionService.rename(message.sessionId, message.name);
+    sendResponse({ success: true, session });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionSearch(
+  message: Extract<BackgroundMessage, { action: 'sessionSearch' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const sessions = await sessionService.search(message.query);
+    sendResponse({ success: true, sessions });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionExport(
+  message: Extract<BackgroundMessage, { action: 'sessionExport' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const json = await sessionService.exportToJson(message.sessionIds);
+    sendResponse({ success: true, json });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionImport(
+  message: Extract<BackgroundMessage, { action: 'sessionImport' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const result = await sessionService.importFromJson(message.json);
+    sendResponse({ success: true, ...result });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionGetStats(
+  message: Extract<BackgroundMessage, { action: 'sessionGetStats' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    const stats = await sessionService.getStats();
+    sendResponse({ success: true, stats });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleSessionClearAll(
+  message: Extract<BackgroundMessage, { action: 'sessionClearAll' }>,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  try {
+    const sessionService = SessionService.getInstance();
+    await sessionService.clearAll();
+    sendResponse({ success: true });
+  } catch (error: any) {
+    sendResponse({ success: false, error: error.message });
   }
 }
 

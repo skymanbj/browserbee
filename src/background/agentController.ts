@@ -1,38 +1,33 @@
 // Import provider-specific types
 import Anthropic from "@anthropic-ai/sdk";
-import { BrowserAgent, createBrowserAgent, executePromptWithFallback, needsReinitialization } from "../agent/AgentCore";
+import { createBrowserAgent, executePromptWithFallback, needsReinitialization } from "../agent/AgentCore";
 import { ExecutionCallbacks } from "../agent/ExecutionEngine";
+import { setCurrentPage } from '../agent/PageContextManager';
 import { contextTokenCount } from "../agent/TokenManager";
 import { ScreenshotManager } from "../tracking/screenshotManager";
 import { TokenTrackingService } from "../tracking/tokenTrackingService";
+import { SessionMessage } from '../types/session';
 import { ConfigManager } from "./configManager";
 import { saveReflectionMemory } from "./reflectionController";
-import { attachToTab } from './tabManager';
-import { setCurrentPage } from '../agent/PageContextManager';
-import { 
-  resetStreamingState, 
-  addToStreamingBuffer, 
-  getStreamingBuffer, 
-  setStreamingBuffer,
-  clearStreamingBuffer, 
-  finalizeStreamingSegment, 
-  startNewSegment, 
-  getCurrentSegmentId, 
+import { SessionService } from './sessionService';
+import {
+  addToStreamingBuffer,
+  clearStreamingBuffer,
+  finalizeStreamingSegment,
+  getCurrentSegmentId,
+  getStreamingBuffer,
   incrementSegmentId,
-  signalStreamingComplete
+  resetStreamingState,
+  setStreamingBuffer,
+  signalStreamingComplete,
+  startNewSegment
 } from "./streamingManager";
-import { 
-  getCurrentTabId, 
-  getTabState, 
-  setTabState, 
-  getWindowForTab, 
-  getAgentForWindow, 
-  setAgentForWindow,
-  getAgentForTab,
-  isConnectionHealthy
-} from "./tabManager";
-import { ProviderType, AgentStatus, AgentStatusInfo } from "./types";
-import { sendUIMessage, logWithTimestamp, handleError } from "./utils";
+import {
+  attachToTab, getAgentForWindow, getCurrentTabId,
+  getTabState, getWindowForTab, isConnectionHealthy, setAgentForWindow
+} from './tabManager';
+import { AgentStatus, AgentStatusInfo, ProviderType } from "./types";
+import { handleError, logWithTimestamp, sendUIMessage } from "./utils";
 
 // Generic message format that works with all providers
 interface GenericMessage {
@@ -350,6 +345,39 @@ export async function addToConversationHistory(tabId: number, message: Anthropic
   const history = await getStructuredMessageHistory(tabId);
   history.conversationHistory.push(message);
   windowMessageHistories.set(windowId, history);
+
+  // Auto-save the message to the current session
+  try {
+    const sessionService = SessionService.getInstance();
+    const currentSessionId = sessionService.getCurrentSessionId();
+    if (!currentSessionId) {
+      // Attempt to get tab info and create/retrieve a session
+      const tab = await chrome.tabs.get(tabId).catch(() => null);
+      await sessionService.getOrCreateCurrentSession({
+        tabId,
+        tabTitle: tab?.title || `Tab ${tabId}`,
+        url: tab?.url || '',
+        provider: history.provider || 'anthropic',
+      });
+    }
+
+    // Convert Anthropic message to SessionMessage format
+    const sessionMessage: SessionMessage = {
+      role: message.role === 'user' ? 'user' : 'assistant',
+      content: typeof message.content === 'string'
+        ? message.content
+        : JSON.stringify(message.content),
+      timestamp: Date.now(),
+    };
+
+    const sid = sessionService.getCurrentSessionId();
+    if (sid) {
+      await sessionService.addMessage(sid, sessionMessage);
+    }
+  } catch (error) {
+    // Silently fail - session saving should not break the core flow
+    logWithTimestamp(`Failed to auto-save message to session: ${error}`, 'warn');
+  }
 }
 
 // No replacement - removing the isNewTaskRequest function

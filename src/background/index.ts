@@ -1,6 +1,7 @@
-import './setup';
 import { MemoryService } from '../tracking/memoryService';
 import { setupMessageListeners } from './messageHandler';
+import { SessionService } from './sessionService';
+import './setup';
 import { cleanupOnUnload, setupTabListeners } from './tabManager';
 import { logWithTimestamp } from './utils';
 
@@ -9,6 +10,12 @@ import { logWithTimestamp } from './utils';
  */
 function initializeExtension(): void {
   logWithTimestamp('BrowserBee 🐝 extension initialized');
+
+  // Initialize SessionService (lazy loads from storage on first access)
+  const sessionService = SessionService.getInstance();
+  sessionService.init().catch(error => {
+    logWithTimestamp(`Failed to initialize SessionService: ${error}`, 'error');
+  });
 
   // Set up message listeners
   setupMessageListeners();

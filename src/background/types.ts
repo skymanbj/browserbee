@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { BrowserAgent } from "../agent/AgentCore";
 
 // Provider types
@@ -202,7 +201,75 @@ export interface AgentStatusUpdateMessage {
   windowId?: number;
 }
 
-export type BackgroundMessage = 
+// Session message types
+export interface SessionCreateMessage {
+  action: 'sessionCreate';
+  name?: string;
+  tabId: number;
+  tabTitle: string;
+  windowId?: number;
+  url?: string;
+  provider: string;
+  modelId?: string;
+}
+
+export interface SessionUpdateMessage {
+  action: 'sessionUpdate';
+  sessionId: string;
+  name?: string;
+  tabTitle?: string;
+  url?: string;
+}
+
+export interface SessionDeleteMessage {
+  action: 'sessionDelete';
+  sessionId: string;
+}
+
+export interface SessionDeleteManyMessage {
+  action: 'sessionDeleteMany';
+  sessionIds: string[];
+}
+
+export interface SessionGetAllMessage {
+  action: 'sessionGetAll';
+}
+
+export interface SessionGetByIdMessage {
+  action: 'sessionGetById';
+  sessionId: string;
+}
+
+export interface SessionRenameMessage {
+  action: 'sessionRename';
+  sessionId: string;
+  name: string;
+}
+
+export interface SessionSearchMessage {
+  action: 'sessionSearch';
+  query: string;
+}
+
+export interface SessionExportMessage {
+  action: 'sessionExport';
+  sessionIds?: string[];
+}
+
+export interface SessionImportMessage {
+  action: 'sessionImport';
+  json: string;
+}
+
+export interface SessionGetStatsMessage {
+  action: 'sessionGetStats';
+}
+
+export interface SessionClearAllMessage {
+  action: 'sessionClearAll';
+}
+
+export type BackgroundMessage =
   | ExecutePromptMessage
   | CancelExecutionMessage
   | ClearHistoryMessage
@@ -216,7 +283,19 @@ export type BackgroundMessage =
   | ProviderConfigChangedMessage
   | ForceResetPlaywrightMessage
   | RequestApprovalMessage
-  | CheckAgentStatusMessage;
+  | CheckAgentStatusMessage
+  | SessionCreateMessage
+  | SessionUpdateMessage
+  | SessionDeleteMessage
+  | SessionDeleteManyMessage
+  | SessionGetAllMessage
+  | SessionGetByIdMessage
+  | SessionRenameMessage
+  | SessionSearchMessage
+  | SessionExportMessage
+  | SessionImportMessage
+  | SessionGetStatsMessage
+  | SessionClearAllMessage;
 
 // New message types for enhanced tab management
 export interface TabStatusChangedMessage {
