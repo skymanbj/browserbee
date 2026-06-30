@@ -227,6 +227,19 @@ export const useMessageManagement = () => {
     }
   };
 
+  const saveMessagesToSession = async () => {
+    if (!activeSessionId || messages.length === 0) return;
+    
+    try {
+      const session = await SessionManager.getSession(activeSessionId);
+      if (session) {
+        await SessionManager.updateSession(activeSessionId, messages, session.agentHistory);
+      }
+    } catch (error) {
+      console.error('Failed to save messages to session:', error);
+    }
+  };
+
   return {
     messages,
     streamingSegments,
@@ -244,6 +257,7 @@ export const useMessageManagement = () => {
     deleteMessage,
     deleteMultipleMessages,
     currentSegmentId,
+    saveMessagesToSession,
     // Session values
     sessions,
     activeSessionId,

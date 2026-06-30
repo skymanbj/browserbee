@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ConfigManager } from '../background/configManager';
 import { TokenTrackingService } from '../tracking/tokenTrackingService';
 import { ApprovalRequest } from './components/ApprovalRequest';
@@ -69,6 +69,7 @@ export function SidePanel() {
     deleteMessage,
     deleteMultipleMessages,
     currentSegmentId,
+    saveMessagesToSession,
     sessions,
     activeSessionId,
     initSessions,
@@ -175,6 +176,8 @@ export function SidePanel() {
     onProcessingComplete: () => {
       setIsProcessing(false);
       completeStreaming();
+      // Save messages to the current session
+      saveMessagesToSession();
       // Also update the tab status to idle to ensure the UI indicator changes
       setTabStatus('idle');
     },
