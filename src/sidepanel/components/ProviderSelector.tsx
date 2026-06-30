@@ -2,6 +2,7 @@ import { faCog, faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useEffect, useState } from 'react';
 import { ConfigManager } from '../../background/configManager';
+import { useTheme } from '../../context/ThemeContext';
 import { TokenTrackingService } from '../../tracking/tokenTrackingService';
 
 interface ProviderOption {
@@ -14,7 +15,58 @@ interface ProviderSelectorProps {
   isProcessing: boolean;
 }
 
+/** Dark-theme inline styles (used when themeMode === 'dark') */
+const dark = {
+  container: {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.20)',
+  },
+  btn: {
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    color: '#94a3b8',
+  },
+  select: {
+    background: '#1e293b',
+    border: '1px solid rgba(255,255,255,0.12)',
+    color: '#e2e8f0',
+  },
+  option: {
+    background: '#1e293b',
+    color: '#e2e8f0',
+  },
+  borderColor: 'rgba(255,255,255,0.12)',
+} as const;
+
+/** Light-theme inline styles (used when themeMode === 'light') */
+const light = {
+  container: {
+    background: 'rgba(255,255,255,0.8)',
+    border: '1px solid rgba(0,0,0,0.08)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+  },
+  btn: {
+    background: 'rgba(0,0,0,0.05)',
+    border: '1px solid rgba(0,0,0,0.1)',
+    color: '#64748b',
+  },
+  select: {
+    background: '#ffffff',
+    border: '1px solid rgba(0,0,0,0.1)',
+    color: '#374151',
+  },
+  option: {
+    background: '#ffffff',
+    color: '#374151',
+  },
+  borderColor: 'rgba(0,0,0,0.1)',
+} as const;
+
 export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
+  const { themeMode } = useTheme();
+  const t = themeMode === 'dark' ? dark : light;
+
   const [options, setOptions] = useState<ProviderOption[]>([]);
   const [currentProvider, setCurrentProvider] = useState<string>('');
   const [currentModel, setCurrentModel] = useState<string>('');
@@ -164,9 +216,9 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
       marginTop: '6px',
       padding: '7px 10px',
       borderRadius: '10px',
-      background: 'rgba(255,255,255,0.8)',
-      border: '1px solid rgba(0,0,0,0.08)',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+      background: t.container.background,
+      border: t.container.border,
+      boxShadow: t.container.boxShadow,
     }}>
       {/* 设置按钮 */}
       <button
@@ -176,9 +228,9 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
         style={{
           width: '28px', height: '28px',
           borderRadius: '8px',
-          background: 'rgba(0,0,0,0.05)',
-          border: '1px solid rgba(0,0,0,0.1)',
-          color: '#64748b',
+          background: t.btn.background,
+          border: t.btn.border,
+          color: t.btn.color,
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
@@ -186,7 +238,7 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
           opacity: isProcessing ? 0.4 : 1,
         }}
         onMouseEnter={e => { e.currentTarget.style.color = '#f5a623'; e.currentTarget.style.borderColor = 'rgba(245,166,35,0.35)'; }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = t.btn.color; e.currentTarget.style.borderColor = t.btn.border; }}
       >
         <FontAwesomeIcon icon={faCog} style={{ fontSize: '12px' }} />
       </button>
@@ -198,10 +250,10 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
         disabled={isProcessing}
         style={{
           flex: 1,
-          background: '#ffffff',
-          border: '1px solid rgba(0,0,0,0.1)',
+          background: t.select.background,
+          border: t.select.border,
           borderRadius: '8px',
-          color: '#374151',
+          color: t.select.color,
           fontSize: '12px',
           padding: '4px 8px',
           cursor: 'pointer',
@@ -209,14 +261,14 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
           transition: 'border-color 0.2s',
         }}
         onFocus={e => { e.currentTarget.style.borderColor = 'rgba(245,166,35,0.4)'; }}
-        onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; }}
+        onBlur={e => { e.currentTarget.style.borderColor = t.select.border; }}
       >
         {options.map(option => (
           option.models.map(model => (
             <option
               key={`${option.provider}|${model.id}`}
               value={`${option.provider}|${model.id}`}
-              style={{ background: '#ffffff', color: '#374151' }}
+              style={{ background: t.option.background, color: t.option.color }}
             >
               {model.name}
             </option>
@@ -232,9 +284,9 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
         style={{
           width: '28px', height: '28px',
           borderRadius: '8px',
-          background: 'rgba(0,0,0,0.05)',
-          border: '1px solid rgba(0,0,0,0.1)',
-          color: '#64748b',
+          background: t.btn.background,
+          border: t.btn.border,
+          color: t.btn.color,
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
@@ -242,7 +294,7 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
           opacity: isProcessing ? 0.4 : 1,
         }}
         onMouseEnter={e => { e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.35)'; }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = t.btn.color; e.currentTarget.style.borderColor = t.btn.border; }}
       >
         <FontAwesomeIcon icon={faCircleInfo} style={{ fontSize: '12px' }} />
       </button>
