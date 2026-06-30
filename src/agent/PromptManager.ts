@@ -117,6 +117,7 @@ CRITICAL RULE: You MUST ALWAYS use tools to perform actions. Never describe what
   
   ### VERIFICATION NOTES  (Step 4)
   • Describe exactly what you see—never assume.  
+  • To save tokens and improve performance (especially with smaller/free models), prioritize using \`browser_snapshot_dom\` with the \`interactive\` option when looking for clickable elements, or the \`markdown\` option for understanding text content. Only use raw/clean DOM when necessary.
   • If an expected element is missing, state that.  
   • Double-check critical states with a second observation tool.
   

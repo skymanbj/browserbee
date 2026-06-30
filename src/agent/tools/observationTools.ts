@@ -49,6 +49,8 @@ export const browserSnapshotDom: ToolFactory = (page: Page) =>
       "  • selector=<css_selector> - capture only elements matching this selector\n" +
       "  • clean - remove scripts, styles, and other non-visible elements\n" +
       "  • structure - return only element tags, ids, and classes (no content)\n" +
+      "  • interactive - return only interactive elements (buttons, links, inputs) with selectors\n" +
+      "  • markdown - return a simplified markdown representation of the page text\n" +
       "  • limit=<number> - max character length (default 20000)",
     func: async (input: string) => {
       try {
@@ -149,7 +151,94 @@ export const browserSnapshotDom: ToolFactory = (page: Page) =>
             );
           } else {
             // Capture the entire page
-            if (options.structure) {
+            if (options.interactive) {
+              html = await activePage.evaluate(() => {
+                const interactiveSelectors = [
+                  'button', 'a[href]', 'input', 'select', 'textarea', 
+                  '[role="button"]', '[role="link"]', '[tabindex]:not([tabindex="-1"])'
+                ];
+                const elements = document.querySelectorAll(interactiveSelectors.join(', '));
+                
+                return Array.from(elements)
+                  .filter(el => {
+                    const rect = el.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+                  })
+                  .map((el, index) => {
+                    const tag = el.tagName.toLowerCase();
+                    let text = (el.textContent || '').trim().substring(0, 50);
+                    if (tag === 'input') {
+                      const input = el as HTMLInputElement;
+                      text = `[Input ${input.type}] ${input.placeholder || input.name || ''}`;
+                    } else if (tag === 'a') {
+                      text = `[Link] ${text}`;
+                    } else if (tag === 'button' || el.getAttribute('role') === 'button') {
+                      text = `[Btn] ${text}`;
+                    }
+                    text = text.replace(/\s+/g, ' ');
+                    
+                    // Generate a reasonably unique selector
+                    let selector = tag;
+                    if (el.id) {
+                      selector += `#${el.id}`;
+                    } else if (el.className && typeof el.className === 'string') {
+                      const firstClass = el.className.split(' ').filter(c => c)[0];
+                      if (firstClass) selector += `.${firstClass}`;
+                    }
+                    
+                    // Fallback to text content selector if it's unique enough or just return the structural path
+                    return `${index + 1}. ${text} | Selector: ${selector}`;
+                  })
+                  .join('\n');
+              });
+            } else if (options.markdown) {
+              html = await activePage.evaluate(() => {
+                function domToMarkdown(node: Node): string {
+                  if (node.nodeType === 3) {
+                    const text = node.textContent || '';
+                    return text.trim() ? text.replace(/\s+/g, ' ') + ' ' : '';
+                  }
+                  if (node.nodeType !== 1) return '';
+                  
+                  const el = node as Element;
+                  const tag = el.tagName.toLowerCase();
+                  
+                  if (['script', 'style', 'noscript', 'meta', 'link', 'svg'].includes(tag)) {
+                    return '';
+                  }
+                  
+                  // Check visibility
+                  const style = window.getComputedStyle(el);
+                  if (style.display === 'none' || style.visibility === 'hidden') return '';
+                  
+                  let md = '';
+                  let isBlock = ['div', 'p', 'section', 'article', 'nav', 'header', 'footer', 'li'].includes(tag);
+                  
+                  if (/^h[1-6]$/.test(tag)) {
+                    md += '\n\n' + '#'.repeat(parseInt(tag[1])) + ' ';
+                    isBlock = true;
+                  }
+                  
+                  if (tag === 'a') {
+                    const href = el.getAttribute('href') || '';
+                    const childText = Array.from(el.childNodes).map(domToMarkdown).join('').trim();
+                    if (childText) md += `[${childText}](${href}) `;
+                    return md;
+                  }
+                  
+                  if (tag === 'li') md += '\n- ';
+                  
+                  const childMd = Array.from(el.childNodes).map(domToMarkdown).join('');
+                  md += childMd;
+                  
+                  if (isBlock && md.trim()) md += '\n';
+                  
+                  return md;
+                }
+                
+                return domToMarkdown(document.body).replace(/\n{3,}/g, '\n\n').trim();
+              });
+            } else if (options.structure) {
               html = await activePage.evaluate(() => {
                 function getPageStructure(element: Element, depth = 0): string {
                   const tagName = element.tagName.toLowerCase();
@@ -238,6 +327,8 @@ function parseSnapshotOptions(input: string) {
     selector?: string; 
     clean?: boolean; 
     structure?: boolean; 
+    interactive?: boolean;
+    markdown?: boolean;
     limit?: string;
   } = {};
   
@@ -259,6 +350,10 @@ function parseSnapshotOptions(input: string) {
       options.clean = true;
     } else if (trimmed === 'structure') {
       options.structure = true;
+    } else if (trimmed === 'interactive') {
+      options.interactive = true;
+    } else if (trimmed === 'markdown') {
+      options.markdown = true;
     } else if (trimmed.startsWith('selector=')) {
       options.selector = trimmed.substring('selector='.length);
     } else if (trimmed.startsWith('limit=')) {
