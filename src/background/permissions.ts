@@ -22,22 +22,6 @@ export async function hasDebuggerPermission(): Promise<boolean> {
 }
 
 /**
- * Request the debugger permission from the user.
- * Returns true if the user granted it.
- */
-export async function requestDebuggerPermission(): Promise<boolean> {
-  try {
-    const granted = await chrome.permissions.request({
-      permissions: ["debugger"]
-    });
-    return granted === true;
-  } catch (error) {
-    console.warn("[permissions] Error requesting debugger permission:", error);
-    return false;
-  }
-}
-
-/**
  * Check whether we have host permission for a given URL.
  */
 export async function hasHostPermission(url: string): Promise<boolean> {
@@ -82,17 +66,16 @@ export async function ensurePermissionForTab(
     return { granted: false, reason: "Tab has no URL or ID." };
   }
 
-  // Check debugger permission first (required by playwright-crx)
+  // Debugger is declared as a required permission in the manifest because MV3
+  // does not allow it to be optional. It is therefore granted at install time.
+  // We still perform a sanity check here in case the permission is ever revoked.
   const debuggerGranted = await hasDebuggerPermission();
   if (!debuggerGranted) {
-    const requested = await requestDebuggerPermission();
-    if (!requested) {
-      return {
-        granted: false,
-        reason:
-          "The debugger permission is required to automate the browser. Please grant it and try again."
-      };
-    }
+    return {
+      granted: false,
+      reason:
+        "The debugger permission is required to automate the browser. Please re-enable the extension and try again."
+    };
   }
 
   // Then check host permission for the tab's URL. activeTab grants this

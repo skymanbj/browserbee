@@ -36,11 +36,10 @@
     "storage",
     "activeTab",
     "commands",
-    "alarms"
-  ],
-  "optional_permissions": [
+    "alarms",
     "debugger"
   ],
+  "optional_permissions": []
   "side_panel": {
     "default_path": "sidepanel.html"
   },

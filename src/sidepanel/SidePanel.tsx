@@ -410,16 +410,8 @@ export function SidePanel() {
               }
 
               try {
-                // Request debugger permission from the side panel (user gesture context).
-                const debuggerGranted = await chrome.permissions.request({
-                  permissions: ['debugger']
-                });
-                if (!debuggerGranted) {
-                  setPermissionError('The debugger permission is required to automate the browser. Please grant it and try again.');
-                  return;
-                }
-
-                // Also request host permission for the current tab's URL.
+                // Debugger is a required permission declared in the manifest (MV3 does not
+                // allow it to be optional), so we only need to request host access here.
                 const tab = await chrome.tabs.get(tabId);
                 if (tab.url && (tab.url.startsWith('http://') || tab.url.startsWith('https://'))) {
                   const origin = new URL(tab.url).origin + '/*';
