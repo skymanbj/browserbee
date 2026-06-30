@@ -3,6 +3,7 @@ import { OpenAICompatibleInstance } from '../../models/providers/openai-compatib
 import { OllamaModel } from './OllamaModelList';
 import { GeneralTab } from './tabs/GeneralTab';
 import { MemoryTab } from './tabs/MemoryTab';
+import { PromptTemplateTab } from './tabs/PromptTemplateTab';
 import { ProvidersTab } from './tabs/ProvidersTab';
 import { ScheduledTaskTab } from './tabs/ScheduledTaskTab';
 import { SessionTab } from './tabs/SessionTab';
@@ -66,6 +67,7 @@ export function VerticalTabs(props: VerticalTabsProps) {
     { id: 'memory', label: 'Memory', icon: '🧠' },
     { id: 'sessions', label: 'Sessions', icon: '💬' },
     { id: 'scheduledTasks', label: 'Scheduled Tasks', icon: '⏰' },
+    { id: 'prompts', label: 'Prompt Templates', icon: '📋' },
   ];
 
   const renderTabContent = () => {
@@ -130,6 +132,8 @@ export function VerticalTabs(props: VerticalTabsProps) {
         return <SessionTab />;
       case 'scheduledTasks':
         return <ScheduledTaskTab />;
+      case 'prompts':
+        return <PromptTemplateTab />;
       default:
         return <GeneralTab />;
     }
