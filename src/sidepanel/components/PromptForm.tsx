@@ -198,36 +198,33 @@ export const PromptForm: React.FC<PromptFormProps> = ({
 
   return (
     <div className="mt-4 flex flex-col gap-2">
-      {/* ── Template & Skill quick-access bar ── */}
       <div className="flex flex-wrap items-center gap-1 text-xs">
         <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} font-medium select-none mr-0.5`}>常用技能:</span>
-        <div className="flex flex-wrap gap-1 items-center max-w-full">
-          {skills.map(skill => (
-            <div key={skill.id} className="relative group">
+        {skills.map(skill => (
+          <div key={skill.id} className="relative group">
+            <button
+              type="button"
+              onClick={() => handleApplySkill(skill.prompt)}
+              disabled={isProcessing || tabStatus === 'detached'}
+              className={`btn btn-[10px] h-6 min-h-[24px] ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} rounded-full px-2.5 py-0 font-medium lowercase select-none`}
+              title={skill.prompt}
+            >
+              {skill.name}
+            </button>
+
+            {/* 删除自定义技能按钮 (Hover 时显示) */}
+            {!skill.id.startsWith('default_') && (
               <button
                 type="button"
-                onClick={() => handleApplySkill(skill.prompt)}
-                disabled={isProcessing || tabStatus === 'detached'}
-                className={`btn btn-[10px] h-6 min-h-[24px] ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} rounded-full px-2.5 py-0 font-medium lowercase select-none`}
-                title={skill.prompt}
+                onClick={(e) => handleDeleteSkill(e, skill.id)}
+                className="absolute -top-1 -right-1 hidden group-hover:flex items-center justify-center w-3.5 h-3.5 rounded-full bg-rose-500 text-white font-bold text-[8px] cursor-pointer"
+                title="删除技能"
               >
-                {skill.name}
+                ✕
               </button>
-
-              {/* 删除自定义技能按钮 (Hover 时显示) */}
-              {!skill.id.startsWith('default_') && (
-                <button
-                  type="button"
-                  onClick={(e) => handleDeleteSkill(e, skill.id)}
-                  className="absolute -top-1 -right-1 hidden group-hover:flex items-center justify-center w-3.5 h-3.5 rounded-full bg-rose-500 text-white font-bold text-[8px] cursor-pointer"
-                  title="删除技能"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        ))}
 
         {/* Show template picker button */}
         <button
