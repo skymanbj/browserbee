@@ -3,6 +3,39 @@ import { BrowserAgent } from "../agent/AgentCore";
 // Provider types
 export type ProviderType = 'anthropic' | 'openai' | 'gemini' | 'ollama' | `openai-compatible:${string}`;
 
+// Content block types for multimodal messages
+export interface TextContentBlock {
+  type: 'text';
+  text: string;
+}
+
+export interface ImageContentBlock {
+  type: 'image';
+  data: string;
+  mimeType: string;
+}
+
+export interface PdfContentBlock {
+  type: 'pdf';
+  data: string;
+  name: string;
+}
+
+export type ContentBlock = TextContentBlock | ImageContentBlock | PdfContentBlock;
+
+// File attachment type (used in UI -> background communication)
+export type AttachmentType = 'image' | 'pdf' | 'text';
+
+export interface FileAttachment {
+  id: string;
+  name: string;
+  type: AttachmentType;
+  mimeType: string;
+  data: string;
+  size: number;
+  thumbnail?: string;
+}
+
 // Agent status types
 export enum AgentStatus {
   IDLE = 'idle',
@@ -21,6 +54,7 @@ export interface AgentStatusInfo {
 export interface ExecutePromptMessage {
   action: 'executePrompt';
   prompt: string;
+  attachments?: FileAttachment[];
   tabId?: number;
   windowId?: number;
 }

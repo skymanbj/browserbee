@@ -353,6 +353,7 @@ export function SidePanel() {
                   isStreaming={isStreaming}
                   onDeleteMessage={deleteMessage}
                   onDeleteTurn={deleteMultipleMessages}
+                  onEditTurn={() => { }}
                   isProcessing={isProcessing}
                 />
               </div>
