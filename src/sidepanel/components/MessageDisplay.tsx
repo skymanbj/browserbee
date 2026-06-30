@@ -179,14 +179,14 @@ const ToolGroup: React.FC<{
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className="flex items-center justify-between px-3 py-2 cursor-pointer bg-base-200 hover:bg-opacity-80 text-xs font-semibold text-gray-600 select-none"
+        className="flex items-center justify-between px-3 py-2 cursor-pointer bg-base-200 hover:bg-opacity-80 text-xs font-semibold text-base-content/70 select-none"
       >
         <div className="flex items-center gap-1.5">
           <span>⚙️</span>
           <span>自动操作步骤 (共 {groupMessages.length} 步)</span>
           {isProcessing && <span className="loading loading-double-ring loading-xs text-primary ml-1"></span>}
         </div>
-        <span className="text-gray-400 font-bold">
+        <span className="text-base-content/50 font-bold">
           {isOpen ? '收起 ↑' : '展开 ↓'}
         </span>
       </div>
@@ -195,7 +195,7 @@ const ToolGroup: React.FC<{
         <div className="p-2 space-y-1 bg-base-100 bg-opacity-50 max-h-[300px] overflow-y-auto">
           {groupMessages.map(({ message, originalIndex }) => (
             <div key={`group-msg-${originalIndex}`} className="flex items-start justify-between gap-2 relative text-xs py-0.5 border-b border-base-content border-opacity-5 last:border-0">
-              <div className="flex-grow min-w-0 bg-base-200 px-2 py-1 rounded text-gray-500 font-mono overflow-x-auto whitespace-pre-wrap">
+              <div className="flex-grow min-w-0 bg-base-200 px-2 py-1 rounded text-base-content/60 font-mono overflow-x-auto whitespace-pre-wrap">
                 {message.content}
               </div>
               <button
@@ -256,7 +256,7 @@ const ConversationTurnComponent: React.FC<{
           className="p-3 bg-base-200 border-b border-base-content border-opacity-5"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
+          <div className="text-xs font-semibold text-base-content/60 mb-1.5 flex items-center gap-1">
             <span>✏️ 编辑提问:</span>
           </div>
           <textarea
@@ -298,7 +298,7 @@ const ConversationTurnComponent: React.FC<{
         >
           <div className="flex items-center gap-2 flex-grow min-w-0 pr-2">
             <span className="text-primary font-bold flex-shrink-0">问:</span>
-            <span className="truncate flex-grow text-gray-700 font-medium" title={turn.prompt}>{turn.prompt}</span>
+            <span className="truncate flex-grow text-base-content font-medium" title={turn.prompt}>{turn.prompt}</span>
             {turn.attachments && turn.attachments.length > 0 && (
               <span className="badge badge-sm badge-ghost flex-shrink-0 gap-1">
                 📎 {turn.attachments.length}
@@ -333,7 +333,7 @@ const ConversationTurnComponent: React.FC<{
             >
               ✕
             </button>
-            <span className="text-gray-400 text-xs font-bold">
+            <span className="text-base-content/50 text-xs font-bold">
               {isOpen ? '收起 ↑' : '答 ↓'}
             </span>
           </div>
@@ -348,7 +348,7 @@ const ConversationTurnComponent: React.FC<{
             </div>
           )}
           {turn.messages.length === 0 && !isProcessing && (
-            <p className="text-gray-400 text-xs italic">无回答内容</p>
+            <p className="text-base-content/50 text-xs italic">无回答内容</p>
           )}
 
           {turnGroupedItems.map((item, idx) => {
@@ -380,7 +380,7 @@ const ConversationTurnComponent: React.FC<{
                 <div className="flex-grow min-w-0">
                   {msg.type === 'system' ? (
                     <CollapsibleWrapper content={msg.content} bgClass="from-base-200">
-                      <div className="bg-base-200 px-3 py-1 rounded text-gray-500 text-sm">
+                      <div className="bg-base-200 px-3 py-1 rounded text-base-content/60 text-sm">
                         {msg.content}
                       </div>
                     </CollapsibleWrapper>
@@ -421,7 +421,7 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({
   isProcessing
 }) => {
   if (messages.length === 0 && Object.keys(streamingSegments).length === 0) {
-    return <p className="text-gray-500">No output yet</p>;
+    return <p className="text-base-content/60">No output yet</p>;
   }
 
   const segmentedItems = segmentConversations(messages);
@@ -451,7 +451,7 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({
           <div key={`msg-${originalIndex}`} className="mb-2 flex items-start justify-between gap-2 relative">
             <div className="flex-grow min-w-0">
               {msg.type === 'system' ? (
-                <div className="bg-base-200 px-3 py-1 rounded text-gray-500 text-sm">
+                <div className="bg-base-200 px-3 py-1 rounded text-base-content/60 text-sm">
                   {msg.content}
                 </div>
               ) : msg.type === 'screenshot' && msg.imageData ? (
