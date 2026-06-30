@@ -945,18 +945,15 @@ function handleGetSessions(
   }
 }
 
-function handleCreateSession(
+async function handleCreateSession(
   message: any,
   sendResponse: (response?: any) => void
-): void {
+): Promise<void> {
   try {
     const windowId = message.windowId || chrome.windows.WINDOW_ID_CURRENT;
-    SessionManager.createSession(message.title).then(async (session) => {
-      await SessionManager.setActiveSessionId(windowId, session.id);
-      sendResponse({ success: true, session });
-    }).catch((error: any) => {
-      sendResponse({ success: false, error: String(error) });
-    });
+    const session = await SessionManager.createSession(message.title || '新会话');
+    await SessionManager.setActiveSessionId(windowId, session.id);
+    sendResponse({ success: true, session });
   } catch (error: any) {
     sendResponse({ success: false, error: String(error) });
   }
