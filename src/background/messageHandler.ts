@@ -375,7 +375,12 @@ function isBackgroundMessage(message: any): message is BackgroundMessage {
       message.action === 'scheduledTaskImport' ||
       message.action === 'scheduledTaskGetLogs' ||
       message.action === 'scheduledTaskGetStats' ||
-      message.action === 'scheduledTaskStatus'
+      message.action === 'scheduledTaskStatus' ||
+      message.action === 'getSessions' ||
+      message.action === 'createSession' ||
+      message.action === 'setActiveSession' ||
+      message.action === 'deleteSession' ||
+      message.action === 'renameSession'
     )
   );
 }
