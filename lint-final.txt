@@ -1,0 +1,44 @@
+
+D:\browserbee-0.2.0\src\agent\ExecutionEngine.ts
+   12:7   warning  'MAX_OUTPUT_TOKENS' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  652:20  warning  'error' is defined but never used                       @typescript-eslint/no-unused-vars
+
+D:\browserbee-0.2.0\src\agent\tools\memoryTools.ts
+    6:28  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   16:20  warning  'parseError' is defined but never used                                  @typescript-eslint/no-unused-vars
+   85:32  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  128:32  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  150:30  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  174:34  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\browserbee-0.2.0\tests\unit\agent\tools\navigationTools.test.ts
+   3:1   warning  `../../../fixtures/toolTestData` import should occur before import of `../../../mocks/playwright`               import/order
+   4:3   warning  'mockNavigationScenarios' is defined but never used                                                             @typescript-eslint/no-unused-vars
+  22:1   warning  `../../../../src/agent/tools/navigationTools` import should occur before import of `../../../mocks/playwright`  import/order
+  35:17  error    A `require()` style import is forbidden                                                                         @typescript-eslint/no-require-imports
+
+D:\browserbee-0.2.0\tests\unit\agent\tools\tabTools.test.ts
+   37:1   warning  `../../../../src/agent/tools/tabTools` import should occur before import of `../../../mocks/playwright`  import/order
+   64:33  error    A `require()` style import is forbidden                                                                  @typescript-eslint/no-require-imports
+  174:35  error    A `require()` style import is forbidden                                                                  @typescript-eslint/no-require-imports
+  257:35  error    A `require()` style import is forbidden                                                                  @typescript-eslint/no-require-imports
+  370:35  error    A `require()` style import is forbidden                                                                  @typescript-eslint/no-require-imports
+  381:35  error    A `require()` style import is forbidden                                                                  @typescript-eslint/no-require-imports
+  465:35  error    A `require()` style import is forbidden                                                                  @typescript-eslint/no-require-imports
+
+D:\browserbee-0.2.0\tests\unit\models\providers\factory.test.ts
+   80:37  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   96:34  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  113:34  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  130:34  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  156:44  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  194:37  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  200:37  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  271:34  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  292:34  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  310:34  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  329:44  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+✖ 30 problems (18 errors, 12 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

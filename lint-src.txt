@@ -1,0 +1,15 @@
+
+D:\browserbee-0.2.0\src\agent\ExecutionEngine.ts
+   12:7   warning  'MAX_OUTPUT_TOKENS' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  652:20  warning  'error' is defined but never used                       @typescript-eslint/no-unused-vars
+
+D:\browserbee-0.2.0\src\agent\tools\memoryTools.ts
+    6:28  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   16:20  warning  'parseError' is defined but never used                                  @typescript-eslint/no-unused-vars
+   85:32  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  128:32  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  150:30  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  174:34  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 8 problems (0 errors, 8 warnings)
+

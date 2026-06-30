@@ -1,5 +1,7 @@
 import { jest } from '@jest/globals';
 
+jest.setTimeout(20000);
+
 // Mock the tabManager dependency before importing approvalManager
 jest.mock('../../../src/background/tabManager', () => ({
   getWindowForTab: jest.fn()

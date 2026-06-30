@@ -1,8 +1,5 @@
-import { AnthropicProvider } from '../models/providers/anthropic';
-import { GeminiProvider } from '../models/providers/gemini';
-import { OllamaProvider, OllamaProviderOptions } from '../models/providers/ollama';
-import { OpenAIProvider } from '../models/providers/openai';
-import { OpenAICompatibleProvider, OpenAICompatibleInstance } from '../models/providers/openai-compatible';
+import { OllamaProviderOptions } from '../models/providers/ollama';
+import { OpenAICompatibleInstance } from '../models/providers/openai-compatible';
 
 export interface ProviderConfig {
   provider: 'anthropic' | 'openai' | 'gemini' | 'ollama' | `openai-compatible:${string}`;
@@ -28,7 +25,7 @@ export class ConfigManager {
 
   async getOpenAICompatibleInstances(): Promise<OpenAICompatibleInstance[]> {
     // 优先读取 local 以免超出 sync 容量限制 (sync 的单个 Key 最大 8KB，整个 100KB；local 10MB+)
-    let result = await chrome.storage.local.get({ openaiCompatibleInstances: null });
+    const result = await chrome.storage.local.get({ openaiCompatibleInstances: null });
     if (result.openaiCompatibleInstances && Array.isArray(result.openaiCompatibleInstances)) {
       return result.openaiCompatibleInstances;
     }
@@ -220,7 +217,8 @@ export class ConfigManager {
       const instances = await this.getOpenAICompatibleInstances();
       const instance = instances.find((inst: OpenAICompatibleInstance) => inst.id === instanceId);
       if (instance) {
-        const available = OpenAICompatibleProvider.getAvailableModels({ openaiCompatibleModels: instance.models || [] } as any);
+        const { OpenAICompatibleProvider } = await import('../models/providers/openai-compatible');
+      const available = OpenAICompatibleProvider.getAvailableModels({ openaiCompatibleModels: instance.models || [] } as any);
         // 过滤模型池：如果配置了选中的模型，则仅展示勾选启用的模型
         if (instance.enabledModelIds && instance.enabledModelIds.length > 0) {
           const filtered = available.filter(m => instance.enabledModelIds?.includes(m.id));
@@ -239,14 +237,21 @@ export class ConfigManager {
     }
 
     switch (provider) {
-      case 'anthropic':
+      case 'anthropic': {
+        const { AnthropicProvider } = await import('../models/providers/anthropic');
         return AnthropicProvider.getAvailableModels();
-      case 'openai':
+      }
+      case 'openai': {
+        const { OpenAIProvider } = await import('../models/providers/openai');
         return OpenAIProvider.getAvailableModels();
-      case 'gemini':
+      }
+      case 'gemini': {
+        const { GeminiProvider } = await import('../models/providers/gemini');
         return GeminiProvider.getAvailableModels();
+      }
       case 'ollama': {
         const result = await chrome.storage.sync.get({ ollamaCustomModels: [] });
+        const { OllamaProvider } = await import('../models/providers/ollama');
         const models = OllamaProvider.getAvailableModels({ ollamaCustomModels: result.ollamaCustomModels } as OllamaProviderOptions);
         return models;
       }

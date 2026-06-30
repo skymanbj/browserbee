@@ -145,6 +145,7 @@ describe('Provider Factory', () => {
         apiModelId: mockOpenAICompatibleConfig.apiModelId,
         baseUrl: mockOpenAICompatibleConfig.baseUrl,
         dangerouslyAllowBrowser: true,
+        openaiCompatibleModels: [],
       };
 
       const provider = await createProvider('openai-compatible', options);

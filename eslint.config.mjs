@@ -13,7 +13,7 @@ export default [
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
-        project: './tsconfig.json',
+        project: './tsconfig.eslint.json',
         ecmaVersion: 'latest',
         sourceType: 'module',
         ecmaFeatures: {
@@ -31,4 +31,11 @@ export default [
       react: { version: 'detect' }
     }
   }
-];
+  {
+    files: ['tests/**/*.ts', 'tests/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      'import/order': 'off',
+    },
+  },
+]

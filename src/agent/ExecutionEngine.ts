@@ -293,7 +293,7 @@ export class ExecutionEngine {
           console.log("Complete tool call detected:", match);
 
           // Extract the tool call
-          const [fullMatch, codeBlockStart, toolName, toolInput, requiresApprovalRaw] = match;
+          const [, codeBlockStart, toolName, toolInput] = match;
 
           // Find the start of the tool call
           const matchIndex = codeBlockStart

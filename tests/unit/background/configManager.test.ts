@@ -1,13 +1,3 @@
-import { ConfigManager, ProviderConfig } from '../../../src/background/configManager';
-import { 
-  mockAnthropicConfig, 
-  mockOpenAIConfig, 
-  mockGeminiConfig, 
-  mockOllamaConfig,
-  invalidConfig 
-} from '../../fixtures/sampleConfigs';
-
-// Mock the provider modules to avoid ES module issues
 jest.mock('../../../src/models/providers/anthropic', () => ({
   AnthropicProvider: {
     getAvailableModels: jest.fn().mockReturnValue([
@@ -52,11 +42,19 @@ jest.mock('../../../src/models/providers/openai-compatible', () => ({
   },
 }));
 
+import { ConfigManager, ProviderConfig } from '../../../src/background/configManager';
+
 // Mock Chrome storage API
 const mockChromeStorage = {
   sync: {
     get: jest.fn(),
     set: jest.fn(),
+    remove: jest.fn(),
+  },
+  local: {
+    get: jest.fn(),
+    set: jest.fn(),
+    remove: jest.fn(),
   },
 };
 
@@ -71,29 +69,41 @@ describe('ConfigManager', () => {
   let configManager: ConfigManager;
 
   beforeEach(() => {
+    jest.resetAllMocks();
     configManager = ConfigManager.getInstance();
-    jest.clearAllMocks();
   });
 
   describe('getInstance', () => {
     it('should return a singleton instance', () => {
       const instance1 = ConfigManager.getInstance();
       const instance2 = ConfigManager.getInstance();
-      
+
       expect(instance1).toBe(instance2);
       expect(instance1).toBeInstanceOf(ConfigManager);
     });
   });
 
   describe('getProviderConfig', () => {
+    const defaultMigrateResult = {
+      openaiCompatibleInstances: null,
+      openaiCompatibleApiKey: '',
+      openaiCompatibleBaseUrl: '',
+      openaiCompatibleModelId: '',
+      openaiCompatibleModels: [],
+      provider: 'anthropic',
+    };
+
     it('should return stored provider configuration', async () => {
-      mockChromeStorage.sync.get.mockResolvedValue({
-        provider: 'anthropic',
-        anthropicApiKey: 'test-key',
-        anthropicModelId: 'claude-3-5-sonnet-20241022',
-        anthropicBaseUrl: '',
-        thinkingBudgetTokens: 0,
-      });
+      // First call is migrateOpenAICompatibleData, second is the main config read
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          provider: 'anthropic',
+          anthropicApiKey: 'test-key',
+          anthropicModelId: 'claude-3-5-sonnet-20241022',
+          anthropicBaseUrl: '',
+          thinkingBudgetTokens: 0,
+        });
 
       const config = await configManager.getProviderConfig();
 
@@ -105,7 +115,7 @@ describe('ConfigManager', () => {
         thinkingBudgetTokens: 0,
       });
 
-      expect(mockChromeStorage.sync.get).toHaveBeenCalledWith({
+      expect(mockChromeStorage.sync.get).toHaveBeenLastCalledWith({
         provider: 'anthropic',
         anthropicApiKey: '',
         anthropicModelId: 'claude-3-7-sonnet-20250219',
@@ -120,21 +130,19 @@ describe('ConfigManager', () => {
         ollamaModelId: '',
         ollamaBaseUrl: '',
         thinkingBudgetTokens: 0,
-        openaiCompatibleApiKey: '',
-        openaiCompatibleModelId: '',
-        openaiCompatibleBaseUrl: '',
-        openaiCompatibleModels: [],
       });
     });
 
     it('should return default configuration when no provider is set', async () => {
-      mockChromeStorage.sync.get.mockResolvedValue({
-        provider: 'anthropic',
-        anthropicApiKey: '',
-        anthropicModelId: 'claude-3-7-sonnet-20250219',
-        anthropicBaseUrl: '',
-        thinkingBudgetTokens: 0,
-      });
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          provider: 'anthropic',
+          anthropicApiKey: '',
+          anthropicModelId: 'claude-3-7-sonnet-20250219',
+          anthropicBaseUrl: '',
+          thinkingBudgetTokens: 0,
+        });
 
       const config = await configManager.getProviderConfig();
 
@@ -148,12 +156,14 @@ describe('ConfigManager', () => {
     });
 
     it('should handle OpenAI configuration', async () => {
-      mockChromeStorage.sync.get.mockResolvedValue({
-        provider: 'openai',
-        openaiApiKey: 'openai-key',
-        openaiModelId: 'gpt-4o',
-        openaiBaseUrl: '',
-      });
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          provider: 'openai',
+          openaiApiKey: 'openai-key',
+          openaiModelId: 'gpt-4o',
+          openaiBaseUrl: '',
+        });
 
       const config = await configManager.getProviderConfig();
 
@@ -166,12 +176,14 @@ describe('ConfigManager', () => {
     });
 
     it('should handle Gemini configuration', async () => {
-      mockChromeStorage.sync.get.mockResolvedValue({
-        provider: 'gemini',
-        geminiApiKey: 'gemini-key',
-        geminiModelId: 'gemini-2.5-flash-preview-05-20',
-        geminiBaseUrl: '',
-      });
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          provider: 'gemini',
+          geminiApiKey: 'gemini-key',
+          geminiModelId: 'gemini-2.5-flash-preview-05-20',
+          geminiBaseUrl: '',
+        });
 
       const config = await configManager.getProviderConfig();
 
@@ -184,12 +196,14 @@ describe('ConfigManager', () => {
     });
 
     it('should handle Ollama configuration with base URL', async () => {
-      mockChromeStorage.sync.get.mockResolvedValue({
-        provider: 'ollama',
-        ollamaApiKey: 'dummy-key',
-        ollamaModelId: 'llama2',
-        ollamaBaseUrl: 'http://localhost:11434',
-      });
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          provider: 'ollama',
+          ollamaApiKey: 'dummy-key',
+          ollamaModelId: 'llama2',
+          ollamaBaseUrl: 'http://localhost:11434',
+        });
 
       const config = await configManager.getProviderConfig();
 
@@ -202,22 +216,32 @@ describe('ConfigManager', () => {
     });
 
     it('should handle OpenAI-compatible configuration', async () => {
-      mockChromeStorage.sync.get.mockResolvedValue({
-        provider: 'openai-compatible',
-        openaiCompatibleApiKey: 'custom-key',
-        openaiCompatibleModelId: 'custom-model',
-        openaiCompatibleBaseUrl: 'https://api.custom.com/v1',
-        openaiCompatibleModels: [{ id: 'custom-model', name: 'Custom Model' }],
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          provider: 'openai-compatible:default',
+        });
+
+      mockChromeStorage.local.get.mockResolvedValue({
+        openaiCompatibleInstances: [{
+          id: 'default',
+          name: 'Custom',
+          apiKey: 'custom-key',
+          baseUrl: 'https://api.custom.com/v1',
+          modelId: 'custom-model',
+          models: [{ id: 'custom-model', name: 'Custom Model' }],
+        }],
       });
 
       const config = await configManager.getProviderConfig();
 
       expect(config).toEqual({
-        provider: 'openai-compatible',
+        provider: 'openai-compatible:default',
         apiKey: 'custom-key',
         apiModelId: 'custom-model',
         baseUrl: 'https://api.custom.com/v1',
         openaiCompatibleModels: [{ id: 'custom-model', name: 'Custom Model' }],
+        instanceId: 'default',
       });
     });
 
@@ -227,12 +251,26 @@ describe('ConfigManager', () => {
       await expect(configManager.getProviderConfig()).rejects.toThrow('Storage error');
     });
 
-    it('should throw error for unsupported provider', async () => {
-      mockChromeStorage.sync.get.mockResolvedValue({
-        provider: 'unsupported',
-      });
+    it('should return default anthropic configuration for unsupported provider', async () => {
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          provider: 'unsupported',
+          anthropicApiKey: '',
+          anthropicModelId: 'claude-3-7-sonnet-20250219',
+          anthropicBaseUrl: '',
+          thinkingBudgetTokens: 0,
+        });
 
-      await expect(configManager.getProviderConfig()).rejects.toThrow('Provider unsupported not supported');
+      const config = await configManager.getProviderConfig();
+
+      expect(config).toEqual({
+        provider: 'anthropic',
+        apiKey: '',
+        apiModelId: 'claude-3-7-sonnet-20250219',
+        baseUrl: '',
+        thinkingBudgetTokens: 0,
+      });
     });
   });
 
@@ -268,25 +306,32 @@ describe('ConfigManager', () => {
   });
 
   describe('getConfiguredProviders', () => {
+    const defaultMigrateResult = {
+      openaiCompatibleInstances: null,
+      openaiCompatibleApiKey: '',
+      openaiCompatibleBaseUrl: '',
+      openaiCompatibleModelId: '',
+      openaiCompatibleModels: [],
+      provider: 'anthropic',
+    };
+
     it('should return list of configured providers', async () => {
-      // First call for getConfiguredProviders
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        anthropicApiKey: 'anthropic-key',
-        openaiApiKey: 'openai-key',
-        geminiApiKey: '',
-        ollamaApiKey: '',
-        openaiCompatibleApiKey: '',
-        openaiCompatibleModels: [],
-      });
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          anthropicApiKey: 'anthropic-key',
+          openaiApiKey: 'openai-key',
+          geminiApiKey: '',
+        })
+        .mockResolvedValueOnce({
+          ollamaBaseUrl: '',
+        })
+        .mockResolvedValueOnce({
+          ollamaCustomModels: [],
+        });
 
-      // Second call for getOllamaBaseUrl
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        ollamaBaseUrl: '',
-      });
-
-      // Third call for ollama custom models check
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        ollamaCustomModels: [],
+      mockChromeStorage.local.get.mockResolvedValue({
+        openaiCompatibleInstances: [],
       });
 
       const providers = await configManager.getConfiguredProviders();
@@ -295,24 +340,22 @@ describe('ConfigManager', () => {
     });
 
     it('should include ollama when configured with models', async () => {
-      // First call for getConfiguredProviders
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        anthropicApiKey: 'anthropic-key',
-        openaiApiKey: '',
-        geminiApiKey: '',
-        ollamaApiKey: '',
-        openaiCompatibleApiKey: '',
-        openaiCompatibleModels: [],
-      });
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          anthropicApiKey: 'anthropic-key',
+          openaiApiKey: '',
+          geminiApiKey: '',
+        })
+        .mockResolvedValueOnce({
+          ollamaBaseUrl: 'http://localhost:11434',
+        })
+        .mockResolvedValueOnce({
+          ollamaCustomModels: [{ id: 'llama2', name: 'Llama 2' }],
+        });
 
-      // Second call for getOllamaBaseUrl
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        ollamaBaseUrl: 'http://localhost:11434',
-      });
-
-      // Third call for ollama custom models check
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        ollamaCustomModels: [{ id: 'llama2', name: 'Llama 2' }],
+      mockChromeStorage.local.get.mockResolvedValue({
+        openaiCompatibleInstances: [],
       });
 
       const providers = await configManager.getConfiguredProviders();
@@ -321,24 +364,22 @@ describe('ConfigManager', () => {
     });
 
     it('should return empty array when no providers are configured', async () => {
-      // First call for getConfiguredProviders
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        anthropicApiKey: '',
-        openaiApiKey: '',
-        geminiApiKey: '',
-        ollamaApiKey: '',
-        openaiCompatibleApiKey: '',
-        openaiCompatibleModels: [],
-      });
+      mockChromeStorage.sync.get
+        .mockResolvedValueOnce(defaultMigrateResult)
+        .mockResolvedValueOnce({
+          anthropicApiKey: '',
+          openaiApiKey: '',
+          geminiApiKey: '',
+        })
+        .mockResolvedValueOnce({
+          ollamaBaseUrl: '',
+        })
+        .mockResolvedValueOnce({
+          ollamaCustomModels: [],
+        });
 
-      // Second call for getOllamaBaseUrl
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        ollamaBaseUrl: '',
-      });
-
-      // Third call for ollama custom models check
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        ollamaCustomModels: [],
+      mockChromeStorage.local.get.mockResolvedValue({
+        openaiCompatibleInstances: [],
       });
 
       const providers = await configManager.getConfiguredProviders();
@@ -356,6 +397,9 @@ describe('ConfigManager', () => {
       const baseUrl = await configManager.getOllamaBaseUrl();
 
       expect(baseUrl).toBe('http://localhost:11434');
+      expect(mockChromeStorage.sync.get).toHaveBeenCalledWith({
+        ollamaBaseUrl: '',
+      });
     });
 
     it('should return empty string when not configured', async () => {
@@ -371,93 +415,110 @@ describe('ConfigManager', () => {
 
   describe('updateProviderAndModel', () => {
     it('should update provider and model configuration', async () => {
-      // First call to get current config
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        provider: 'anthropic',
-        anthropicModelId: 'claude-3-7-sonnet-20250219',
-        openaiModelId: 'gpt-4o',
-        geminiModelId: 'gemini-1.5-pro',
-        ollamaModelId: 'llama3.1',
+      mockChromeStorage.sync.set.mockResolvedValue(undefined);
+      mockChromeStorage.local.set.mockResolvedValue(undefined);
+      mockChromeStorage.local.get.mockResolvedValue({
+        openaiCompatibleInstances: [{
+          id: 'default',
+          name: 'Custom',
+          apiKey: 'custom-key',
+          baseUrl: 'https://api.custom.com/v1',
+          modelId: 'custom-model',
+          models: [{ id: 'custom-model', name: 'Custom Model' }],
+        }],
       });
 
-      mockChromeStorage.sync.set.mockResolvedValue(undefined);
+      await configManager.updateProviderAndModel('openai-compatible:default', 'custom-model');
 
-      await configManager.updateProviderAndModel('openai', 'gpt-4o');
-
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({ provider: 'openai' });
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({ openaiModelId: 'gpt-4o' });
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        provider: 'openai-compatible:default',
+      });
+      expect(mockChromeStorage.local.set).toHaveBeenCalledWith({
+        openaiCompatibleInstances: [{
+          id: 'default',
+          name: 'Custom',
+          apiKey: 'custom-key',
+          baseUrl: 'https://api.custom.com/v1',
+          modelId: 'custom-model',
+          models: [{ id: 'custom-model', name: 'Custom Model' }],
+        }],
+      });
     });
 
     it('should handle Anthropic provider update', async () => {
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        provider: 'anthropic',
-        anthropicModelId: 'claude-3-7-sonnet-20250219',
-        openaiModelId: 'gpt-4o',
-        geminiModelId: 'gemini-1.5-pro',
-        ollamaModelId: 'llama3.1',
-      });
-
       mockChromeStorage.sync.set.mockResolvedValue(undefined);
 
       await configManager.updateProviderAndModel('anthropic', 'claude-3-5-sonnet-20241022');
 
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({ provider: 'anthropic' });
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({ anthropicModelId: 'claude-3-5-sonnet-20241022' });
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        provider: 'anthropic',
+      });
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        anthropicModelId: 'claude-3-5-sonnet-20241022',
+      });
+    });
+
+    it('should handle OpenAI provider update', async () => {
+      mockChromeStorage.sync.set.mockResolvedValue(undefined);
+
+      await configManager.updateProviderAndModel('openai', 'gpt-4o');
+
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        provider: 'openai',
+      });
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        openaiModelId: 'gpt-4o',
+      });
     });
 
     it('should handle Gemini provider update', async () => {
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        provider: 'anthropic',
-        anthropicModelId: 'claude-3-7-sonnet-20250219',
-        openaiModelId: 'gpt-4o',
-        geminiModelId: 'gemini-1.5-pro',
-        ollamaModelId: 'llama3.1',
-      });
-
       mockChromeStorage.sync.set.mockResolvedValue(undefined);
 
-      await configManager.updateProviderAndModel('gemini', 'gemini-2.5-flash-preview-05-20');
+      await configManager.updateProviderAndModel('gemini', 'gemini-1.5-pro');
 
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({ provider: 'gemini' });
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({ geminiModelId: 'gemini-2.5-flash-preview-05-20' });
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        provider: 'gemini',
+      });
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        geminiModelId: 'gemini-1.5-pro',
+      });
     });
 
     it('should handle Ollama provider update', async () => {
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        provider: 'anthropic',
-        anthropicModelId: 'claude-3-7-sonnet-20250219',
-        openaiModelId: 'gpt-4o',
-        geminiModelId: 'gemini-1.5-pro',
-        ollamaModelId: 'llama3.1',
-      });
-
       mockChromeStorage.sync.set.mockResolvedValue(undefined);
 
       await configManager.updateProviderAndModel('ollama', 'llama2');
 
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({ provider: 'ollama' });
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({ ollamaModelId: 'llama2' });
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        provider: 'ollama',
+      });
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        ollamaModelId: 'llama2',
+      });
     });
 
     it('should not update model for unsupported provider', async () => {
-      mockChromeStorage.sync.get.mockResolvedValueOnce({
-        provider: 'anthropic',
-        anthropicModelId: 'claude-3-7-sonnet-20250219',
-        openaiModelId: 'gpt-4o',
-        geminiModelId: 'gemini-1.5-pro',
-        ollamaModelId: 'llama3.1',
-      });
-
       mockChromeStorage.sync.set.mockResolvedValue(undefined);
 
       await configManager.updateProviderAndModel('unsupported', 'model');
 
-      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({ provider: 'unsupported' });
+      expect(mockChromeStorage.sync.set).toHaveBeenCalledWith({
+        provider: 'unsupported',
+      });
       expect(mockChromeStorage.sync.set).toHaveBeenCalledTimes(1); // Only provider update, no model update
     });
   });
 
   describe('getModelsForProvider', () => {
+    const defaultMigrateResult = {
+      openaiCompatibleInstances: null,
+      openaiCompatibleApiKey: '',
+      openaiCompatibleBaseUrl: '',
+      openaiCompatibleModelId: '',
+      openaiCompatibleModels: [],
+      provider: 'anthropic',
+    };
+
     it('should return models for Anthropic', async () => {
       const models = await configManager.getModelsForProvider('anthropic');
 
@@ -499,11 +560,19 @@ describe('ConfigManager', () => {
     });
 
     it('should return models for OpenAI-compatible', async () => {
-      mockChromeStorage.sync.get.mockResolvedValue({
-        openaiCompatibleModels: [{ id: 'custom-model', name: 'Custom Model' }],
+      mockChromeStorage.sync.get.mockResolvedValueOnce(defaultMigrateResult);
+      mockChromeStorage.local.get.mockResolvedValue({
+        openaiCompatibleInstances: [{
+          id: 'default',
+          name: 'Custom',
+          apiKey: 'custom-key',
+          baseUrl: 'https://api.custom.com/v1',
+          modelId: 'custom-model',
+          models: [{ id: 'custom-model', name: 'Custom Model' }],
+        }],
       });
 
-      const models = await configManager.getModelsForProvider('openai-compatible');
+      const models = await configManager.getModelsForProvider('openai-compatible:default');
 
       expect(models).toEqual([
         { id: 'custom-model', name: 'Custom Model' },
