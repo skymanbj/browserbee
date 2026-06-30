@@ -112,7 +112,7 @@ export function ProviderCardGrid({
                   <h3 className="font-bold text-base truncate pr-16">{inst.name}</h3>
                 </div>
                 <p className="text-xs text-base-content/60 leading-normal truncate">
-                  {inst.baseUrl || 'OpenAI Compatible API'}
+                  {inst.modelId ? `${language === 'zh' ? '模型' : 'Model'}: ${inst.modelId}` : (inst.baseUrl || 'OpenAI Compatible API')}
                 </p>
               </div>
             </div>

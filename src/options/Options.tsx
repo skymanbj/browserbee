@@ -140,7 +140,7 @@ export function Options() {
   // Load saved settings when component mounts
   useEffect(() => {
     (async () => {
-      const { instances, provider: migratedProvider } = await migrateOldOpenAICompatibleData();
+      const { instances: oldInstances, provider: migratedProvider } = await migrateOldOpenAICompatibleData();
       
       const result = await chrome.storage.sync.get({
         provider: 'anthropic',
@@ -158,8 +158,20 @@ export function Options() {
         ollamaBaseUrl: '',
         ollamaCustomModels: [],
         thinkingBudgetTokens: 0,
-        openaiCompatibleInstances: [] as OpenAICompatibleInstance[],
       });
+      
+      // 优先从 local 读取自定义兼容提供商实例数据以防超限
+      const localResult = await chrome.storage.local.get({ openaiCompatibleInstances: null });
+      let currentInstances = localResult.openaiCompatibleInstances;
+      if (!currentInstances || !Array.isArray(currentInstances)) {
+        // 备用：从 sync 迁移
+        const syncResult = await chrome.storage.sync.get({ openaiCompatibleInstances: [] });
+        currentInstances = syncResult.openaiCompatibleInstances || oldInstances;
+        if (currentInstances && currentInstances.length > 0) {
+          await chrome.storage.local.set({ openaiCompatibleInstances: currentInstances });
+          await chrome.storage.sync.remove('openaiCompatibleInstances');
+        }
+      }
       
       setProvider(result.provider);
       setAnthropicApiKey(result.anthropicApiKey);
@@ -176,13 +188,16 @@ export function Options() {
       setOllamaBaseUrl(result.ollamaBaseUrl || '');
       setOllamaCustomModels(result.ollamaCustomModels || []);
       setThinkingBudgetTokens(result.thinkingBudgetTokens);
-      setOpenaiCompatibleInstances(result.openaiCompatibleInstances || instances);
+      setOpenaiCompatibleInstances(currentInstances || []);
     })();
   }, []);
 
   const handleSave = () => {
     setIsSaving(true);
     setSaveStatus('');
+
+    // 将自定义大模型实例保存到 local 中，防容量溢出
+    chrome.storage.local.set({ openaiCompatibleInstances });
 
     chrome.storage.sync.set({
       provider,
@@ -200,7 +215,6 @@ export function Options() {
       ollamaBaseUrl,
       ollamaCustomModels,
       thinkingBudgetTokens,
-      openaiCompatibleInstances,
     }, () => {
       
       setIsSaving(false);

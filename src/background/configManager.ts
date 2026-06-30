@@ -27,8 +27,21 @@ export class ConfigManager {
   }
 
   async getOpenAICompatibleInstances(): Promise<OpenAICompatibleInstance[]> {
-    const result = await chrome.storage.sync.get({ openaiCompatibleInstances: [] });
-    return (result.openaiCompatibleInstances || []) as OpenAICompatibleInstance[];
+    // 优先读取 local 以免超出 sync 容量限制 (sync 的单个 Key 最大 8KB，整个 100KB；local 10MB+)
+    let result = await chrome.storage.local.get({ openaiCompatibleInstances: null });
+    if (result.openaiCompatibleInstances && Array.isArray(result.openaiCompatibleInstances)) {
+      return result.openaiCompatibleInstances;
+    }
+    
+    // 备用：从 sync 迁移老数据
+    const syncResult = await chrome.storage.sync.get({ openaiCompatibleInstances: [] });
+    const instances = (syncResult.openaiCompatibleInstances || []) as OpenAICompatibleInstance[];
+    if (instances.length > 0) {
+      await chrome.storage.local.set({ openaiCompatibleInstances: instances });
+      // 迁移完后从 sync 移除，防止 sync 爆容量
+      await chrome.storage.sync.remove('openaiCompatibleInstances');
+    }
+    return instances;
   }
 
   async migrateOpenAICompatibleData(): Promise<void> {
@@ -98,14 +111,13 @@ export class ConfigManager {
       ollamaModelId: '',
       ollamaBaseUrl: '',
       thinkingBudgetTokens: 0,
-      openaiCompatibleInstances: [] as OpenAICompatibleInstance[],
     });
     
     const provider = result.provider as string;
 
     if (provider.startsWith('openai-compatible:')) {
       const instanceId = provider.substring('openai-compatible:'.length);
-      const instances = (result.openaiCompatibleInstances || []) as OpenAICompatibleInstance[];
+      const instances = await this.getOpenAICompatibleInstances();
       const instance = instances.find((inst: OpenAICompatibleInstance) => inst.id === instanceId);
       if (instance) {
         return {
@@ -179,7 +191,6 @@ export class ConfigManager {
       openaiApiKey: '',
       geminiApiKey: '',
       ollamaApiKey: '',
-      openaiCompatibleInstances: [] as OpenAICompatibleInstance[],
     });
     
     const providers: string[] = [];
@@ -193,7 +204,7 @@ export class ConfigManager {
       providers.push('ollama');
     }
     
-    const instances = (result.openaiCompatibleInstances || []) as OpenAICompatibleInstance[];
+    const instances = await this.getOpenAICompatibleInstances();
     for (const instance of instances) {
       if (instance.apiKey && instance.models && instance.models.length > 0) {
         providers.push(`openai-compatible:${instance.id}`);
@@ -247,7 +258,7 @@ export class ConfigManager {
       const updatedInstances = instances.map((inst: OpenAICompatibleInstance) =>
         inst.id === instanceId ? { ...inst, modelId } : inst
       );
-      await chrome.storage.sync.set({ openaiCompatibleInstances: updatedInstances });
+      await chrome.storage.local.set({ openaiCompatibleInstances: updatedInstances });
       return;
     }
 

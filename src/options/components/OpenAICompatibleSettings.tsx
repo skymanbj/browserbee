@@ -107,9 +107,25 @@ export function OpenAICompatibleSettings({
         setModels(merged);
         setStatus(t('Models pulled successfully!') + ` (${fetched.length} models, +${addedCount} new)`);
         
+        const activeModelId = modelId || (fetched.length > 0 ? fetched[0].id : '');
         if (!modelId && fetched.length > 0) {
           setModelId(fetched[0].id);
         }
+
+        // 立即自动写盘，防容量溢出且无需多点保存
+        (async () => {
+          try {
+            const localResult = await chrome.storage.local.get({ openaiCompatibleInstances: [] });
+            const currentInsts = localResult.openaiCompatibleInstances || [];
+            const updatedInsts = currentInsts.map((inst: any) => 
+              inst.id === instanceId ? { ...inst, models: merged, modelId: activeModelId } : inst
+            );
+            await chrome.storage.local.set({ openaiCompatibleInstances: updatedInsts });
+            chrome.runtime.sendMessage({ action: 'providerConfigChanged' });
+          } catch (storageErr) {
+            console.error('Auto saving models failed:', storageErr);
+          }
+        })();
       } else {
         throw new Error('Could not find data array in response');
       }
