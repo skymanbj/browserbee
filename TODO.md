@@ -16,4 +16,4 @@
 
 ### Step 4
 
-- [ ] Run `npm test` and `npm run lint` (if available) to verify.
+- [x] Run `npm test` and `npm run lint` (if available) to verify.
