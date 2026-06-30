@@ -285,11 +285,24 @@ html[data-theme="light"] .label-text-alt {
 }
 
 html[data-theme="light"] .placeholder\:text-base-content\/30 ::-moz-placeholder {
-  color: rgba(107, 114, 128, 0.3) !important;
+  color: rgba(107, 114, 128, 0.6) !important;
 }
 
 html[data-theme="light"] .placeholder\:text-base-content\/30::placeholder {
-  color: rgba(107, 114, 128, 0.3) !important;
+  color: rgba(107, 114, 128, 0.6) !important;
+}
+
+/* Ensure input/textarea placeholder text is visible in light mode */
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+html[data-theme="light"] .input input::placeholder,
+html[data-theme="light"] .input textarea::placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
 }
 
 /* ── Utility Animations ──────────────────────────────── */
