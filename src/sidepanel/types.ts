@@ -1,4 +1,5 @@
-// Define message types
+import { FileAttachment } from '../background/types';
+
 export type MessageType = 'system' | 'llm' | 'screenshot';
 
 export interface Message {
@@ -9,6 +10,7 @@ export interface Message {
   isStreaming?: boolean;
   imageData?: string;
   mediaType?: string;
+  attachments?: FileAttachment[];
 }
 
 // Chrome message types
@@ -36,4 +38,26 @@ export interface ChromeMessage {
   // Tab replacement properties
   oldTabId?: number;
   newTabId?: number;
+}
+
+// History conversation types
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  preview: string;
+  messageCount: number;
+  createdAt: number;
+  updatedAt: number;
+  provider: string;
+  model: string;
+}
+
+export interface SavedConversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: number;
+  updatedAt: number;
+  provider: string;
+  model: string;
 }

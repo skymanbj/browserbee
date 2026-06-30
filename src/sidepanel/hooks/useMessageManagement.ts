@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { SessionManager } from '../../background/sessionManager';
 import { ChatSession } from '../../types/session';
 import { Message } from '../types';
+import { FileAttachment } from '../../background/types';
 
 export const useMessageManagement = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -163,8 +164,8 @@ export const useMessageManagement = () => {
     setMessages(prev => [...prev, { ...message, isComplete: true }]);
   };
 
-  const addSystemMessage = (content: string) => {
-    addMessage({ type: 'system', content });
+  const addSystemMessage = (content: string, attachments?: FileAttachment[]) => {
+    addMessage({ type: 'system', content, attachments });
   };
 
   const updateStreamingChunk = (content: string) => {

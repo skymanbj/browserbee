@@ -157,41 +157,94 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
   };
 
   return (
-    <div className="flex items-center justify-between mb-2 px-0">
-      <div className="flex items-center">
-        <button 
-          className="btn btn-ghost btn-xs p-1" 
-          onClick={openOptionsPage}
-          title="Open Settings"
-          disabled={isProcessing}
-        >
-          <FontAwesomeIcon icon={faCog} className="text-gray-500 hover:text-gray-700" />
-        </button>
-        <select 
-          className="select select-ghost select-xs select-bordered w-auto focus:outline-none focus:ring-0 pl-0"
-          value={`${currentProvider}|${currentModel}`}
-          onChange={handleChange}
-          disabled={isProcessing}
-        >
-          {options.map(option => (
-            option.models.map(model => (
-              <option 
-                key={`${option.provider}|${model.id}`} 
-                value={`${option.provider}|${model.id}`}
-              >
-                {option.displayName} - {model.name}
-              </option>
-            ))
-          ))}
-        </select>
-      </div>
-      <button 
-        className="btn btn-ghost btn-xs p-1" 
-        onClick={openHelpPage}
-        title="Open Help"
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      marginTop: '6px',
+      padding: '7px 10px',
+      borderRadius: '10px',
+      background: 'rgba(255,255,255,0.8)',
+      border: '1px solid rgba(0,0,0,0.08)',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+    }}>
+      {/* 设置按钮 */}
+      <button
+        onClick={openOptionsPage}
         disabled={isProcessing}
+        title="打开设置"
+        style={{
+          width: '28px', height: '28px',
+          borderRadius: '8px',
+          background: 'rgba(0,0,0,0.05)',
+          border: '1px solid rgba(0,0,0,0.1)',
+          color: '#64748b',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'all 0.2s',
+          opacity: isProcessing ? 0.4 : 1,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#f5a623'; e.currentTarget.style.borderColor = 'rgba(245,166,35,0.35)'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; }}
       >
-        <FontAwesomeIcon icon={faCircleInfo} className="text-gray-500 hover:text-gray-700" />
+        <FontAwesomeIcon icon={faCog} style={{ fontSize: '12px' }} />
+      </button>
+
+      {/* 模型选择 */}
+      <select
+        value={`${currentProvider}|${currentModel}`}
+        onChange={handleChange}
+        disabled={isProcessing}
+        style={{
+          flex: 1,
+          background: '#ffffff',
+          border: '1px solid rgba(0,0,0,0.1)',
+          borderRadius: '8px',
+          color: '#374151',
+          fontSize: '12px',
+          padding: '4px 8px',
+          cursor: 'pointer',
+          outline: 'none',
+          transition: 'border-color 0.2s',
+        }}
+        onFocus={e => { e.currentTarget.style.borderColor = 'rgba(245,166,35,0.4)'; }}
+        onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; }}
+      >
+        {options.map(option => (
+          option.models.map(model => (
+            <option
+              key={`${option.provider}|${model.id}`}
+              value={`${option.provider}|${model.id}`}
+          style={{ background: '#ffffff', color: '#374151' }}
+            >
+              {option.displayName} - {model.name}
+            </option>
+          ))
+        ))}
+      </select>
+
+      {/* 帮助按钮 */}
+      <button
+        onClick={openHelpPage}
+        disabled={isProcessing}
+        title="查看帮助文档"
+        style={{
+          width: '28px', height: '28px',
+          borderRadius: '8px',
+          background: 'rgba(0,0,0,0.05)',
+          border: '1px solid rgba(0,0,0,0.1)',
+          color: '#64748b',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'all 0.2s',
+          opacity: isProcessing ? 0.4 : 1,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.35)'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; }}
+      >
+        <FontAwesomeIcon icon={faCircleInfo} style={{ fontSize: '12px' }} />
       </button>
     </div>
   );
