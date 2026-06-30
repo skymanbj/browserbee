@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ModelList, Model } from './ModelList';
-import { useLanguage } from '../LanguageContext';
+import { useAppSelector } from '../../store/hooks';
+import { Model } from './ModelList';
 
 interface OpenAICompatibleSettingsProps {
   instanceId: string;
@@ -45,20 +45,29 @@ export function OpenAICompatibleSettings({
   enabledModelIds = [],
   setEnabledModelIds
 }: OpenAICompatibleSettingsProps) {
-  const { t } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'OpenAI Compatible Instances': { zh: 'OpenAI 兼容实例', en: 'OpenAI Compatible Instances' }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
   const [pulling, setPulling] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [modelSearch, setModelSearch] = useState('');
   const [showModelPool, setShowModelPool] = useState(false);
   const [poolSearch, setPoolSearch] = useState('');
 
-  const filteredModels = models.filter(m => 
-    m.id.toLowerCase().includes(modelSearch.toLowerCase()) || 
+  const filteredModels = models.filter(m =>
+    m.id.toLowerCase().includes(modelSearch.toLowerCase()) ||
     m.name.toLowerCase().includes(modelSearch.toLowerCase())
   );
 
-  const filteredPoolModels = models.filter(m => 
-    m.id.toLowerCase().includes(poolSearch.toLowerCase()) || 
+  const filteredPoolModels = models.filter(m =>
+    m.id.toLowerCase().includes(poolSearch.toLowerCase()) ||
     m.name.toLowerCase().includes(poolSearch.toLowerCase())
   );
 
@@ -66,12 +75,12 @@ export function OpenAICompatibleSettings({
     if (setEnabledModelIds) {
       setEnabledModelIds(updatedIds);
     }
-    
+
     // 立即自动写盘并通知后台刷新配置，达到秒级同步
     try {
       const localResult = await chrome.storage.local.get({ openaiCompatibleInstances: [] });
       const currentInsts = localResult.openaiCompatibleInstances || [];
-      const updatedInsts = currentInsts.map((inst: any) => 
+      const updatedInsts = currentInsts.map((inst: any) =>
         inst.id === instanceId ? { ...inst, enabledModelIds: updatedIds } : inst
       );
       await chrome.storage.local.set({ openaiCompatibleInstances: updatedInsts });
@@ -91,14 +100,14 @@ export function OpenAICompatibleSettings({
     try {
       const url = baseUrl.trim();
       const formattedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
-      
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       };
       if (apiKey) {
         headers['Authorization'] = `Bearer ${apiKey.trim()}`;
       }
-      
+
       const response = await fetch(`${formattedUrl}/models`, {
         headers
       });
@@ -107,7 +116,7 @@ export function OpenAICompatibleSettings({
       }
       const data = await response.json();
       const modelList = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : null);
-      
+
       if (modelList) {
         const fetched: Model[] = modelList.map((m: any) => {
           const id = m.id || m.name || '';
@@ -133,10 +142,10 @@ export function OpenAICompatibleSettings({
             addedCount++;
           }
         }
-        
+
         setModels(merged);
         setStatus(t('Models pulled successfully!') + ` (${fetched.length} models, +${addedCount} new)`);
-        
+
         const activeModelId = modelId || (fetched.length > 0 ? fetched[0].id : '');
         if (!modelId && fetched.length > 0) {
           setModelId(fetched[0].id);
@@ -147,7 +156,7 @@ export function OpenAICompatibleSettings({
           try {
             const localResult = await chrome.storage.local.get({ openaiCompatibleInstances: [] });
             const currentInsts = localResult.openaiCompatibleInstances || [];
-            const updatedInsts = currentInsts.map((inst: any) => 
+            const updatedInsts = currentInsts.map((inst: any) =>
               inst.id === instanceId ? { ...inst, models: merged, modelId: activeModelId } : inst
             );
             await chrome.storage.local.set({ openaiCompatibleInstances: updatedInsts });
@@ -241,7 +250,7 @@ export function OpenAICompatibleSettings({
                 onChange={e => setModelSearch(e.target.value)}
               />
             </div>
-            
+
             <select
               className="select select-bordered w-full"
               value={modelId}
@@ -278,7 +287,7 @@ export function OpenAICompatibleSettings({
             <p className="text-[11px] text-base-content/60 mb-2 leading-relaxed">
               {t('在下方勾选您想要在侧边栏对话框里显示的模型。未勾选的模型将被隐藏，以保持侧边栏清爽。')}
             </p>
-            
+
             <div className="flex gap-1.5 mb-2">
               <input
                 type="text"
@@ -308,7 +317,7 @@ export function OpenAICompatibleSettings({
                 {t('清空')}
               </button>
             </div>
-            
+
             <div className="border border-base-content/10 rounded-lg max-h-48 overflow-y-auto bg-base-100 p-2 space-y-1">
               {filteredPoolModels.length === 0 ? (
                 <div className="text-[11px] text-center text-base-content/40 py-4">{t('未找到匹配的模型')}</div>
@@ -343,7 +352,7 @@ export function OpenAICompatibleSettings({
           </div>
         </div>
       )}
-      
+
       {handleRemoveInstance && (
         <div className="mt-6 pt-4 border-t border-base-content/10 flex justify-end">
           <button

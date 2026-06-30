@@ -1,31 +1,46 @@
-import { useState, useEffect } from 'react';
-import { 
-  anthropicModels, 
-  openaiModels, 
-  geminiModels, 
-  ollamaModels,
-  anthropicDefaultModelId,
-  openaiDefaultModelId,
-  geminiDefaultModelId,
-  ollamaDefaultModelId
+import { useEffect } from 'react';
+import {
+  anthropicModels,
+  geminiModels,
+  openaiModels
 } from '../models/models';
 import { OpenAICompatibleInstance } from '../models/providers/openai-compatible';
 
+import { useAppDispatch, useAppSelector, type RootState } from '../store/hooks';
+import {
+  fetchConfig,
+  setIsSaving,
+  setNewInstance,
+  setNewModel,
+  setNewOllamaModel,
+  setOllamaCustomModels,
+  setOllamaModelId,
+  setOpenaiCompatibleInstances,
+  setProvider,
+  setSaveStatus,
+  setSelectedInstanceId
+} from '../store/slices/configSlice';
 import { VerticalTabs } from './components/VerticalTabs';
-import { Model } from './components/ModelList';
-import { OllamaModel } from './components/OllamaModelList';
 
 export function Options() {
+  const dispatch = useAppDispatch();
+
   const getModelPricingData = () => {
     const allModels = [
-      ...Object.entries(anthropicModels).map(([id, model]) => ({ 
-        id, provider: 'Anthropic', ...model 
+      ...Object.entries(anthropicModels).map(([id, model]) => ({
+        id,
+        provider: 'Anthropic',
+        ...model,
       })),
-      ...Object.entries(openaiModels).map(([id, model]) => ({ 
-        id, provider: 'OpenAI', ...model 
+      ...Object.entries(openaiModels).map(([id, model]) => ({
+        id,
+        provider: 'OpenAI',
+        ...model,
       })),
-      ...Object.entries(geminiModels).map(([id, model]) => ({ 
-        id, provider: 'Google', ...model 
+      ...Object.entries(geminiModels).map(([id, model]) => ({
+        id,
+        provider: 'Google',
+        ...model,
       })),
       {
         id: 'ollama',
@@ -37,52 +52,35 @@ export function Options() {
         contextWindow: 32768,
         supportsImages: false,
         supportsPromptCache: false,
-      }
+      },
     ];
-    
+
     return allModels.sort((a, b) => a.outputPrice - b.outputPrice);
   };
-  
-  const [provider, setProvider] = useState('anthropic');
-  
-  // Anthropic settings
-  const [anthropicApiKey, setAnthropicApiKey] = useState('');
-  const [anthropicBaseUrl, setAnthropicBaseUrl] = useState('');
-  
-  // OpenAI settings
-  const [openaiApiKey, setOpenaiApiKey] = useState('');
-  const [openaiBaseUrl, setOpenaiBaseUrl] = useState('');
-  
-  // Gemini settings
-  const [geminiApiKey, setGeminiApiKey] = useState('');
-  const [geminiBaseUrl, setGeminiBaseUrl] = useState('');
-  
-  // Ollama settings
-  const [ollamaApiKey, setOllamaApiKey] = useState('');
-  const [ollamaBaseUrl, setOllamaBaseUrl] = useState('');
-  const [ollamaCustomModels, setOllamaCustomModels] = useState<OllamaModel[]>([]);
-  const [newOllamaModel, setNewOllamaModel] = useState({ id: '', name: '', contextWindow: 32768 });
-  
-  // Model IDs - using defaults from models.ts
-  const [anthropicModelId, setAnthropicModelId] = useState(anthropicDefaultModelId);
-  const [openaiModelId, setOpenaiModelId] = useState(openaiDefaultModelId);
-  const [geminiModelId, setGeminiModelId] = useState(geminiDefaultModelId);
-  const [ollamaModelId, setOllamaModelId] = useState(ollamaDefaultModelId);
-  
-  // Common settings
-  const [thinkingBudgetTokens, setThinkingBudgetTokens] = useState(0);
-  
-  // UI state
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('');
-  
-  // OpenAI-compatible instance state
-  const [openaiCompatibleInstances, setOpenaiCompatibleInstances] = useState<OpenAICompatibleInstance[]>([]);
-  const [newInstance, setNewInstance] = useState({ id: '', name: '' });
-  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
-  const [newModel, setNewModel] = useState({ id: '', name: '', isReasoningModel: false, contextWindow: 0, maxTokens: 0 });
 
-  // Migration: convert old flat openai-compatible keys to instance array
+  const provider = useAppSelector((state: RootState) => state.config.provider);
+  const anthropicApiKey = useAppSelector((state: RootState) => state.config.anthropicApiKey);
+  const anthropicBaseUrl = useAppSelector((state: RootState) => state.config.anthropicBaseUrl);
+  const anthropicModelId = useAppSelector((state: RootState) => state.config.anthropicModelId);
+  const openaiApiKey = useAppSelector((state: RootState) => state.config.openaiApiKey);
+  const openaiBaseUrl = useAppSelector((state: RootState) => state.config.openaiBaseUrl);
+  const openaiModelId = useAppSelector((state: RootState) => state.config.openaiModelId);
+  const geminiApiKey = useAppSelector((state: RootState) => state.config.geminiApiKey);
+  const geminiBaseUrl = useAppSelector((state: RootState) => state.config.geminiBaseUrl);
+  const geminiModelId = useAppSelector((state: RootState) => state.config.geminiModelId);
+  const ollamaApiKey = useAppSelector((state: RootState) => state.config.ollamaApiKey);
+  const ollamaBaseUrl = useAppSelector((state: RootState) => state.config.ollamaBaseUrl);
+  const ollamaModelId = useAppSelector((state: RootState) => state.config.ollamaModelId);
+  const ollamaCustomModels = useAppSelector((state: RootState) => state.config.ollamaCustomModels);
+  const thinkingBudgetTokens = useAppSelector((state: RootState) => state.config.thinkingBudgetTokens);
+  const openaiCompatibleInstances = useAppSelector((state: RootState) => state.config.openaiCompatibleInstances);
+  const selectedInstanceId = useAppSelector((state: RootState) => state.config.selectedInstanceId);
+  const newInstance = useAppSelector((state: RootState) => state.config.newInstance);
+  const newModel = useAppSelector((state: RootState) => state.config.newModel);
+  const newOllamaModel = useAppSelector((state: RootState) => state.config.newOllamaModel);
+  const isSaving = useAppSelector((state: RootState) => state.config.isSaving);
+  const saveStatus = useAppSelector((state: RootState) => state.config.saveStatus);
+
   const migrateOldOpenAICompatibleData = async (): Promise<{ instances: OpenAICompatibleInstance[]; provider: string }> => {
     const result = await chrome.storage.sync.get({
       openaiCompatibleInstances: null as OpenAICompatibleInstance[] | null,
@@ -97,25 +95,30 @@ export function Options() {
       return { instances: result.openaiCompatibleInstances, provider: result.provider };
     }
 
-    const hasOldData = result.openaiCompatibleApiKey || result.openaiCompatibleBaseUrl || (result.openaiCompatibleModels && result.openaiCompatibleModels.length > 0);
+    const hasOldData =
+      result.openaiCompatibleApiKey ||
+      result.openaiCompatibleBaseUrl ||
+      (result.openaiCompatibleModels && result.openaiCompatibleModels.length > 0);
     let instances: OpenAICompatibleInstance[] = [];
     let currentProvider = result.provider;
 
     if (hasOldData) {
-      instances = [{
-        id: 'default',
-        name: 'OpenAI Compatible',
-        apiKey: result.openaiCompatibleApiKey || '',
-        baseUrl: result.openaiCompatibleBaseUrl || '',
-        modelId: result.openaiCompatibleModelId || '',
-        models: (result.openaiCompatibleModels || []).map((m: any) => ({
-          id: m.id,
-          name: m.name,
-          isReasoningModel: m.isReasoningModel || false,
-          contextWindow: m.contextWindow || 0,
-          maxTokens: m.maxTokens || 0,
-        })),
-      }];
+      instances = [
+        {
+          id: 'default',
+          name: 'OpenAI Compatible',
+          apiKey: result.openaiCompatibleApiKey || '',
+          baseUrl: result.openaiCompatibleBaseUrl || '',
+          modelId: result.openaiCompatibleModelId || '',
+          models: (result.openaiCompatibleModels || []).map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            isReasoningModel: m.isReasoningModel || false,
+            contextWindow: m.contextWindow || 0,
+            maxTokens: m.maxTokens || 0,
+          })),
+        },
+      ];
 
       await chrome.storage.sync.set({ openaiCompatibleInstances: instances });
 
@@ -137,139 +140,90 @@ export function Options() {
     return { instances, provider: currentProvider };
   };
 
-  // Load saved settings when component mounts
   useEffect(() => {
     (async () => {
-      const { instances: oldInstances, provider: migratedProvider } = await migrateOldOpenAICompatibleData();
-      
-      const result = await chrome.storage.sync.get({
-        provider: 'anthropic',
-        anthropicApiKey: '',
-        anthropicModelId: anthropicDefaultModelId,
-        anthropicBaseUrl: '',
-        openaiApiKey: '',
-        openaiModelId: openaiDefaultModelId,
-        openaiBaseUrl: '',
-        geminiApiKey: '',
-        geminiModelId: geminiDefaultModelId,
-        geminiBaseUrl: '',
-        ollamaApiKey: '',
-        ollamaModelId: ollamaDefaultModelId,
-        ollamaBaseUrl: '',
-        ollamaCustomModels: [],
-        thinkingBudgetTokens: 0,
-      });
-      
-      // 优先从 local 读取自定义兼容提供商实例数据以防超限
-      const localResult = await chrome.storage.local.get({ openaiCompatibleInstances: null });
-      let currentInstances = localResult.openaiCompatibleInstances;
-      if (!currentInstances || !Array.isArray(currentInstances)) {
-        // 备用：从 sync 迁移
-        const syncResult = await chrome.storage.sync.get({ openaiCompatibleInstances: [] });
-        currentInstances = syncResult.openaiCompatibleInstances || oldInstances;
-        if (currentInstances && currentInstances.length > 0) {
-          await chrome.storage.local.set({ openaiCompatibleInstances: currentInstances });
-          await chrome.storage.sync.remove('openaiCompatibleInstances');
-        }
-      }
-      
-      setProvider(result.provider);
-      setAnthropicApiKey(result.anthropicApiKey);
-      setAnthropicModelId(result.anthropicModelId);
-      setAnthropicBaseUrl(result.anthropicBaseUrl);
-      setOpenaiApiKey(result.openaiApiKey);
-      setOpenaiModelId(result.openaiModelId);
-      setOpenaiBaseUrl(result.openaiBaseUrl);
-      setGeminiApiKey(result.geminiApiKey);
-      setGeminiModelId(result.geminiModelId);
-      setGeminiBaseUrl(result.geminiBaseUrl);
-      setOllamaApiKey(result.ollamaApiKey);
-      setOllamaModelId(result.ollamaModelId);
-      setOllamaBaseUrl(result.ollamaBaseUrl || '');
-      setOllamaCustomModels(result.ollamaCustomModels || []);
-      setThinkingBudgetTokens(result.thinkingBudgetTokens);
-      setOpenaiCompatibleInstances(currentInstances || []);
+      await migrateOldOpenAICompatibleData();
+      await dispatch(fetchConfig());
     })();
-  }, []);
+  }, [dispatch]);
 
   const handleSave = () => {
-    setIsSaving(true);
-    setSaveStatus('');
+    dispatch(setIsSaving(true));
+    dispatch(setSaveStatus(''));
 
-    // 将自定义大模型实例保存到 local 中，防容量溢出
     chrome.storage.local.set({ openaiCompatibleInstances });
 
-    chrome.storage.sync.set({
-      provider,
-      anthropicApiKey,
-      anthropicModelId,
-      anthropicBaseUrl,
-      openaiApiKey,
-      openaiModelId,
-      openaiBaseUrl,
-      geminiApiKey,
-      geminiModelId,
-      geminiBaseUrl,
-      ollamaApiKey,
-      ollamaModelId,
-      ollamaBaseUrl,
-      ollamaCustomModels,
-      thinkingBudgetTokens,
-    }, () => {
-      
-      setIsSaving(false);
-      setSaveStatus('Settings saved successfully!');
-      
-      chrome.runtime.sendMessage({
-        action: 'providerConfigChanged'
-      }, () => {
-        const err = chrome.runtime.lastError;
-        if (err) {
-          console.error('Error sending message:', err.message);
-        }
-      });
-      
-      setTimeout(() => {
-        setSaveStatus('');
-      }, 3000);
-    });
+    chrome.storage.sync.set(
+      {
+        provider,
+        anthropicApiKey,
+        anthropicModelId,
+        anthropicBaseUrl,
+        openaiApiKey,
+        openaiModelId,
+        openaiBaseUrl,
+        geminiApiKey,
+        geminiModelId,
+        geminiBaseUrl,
+        ollamaApiKey,
+        ollamaModelId,
+        ollamaBaseUrl,
+        ollamaCustomModels,
+        thinkingBudgetTokens,
+      },
+      () => {
+        dispatch(setIsSaving(false));
+        dispatch(setSaveStatus('Settings saved successfully!'));
+
+        chrome.runtime.sendMessage(
+          {
+            action: 'providerConfigChanged',
+          },
+          () => {
+            const err = chrome.runtime.lastError;
+            if (err) {
+              console.error('Error sending message:', err.message);
+            }
+          },
+        );
+
+        setTimeout(() => {
+          dispatch(setSaveStatus(''));
+        }, 3000);
+      },
+    );
   };
 
-  // Ollama model list operations
   const handleAddOllamaModel = () => {
     if (!newOllamaModel.id.trim() || !newOllamaModel.name.trim()) return;
-    
+
     const updatedModels = [...ollamaCustomModels, { ...newOllamaModel }];
-    setOllamaCustomModels(updatedModels);
-    setNewOllamaModel({ id: '', name: '', contextWindow: 32768 });
-    
+    dispatch(setOllamaCustomModels(updatedModels));
+    dispatch(setNewOllamaModel({ id: '', name: '', contextWindow: 32768 }));
+
     chrome.storage.sync.set({ ollamaCustomModels: updatedModels });
   };
-  
+
   const handleRemoveOllamaModel = (id: string) => {
-    const updatedModels = ollamaCustomModels.filter(m => m.id !== id);
-    setOllamaCustomModels(updatedModels);
-    if (ollamaModelId === id) setOllamaModelId('');
-    
+    const updatedModels = ollamaCustomModels.filter((m: any) => m.id !== id);
+    dispatch(setOllamaCustomModels(updatedModels));
+    if (ollamaModelId === id) dispatch(setOllamaModelId(''));
+
     chrome.storage.sync.set({ ollamaCustomModels: updatedModels });
   };
-  
+
   const handleEditOllamaModel = (idx: number, field: string, value: any) => {
-    let updatedModels: OllamaModel[] = [];
-    setOllamaCustomModels(models => {
-      updatedModels = models.map((m, i) => i === idx ? { ...m, [field]: value } : m);
-      return updatedModels;
-    });
-    
+    const updatedModels = ollamaCustomModels.map((m: any, i: number) => (i === idx ? { ...m, [field]: value } : m));
+    dispatch(setOllamaCustomModels(updatedModels));
+
     setTimeout(() => {
       chrome.storage.sync.set({ ollamaCustomModels: updatedModels });
     }, 0);
   };
 
-  // OpenAI-compatible instance operations
   const handleAddInstance = () => {
     if (!newInstance.id.trim() || !newInstance.name.trim()) return;
-    if (openaiCompatibleInstances.some(inst => inst.id === newInstance.id)) return;
+    if (openaiCompatibleInstances.some((inst: any) => inst.id === newInstance.id)) return;
 
     const newInst: OpenAICompatibleInstance = {
       id: newInstance.id,
@@ -281,120 +235,81 @@ export function Options() {
     };
 
     const updated = [...openaiCompatibleInstances, newInst];
-    setOpenaiCompatibleInstances(updated);
-    setNewInstance({ id: '', name: '' });
-    setSelectedInstanceId(newInst.id);
-    setProvider(`openai-compatible:${newInst.id}`);
+    dispatch(setOpenaiCompatibleInstances(updated));
+    dispatch(setNewInstance({ id: '', name: '' }));
+    dispatch(setSelectedInstanceId(newInst.id));
+    dispatch(setProvider(`openai-compatible:${newInst.id}`));
   };
 
   const handleRemoveInstance = (id: string) => {
-    const updated = openaiCompatibleInstances.filter(inst => inst.id !== id);
-    setOpenaiCompatibleInstances(updated);
+    const updated = openaiCompatibleInstances.filter((inst: any) => inst.id !== id);
+    dispatch(setOpenaiCompatibleInstances(updated));
     if (provider === `openai-compatible:${id}`) {
-      setProvider('anthropic');
+      dispatch(setProvider('anthropic'));
     }
     if (selectedInstanceId === id) {
-      setSelectedInstanceId(null);
+      dispatch(setSelectedInstanceId(null));
     }
   };
 
   const handleUpdateInstance = (id: string, field: string, value: any) => {
-    setOpenaiCompatibleInstances(prev =>
-      prev.map(inst => inst.id === id ? { ...inst, [field]: value } : inst)
+    dispatch(
+      setOpenaiCompatibleInstances(
+        openaiCompatibleInstances.map((inst: any) => (inst.id === id ? { ...inst, [field]: value } : inst)),
+      ),
     );
   };
 
   const handleUpdateInstanceModel = (instanceId: string, idx: number, field: string, value: any) => {
-    setOpenaiCompatibleInstances(prev =>
-      prev.map(inst => {
-        if (inst.id !== instanceId) return inst;
-        const models = inst.models.map((m, i) => i === idx ? { ...m, [field]: value } : m);
-        return { ...inst, models };
-      })
+    dispatch(
+      setOpenaiCompatibleInstances(
+        openaiCompatibleInstances.map((inst: any) => {
+          if (inst.id !== instanceId) return inst;
+          const models = inst.models.map((m: any, i: number) => (i === idx ? { ...m, [field]: value } : m));
+          return { ...inst, models };
+        }),
+      ),
     );
   };
 
   const handleAddInstanceModel = (instanceId: string) => {
     if (!newModel.id.trim() || !newModel.name.trim()) return;
 
-    setOpenaiCompatibleInstances(prev =>
-      prev.map(inst => {
-        if (inst.id !== instanceId) return inst;
-        return {
-          ...inst,
-          models: [...inst.models, {
-            id: newModel.id,
-            name: newModel.name,
-            isReasoningModel: newModel.isReasoningModel,
-            contextWindow: newModel.contextWindow || 0,
-            maxTokens: newModel.maxTokens || 0,
-          }],
-        };
-      })
+    dispatch(
+      setOpenaiCompatibleInstances(
+        openaiCompatibleInstances.map((inst: any) => {
+          if (inst.id !== instanceId) return inst;
+          return {
+            ...inst,
+            models: [
+              ...inst.models,
+              {
+                id: newModel.id,
+                name: newModel.name,
+                isReasoningModel: newModel.isReasoningModel,
+                contextWindow: newModel.contextWindow || 0,
+                maxTokens: newModel.maxTokens || 0,
+              },
+            ],
+          };
+        }),
+      ),
     );
-    setNewModel({ id: '', name: '', isReasoningModel: false, contextWindow: 0, maxTokens: 0 });
+    dispatch(setNewModel({ id: '', name: '', isReasoningModel: false, contextWindow: 0, maxTokens: 0 }));
   };
 
   const handleRemoveInstanceModel = (instanceId: string, modelId: string) => {
-    setOpenaiCompatibleInstances(prev =>
-      prev.map(inst => {
-        if (inst.id !== instanceId) return inst;
-        const models = inst.models.filter(m => m.id !== modelId);
-        const modelIdUpdate = inst.modelId === modelId ? '' : inst.modelId;
-        return { ...inst, models, modelId: modelIdUpdate };
-      })
+    dispatch(
+      setOpenaiCompatibleInstances(
+        openaiCompatibleInstances.map((inst: any) => {
+          if (inst.id !== instanceId) return inst;
+          const models = inst.models.filter((m: any) => m.id !== modelId);
+          const modelIdUpdate = inst.modelId === modelId ? '' : inst.modelId;
+          return { ...inst, models, modelId: modelIdUpdate };
+        }),
+      ),
     );
   };
 
-  return (
-    <VerticalTabs
-      provider={provider}
-      setProvider={setProvider}
-      anthropicApiKey={anthropicApiKey}
-      setAnthropicApiKey={setAnthropicApiKey}
-      anthropicBaseUrl={anthropicBaseUrl}
-      setAnthropicBaseUrl={setAnthropicBaseUrl}
-      thinkingBudgetTokens={thinkingBudgetTokens}
-      setThinkingBudgetTokens={setThinkingBudgetTokens}
-      openaiApiKey={openaiApiKey}
-      setOpenaiApiKey={setOpenaiApiKey}
-      openaiBaseUrl={openaiBaseUrl}
-      setOpenaiBaseUrl={setOpenaiBaseUrl}
-      geminiApiKey={geminiApiKey}
-      setGeminiApiKey={setGeminiApiKey}
-      geminiBaseUrl={geminiBaseUrl}
-      setGeminiBaseUrl={setGeminiBaseUrl}
-      ollamaApiKey={ollamaApiKey}
-      setOllamaApiKey={setOllamaApiKey}
-      ollamaBaseUrl={ollamaBaseUrl}
-      setOllamaBaseUrl={setOllamaBaseUrl}
-      ollamaModelId={ollamaModelId}
-      setOllamaModelId={setOllamaModelId}
-      ollamaCustomModels={ollamaCustomModels}
-      setOllamaCustomModels={setOllamaCustomModels}
-      newOllamaModel={newOllamaModel}
-      setNewOllamaModel={setNewOllamaModel}
-      handleAddOllamaModel={handleAddOllamaModel}
-      handleRemoveOllamaModel={handleRemoveOllamaModel}
-      handleEditOllamaModel={handleEditOllamaModel}
-      openaiCompatibleInstances={openaiCompatibleInstances}
-      setOpenaiCompatibleInstances={setOpenaiCompatibleInstances}
-      newInstance={newInstance}
-      setNewInstance={setNewInstance}
-      handleAddInstance={handleAddInstance}
-      handleRemoveInstance={handleRemoveInstance}
-      handleUpdateInstance={handleUpdateInstance}
-      handleUpdateInstanceModel={handleUpdateInstanceModel}
-      handleAddInstanceModel={handleAddInstanceModel}
-      handleRemoveInstanceModel={handleRemoveInstanceModel}
-      selectedInstanceId={selectedInstanceId}
-      setSelectedInstanceId={setSelectedInstanceId}
-      newModel={newModel}
-      setNewModel={setNewModel}
-      isSaving={isSaving}
-      saveStatus={saveStatus}
-      handleSave={handleSave}
-      getModelPricingData={getModelPricingData}
-    />
-  );
+  return <VerticalTabs />;
 }

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
-import { OpenAICompatibleSettings } from './OpenAICompatibleSettings';
+import { useAppSelector } from '../../store/hooks';
 import { Model } from './ModelList';
-import { useLanguage } from '../LanguageContext';
+import { OpenAICompatibleSettings } from './OpenAICompatibleSettings';
 
 interface OpenAICompatibleInstanceManagerProps {
   instances: OpenAICompatibleInstance[];
@@ -57,7 +57,16 @@ export function OpenAICompatibleInstanceManager({
     }
   };
 
-  const { t } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'OpenAI Compatible Instances': { zh: 'OpenAI 兼容实例', en: 'OpenAI Compatible Instances' }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
 
   return (
     <div className="border rounded-lg p-4 mb-4 bg-base-100/50">
@@ -154,7 +163,7 @@ export function OpenAICompatibleInstanceManager({
             />
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
-              {instances.length > 0 
+              {instances.length > 0
                 ? 'Select an instance to edit its settings'
                 : 'Add an instance to get started'}
             </div>

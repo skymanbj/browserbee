@@ -1,12 +1,11 @@
 import React from 'react';
+import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
 import { AnthropicSettings } from './AnthropicSettings';
 import { GeminiSettings } from './GeminiSettings';
 import { Model } from './ModelList';
 import { OllamaModel } from './OllamaModelList';
 import { OllamaSettings } from './OllamaSettings';
 import { OpenAICompatibleSettings } from './OpenAICompatibleSettings';
-import { OpenAICompatibleInstanceManager } from './OpenAICompatibleInstanceManager';
-import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
 import { OpenAISettings } from './OpenAISettings';
 
 interface ProviderSettingsProps {
@@ -16,21 +15,27 @@ interface ProviderSettingsProps {
   setAnthropicApiKey: (key: string) => void;
   anthropicBaseUrl: string;
   setAnthropicBaseUrl: (url: string) => void;
+  anthropicModelId: string;
+  setAnthropicModelId: (id: string) => void;
   thinkingBudgetTokens: number;
   setThinkingBudgetTokens: (tokens: number) => void;
-  
+
   // OpenAI settings
   openaiApiKey: string;
   setOpenaiApiKey: (key: string) => void;
   openaiBaseUrl: string;
   setOpenaiBaseUrl: (url: string) => void;
-  
+  openaiModelId: string;
+  setOpenaiModelId: (id: string) => void;
+
   // Gemini settings
   geminiApiKey: string;
   setGeminiApiKey: (key: string) => void;
   geminiBaseUrl: string;
   setGeminiBaseUrl: (url: string) => void;
-  
+  geminiModelId: string;
+  setGeminiModelId: (id: string) => void;
+
   // Ollama settings
   ollamaApiKey: string;
   setOllamaApiKey: (key: string) => void;
@@ -45,7 +50,7 @@ interface ProviderSettingsProps {
   handleAddOllamaModel: () => void;
   handleRemoveOllamaModel: (id: string) => void;
   handleEditOllamaModel: (idx: number, field: string, value: any) => void;
-  
+
   // OpenAI-compatible instance settings
   openaiCompatibleInstances: OpenAICompatibleInstance[];
   setOpenaiCompatibleInstances: (instances: OpenAICompatibleInstance[]) => void;
@@ -115,7 +120,7 @@ export function ProviderSettings({
   return (
     <>
       {provider === 'anthropic' && (
-        <AnthropicSettings 
+        <AnthropicSettings
           anthropicApiKey={anthropicApiKey}
           setAnthropicApiKey={setAnthropicApiKey}
           anthropicBaseUrl={anthropicBaseUrl}
@@ -124,27 +129,27 @@ export function ProviderSettings({
           setThinkingBudgetTokens={setThinkingBudgetTokens}
         />
       )}
-      
+
       {provider === 'openai' && (
-        <OpenAISettings 
+        <OpenAISettings
           openaiApiKey={openaiApiKey}
           setOpenaiApiKey={setOpenaiApiKey}
           openaiBaseUrl={openaiBaseUrl}
           setOpenaiBaseUrl={setOpenaiBaseUrl}
         />
       )}
-      
+
       {provider === 'gemini' && (
-        <GeminiSettings 
+        <GeminiSettings
           geminiApiKey={geminiApiKey}
           setGeminiApiKey={setGeminiApiKey}
           geminiBaseUrl={geminiBaseUrl}
           setGeminiBaseUrl={setGeminiBaseUrl}
         />
       )}
-      
+
       {provider === 'ollama' && (
-        <OllamaSettings 
+        <OllamaSettings
           ollamaApiKey={ollamaApiKey}
           setOllamaApiKey={setOllamaApiKey}
           ollamaBaseUrl={ollamaBaseUrl}
@@ -160,7 +165,7 @@ export function ProviderSettings({
           handleEditOllamaModel={handleEditOllamaModel}
         />
       )}
-      
+
       {provider.startsWith('openai-compatible:') && (() => {
         const selectedInstance = openaiCompatibleInstances.find(inst => inst.id === provider.split(':')[1]) || null;
         if (!selectedInstance) return null;

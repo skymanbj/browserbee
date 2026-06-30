@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ConfigManager } from '../background/configManager';
-import { useTheme } from '../context/ThemeContext';
-import { TokenTrackingService } from '../tracking/tokenTrackingService';
 import { FileAttachment } from '../background/types';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setTheme } from '../store/slices/settingsSlice';
+import { TokenTrackingService } from '../tracking/tokenTrackingService';
 import { ApprovalRequest } from './components/ApprovalRequest';
 import { MessageDisplay } from './components/MessageDisplay';
 import { OutputHeader } from './components/OutputHeader';
@@ -15,7 +16,12 @@ import { useMessageManagement } from './hooks/useMessageManagement';
 import { useTabManagement } from './hooks/useTabManagement';
 
 export function SidePanel() {
-  const { themeMode, toggleTheme } = useTheme();
+  const themeMode = useAppSelector((state) => state.settings.theme);
+  const dispatch = useAppDispatch();
+
+  const toggleTheme = () => {
+    dispatch(setTheme(themeMode === 'light' ? 'dark' : 'light'));
+  };
 
   // State for tab status
   const [tabStatus, setTabStatus] = useState<'attached' | 'detached' | 'unknown' | 'running' | 'idle' | 'error'>('unknown');

@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAppSelector } from '../../store/hooks';
 import { normalizeDomain } from '../../tracking/domainUtils';
 import { AgentMemory, MemoryService } from '../../tracking/memoryService';
 import { MemoryDeleteConfirm } from './MemoryDeleteConfirm';
 import { MemoryEditModal } from './MemoryEditModal';
-import { useLanguage } from '../LanguageContext';
 
 /** Possible sources for a memory badge */
 type MemorySource = 'pre-built' | 'auto-reflection' | 'user-saved';
@@ -50,7 +50,68 @@ function formatDate(timestamp: number): string {
 }
 
 export function MemoryManagement() {
-  const { t, language } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'Memory Management': { zh: '记忆管理', en: 'Memory Management' },
+      'BrowserBee stores memories of successful interactions with websites to improve future performance. View, edit, delete, or export your memories below.': {
+        zh: 'BrowserBee 存储与网站成功交互的记忆，以提高未来的任务执行效率。您可以在下方查看、编辑、删除或导出记忆。',
+        en: 'BrowserBee stores memories of successful interactions with websites to improve future performance. View, edit, delete, or export your memories below.'
+      },
+      'Total Memories': { zh: '记忆总数', en: 'Total Memories' },
+      'Domains': { zh: '关联域名', en: 'Domains' },
+      'Selected': { zh: '已选中', en: 'Selected' },
+      'Search by domain or task...': { zh: '搜索域名或任务...', en: 'Search by domain or task...' },
+      'All': { zh: '全部', en: 'All' },
+      'Pre-built': { zh: '预置记忆', en: 'Pre-built' },
+      'User': { zh: '用户自建', en: 'User' },
+      'Select all': { zh: '全选', en: 'Select all' },
+      'Delete Selected': { zh: '删除所选', en: 'Delete Selected' },
+      'Clear All': { zh: '清空全部', en: 'Clear All' },
+      'Export': { zh: '导出', en: 'Export' },
+      'Import': { zh: '导入', en: 'Import' },
+      'Refresh': { zh: '刷新', en: 'Refresh' },
+      'No memories yet': { zh: '暂无记忆数据', en: 'No memories yet' },
+      'Memories will be created automatically when BrowserBee completes tasks on websites. You can also import memories from a JSON backup.': {
+        zh: 'BrowserBee 在网站上完成任务时会自动创建记忆。您也可以从 JSON 备份中导入记忆。',
+        en: 'Memories will be created automatically when BrowserBee completes tasks on websites. You can also import memories from a JSON backup.'
+      },
+      'No matching memories': { zh: '未找到匹配的记忆数据', en: 'No matching memories' },
+      'Try a different search term or filter selection.': {
+        zh: '请尝试不同的搜索词或筛选条件。',
+        en: 'Try a different search term or filter selection.'
+      },
+      'Unknown': { zh: '未知', en: 'Unknown' },
+      'Invalid date': { zh: '无效日期', en: 'Invalid date' },
+      'Dismiss': { zh: '关闭', en: 'Dismiss' },
+      'Clear All Memories': { zh: '清空全部记忆', en: 'Clear All Memories' },
+      'This will permanently remove all stored memories.': {
+        zh: '这将永久删除所有已存储的记忆。',
+        en: 'This will permanently remove all stored memories.'
+      },
+      'Delete Memories': { zh: '删除所选记忆', en: 'Delete Memories' },
+      'Delete Memory': { zh: '删除单个记忆', en: 'Delete Memory' },
+      'This will permanently remove all stored memories across all domains.': {
+        zh: '这将永久删除所有域名下的全部记忆数据。',
+        en: 'This will permanently remove all stored memories across all domains.'
+      },
+      'Cancel': { zh: '取消', en: 'Cancel' },
+      'Save': { zh: '保存', en: 'Save' },
+      'Edit Memory': { zh: '编辑记忆', en: 'Edit Memory' },
+      'Domain': { zh: '所属域名', en: 'Domain' },
+      'Domain cannot be changed here.': {
+        zh: '此处无法修改所属域名。',
+        en: 'Domain cannot be changed here.'
+      },
+      'Task Description': { zh: '任务描述', en: 'Task Description' },
+      'Tool Sequence': { zh: '工具操作步骤序列', en: 'Tool Sequence' },
+      'One step per line': { zh: '每行一个步骤', en: 'One step per line' }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
   // ── Data state ────────────────────────────────────────────
   const [allMemories, setAllMemories] = useState<AgentMemory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -737,7 +798,7 @@ export function MemoryManagement() {
                   renderGroupSection(domain, memories)
                 )}
               </div>
-              
+
               {totalPages > 1 && (
                 <div className="flex justify-center mt-4">
                   <div className="join">

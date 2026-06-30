@@ -1,35 +1,41 @@
 import React from 'react';
+import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
 import { OllamaModel } from './OllamaModelList';
 import { ProviderSelector } from './ProviderSelector';
 import { ProviderSettings } from './ProviderSettings';
 import { SaveButton } from './SaveButton';
-import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
 
 interface LLMProviderConfigProps {
   // Provider selection
   provider: string;
   setProvider: (provider: string) => void;
-  
+
   // Anthropic settings
   anthropicApiKey: string;
   setAnthropicApiKey: (key: string) => void;
   anthropicBaseUrl: string;
   setAnthropicBaseUrl: (url: string) => void;
+  anthropicModelId: string;
+  setAnthropicModelId: (id: string) => void;
   thinkingBudgetTokens: number;
   setThinkingBudgetTokens: (tokens: number) => void;
-  
+
   // OpenAI settings
   openaiApiKey: string;
   setOpenaiApiKey: (key: string) => void;
   openaiBaseUrl: string;
   setOpenaiBaseUrl: (url: string) => void;
-  
+  openaiModelId: string;
+  setOpenaiModelId: (id: string) => void;
+
   // Gemini settings
   geminiApiKey: string;
   setGeminiApiKey: (key: string) => void;
   geminiBaseUrl: string;
   setGeminiBaseUrl: (url: string) => void;
-  
+  geminiModelId: string;
+  setGeminiModelId: (id: string) => void;
+
   // Ollama settings
   ollamaApiKey: string;
   setOllamaApiKey: (key: string) => void;
@@ -44,7 +50,7 @@ interface LLMProviderConfigProps {
   handleAddOllamaModel: () => void;
   handleRemoveOllamaModel: (id: string) => void;
   handleEditOllamaModel: (idx: number, field: string, value: any) => void;
-  
+
   // OpenAI-compatible instance settings
   openaiCompatibleInstances: OpenAICompatibleInstance[];
   setOpenaiCompatibleInstances: (instances: OpenAICompatibleInstance[]) => void;
@@ -60,7 +66,7 @@ interface LLMProviderConfigProps {
   setSelectedInstanceId: (id: string | null) => void;
   newModel: { id: string; name: string; isReasoningModel: boolean; contextWindow: number; maxTokens: number };
   setNewModel: React.Dispatch<React.SetStateAction<{ id: string; name: string; isReasoningModel: boolean; contextWindow: number; maxTokens: number }>>;
-  
+
   // Save functionality
   isSaving: boolean;
   saveStatus: string;
@@ -74,16 +80,22 @@ export function LLMProviderConfig({
   setAnthropicApiKey,
   anthropicBaseUrl,
   setAnthropicBaseUrl,
+  anthropicModelId,
+  setAnthropicModelId,
   thinkingBudgetTokens,
   setThinkingBudgetTokens,
   openaiApiKey,
   setOpenaiApiKey,
   openaiBaseUrl,
   setOpenaiBaseUrl,
+  openaiModelId,
+  setOpenaiModelId,
   geminiApiKey,
   setGeminiApiKey,
   geminiBaseUrl,
   setGeminiBaseUrl,
+  geminiModelId,
+  setGeminiModelId,
   ollamaApiKey,
   setOllamaApiKey,
   ollamaBaseUrl,
@@ -123,14 +135,14 @@ export function LLMProviderConfig({
           Configure your preferred LLM provider and API settings.
           Your API keys are stored securely in your browser's storage.
         </p>
-        
+
         {/* Provider Selector */}
         <ProviderSelector
           provider={provider}
           setProvider={setProvider}
           openaiCompatibleInstances={openaiCompatibleInstances}
         />
-        
+
         {/* Provider-specific Settings */}
         <ProviderSettings
           provider={provider}
@@ -138,16 +150,22 @@ export function LLMProviderConfig({
           setAnthropicApiKey={setAnthropicApiKey}
           anthropicBaseUrl={anthropicBaseUrl}
           setAnthropicBaseUrl={setAnthropicBaseUrl}
+          anthropicModelId={anthropicModelId}
+          setAnthropicModelId={setAnthropicModelId}
           thinkingBudgetTokens={thinkingBudgetTokens}
           setThinkingBudgetTokens={setThinkingBudgetTokens}
           openaiApiKey={openaiApiKey}
           setOpenaiApiKey={setOpenaiApiKey}
           openaiBaseUrl={openaiBaseUrl}
           setOpenaiBaseUrl={setOpenaiBaseUrl}
+          openaiModelId={openaiModelId}
+          setOpenaiModelId={setOpenaiModelId}
           geminiApiKey={geminiApiKey}
           setGeminiApiKey={setGeminiApiKey}
           geminiBaseUrl={geminiBaseUrl}
           setGeminiBaseUrl={setGeminiBaseUrl}
+          geminiModelId={geminiModelId}
+          setGeminiModelId={setGeminiModelId}
           ollamaApiKey={ollamaApiKey}
           setOllamaApiKey={setOllamaApiKey}
           ollamaBaseUrl={ollamaBaseUrl}
@@ -176,8 +194,8 @@ export function LLMProviderConfig({
           newModel={newModel}
           setNewModel={setNewModel}
         />
-        
-        <SaveButton 
+
+        <SaveButton
           isSaving={isSaving}
           saveStatus={saveStatus}
           handleSave={handleSave}

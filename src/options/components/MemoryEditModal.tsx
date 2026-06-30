@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAppSelector } from '../../store/hooks';
 import { AgentMemory } from '../../tracking/memoryService';
-import { useLanguage } from '../LanguageContext';
 
 export interface MemoryEditModalProps {
     /** Whether the modal is open */
@@ -17,7 +17,26 @@ export interface MemoryEditModalProps {
  * Modal dialog for editing memory task description and tool sequence.
  */
 export function MemoryEditModal({ open, memory, onSave, onCancel }: MemoryEditModalProps) {
-    const { t } = useLanguage();
+    const language = useAppSelector((state) => state.settings.language);
+
+    const t = (key: string): string => {
+        const cleanKey = key.trim();
+        const translationDict: Record<string, Record<string, string>> = {
+            'Edit Memory': { zh: '编辑记忆', en: 'Edit Memory' },
+            'Domain': { zh: '所属域名', en: 'Domain' },
+            'Domain cannot be changed here.': {
+                zh: '此处无法修改所属域名。',
+                en: 'Domain cannot be changed here.'
+            },
+            'Task Description': { zh: '任务描述', en: 'Task Description' },
+            'Tool Sequence': { zh: '工具操作步骤序列', en: 'Tool Sequence' },
+            'One step per line': { zh: '每行一个步骤', en: 'One step per line' },
+            'Cancel': { zh: '取消', en: 'Cancel' },
+            'Save': { zh: '保存', en: 'Save' }
+        };
+        const translated = translationDict[cleanKey]?.[language];
+        return translated ?? key;
+    };
     const [taskDescription, setTaskDescription] = useState('');
     const [toolSequenceText, setToolSequenceText] = useState('');
     const [error, setError] = useState('');
@@ -66,19 +85,19 @@ export function MemoryEditModal({ open, memory, onSave, onCancel }: MemoryEditMo
         }
 
         const steps = toolSequenceText
-             .split('\n')
-             .map(s => s.trim())
-             .filter(s => s.length > 0);
+            .split('\n')
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
 
         if (steps.length === 0) {
-             setError(t('At least one tool step is required.'));
-             return;
+            setError(t('At least one tool step is required.'));
+            return;
         }
 
         setError('');
         onSave({
-             taskDescription: taskDescription.trim(),
-             toolSequence: steps,
+            taskDescription: taskDescription.trim(),
+            toolSequence: steps,
         });
     };
 

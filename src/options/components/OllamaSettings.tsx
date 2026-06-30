@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { OllamaModelList, OllamaModel } from './OllamaModelList';
-import { useLanguage } from '../LanguageContext';
+import { useAppSelector } from '../../store/hooks';
+import { OllamaModel, OllamaModelList } from './OllamaModelList';
 
 interface OllamaSettingsProps {
   ollamaApiKey: string;
@@ -33,7 +33,19 @@ export function OllamaSettings({
   handleRemoveOllamaModel,
   handleEditOllamaModel
 }: OllamaSettingsProps) {
-  const { t } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'Ollama - Free local models': {
+        zh: 'Ollama - 免费本地模型',
+        en: 'Ollama - Free local models'
+      }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
   const [pulling, setPulling] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -43,7 +55,7 @@ export function OllamaSettings({
     try {
       const url = ollamaBaseUrl.trim() || 'http://localhost:11434';
       const formattedUrl = url.startsWith('http') ? url : `http://${url}`;
-      
+
       const response = await fetch(`${formattedUrl}/api/tags`);
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}`);
@@ -55,7 +67,7 @@ export function OllamaSettings({
           name: m.name.split(':')[0],
           contextWindow: 8192 // 默认 contextWindow 改为 8k 以支持更多上下文
         }));
-        
+
         if (fetched.length === 0) {
           setStatus(t('未找到已下载的模型，请先在本地终端运行 ollama pull <model>'));
           return;
@@ -69,7 +81,7 @@ export function OllamaSettings({
             addedCount++;
           }
         }
-        
+
         setOllamaCustomModels(merged);
         setStatus(t('Models pulled successfully!') + ` (${fetched.length} models, +${addedCount} new)`);
       } else {
@@ -86,7 +98,7 @@ export function OllamaSettings({
   return (
     <div className="border rounded-lg p-4 mb-4">
       <h3 className="font-bold mb-2">Ollama Settings</h3>
-      
+
       <div className="form-control mb-4">
         <label htmlFor="ollama-api-key" className="label">
           <span className="label-text">API Key (optional):</span>
@@ -103,7 +115,7 @@ export function OllamaSettings({
           <span className="label-text-alt">Ollama typically doesn't require an API key</span>
         </label>
       </div>
-      
+
       <div className="form-control mb-4">
         <label htmlFor="ollama-base-url" className="label">
           <span className="label-text">Base URL:</span>
@@ -137,11 +149,11 @@ export function OllamaSettings({
           </div>
         )}
         <span className="label-text-alt mt-2 block">
-          If running Ollama locally, you need to enable CORS by setting <code>OLLAMA_ORIGINS=*</code> environment variable. 
+          If running Ollama locally, you need to enable CORS by setting <code>OLLAMA_ORIGINS=*</code> environment variable.
           <a href="https://objectgraph.com/blog/ollama-cors/" target="_blank" className="link link-primary ml-1">Learn more</a>
         </span>
       </div>
-      
+
       {ollamaCustomModels.length === 0 && (
         <div className="alert alert-info mb-4">
           <div>
@@ -150,7 +162,7 @@ export function OllamaSettings({
           </div>
         </div>
       )}
-      
+
       <OllamaModelList
         models={ollamaCustomModels}
         setModels={setOllamaCustomModels}

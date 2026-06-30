@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useLanguage } from '../LanguageContext';
+import { useState } from 'react';
+import { useAppSelector } from '../../store/hooks';
 
 interface AnthropicSettingsProps {
   anthropicApiKey: string;
@@ -18,7 +18,19 @@ export function AnthropicSettings({
   thinkingBudgetTokens,
   setThinkingBudgetTokens
 }: AnthropicSettingsProps) {
-  const { t } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'Anthropic - Recommended for best performance': {
+        zh: 'Anthropic - 推荐（性能最佳）',
+        en: 'Anthropic - Recommended for best performance'
+      }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
   const [testing, setTesting] = useState(false);
   const [testStatus, setTestStatus] = useState<string | null>(null);
 
@@ -56,7 +68,7 @@ export function AnthropicSettings({
   return (
     <div className="border rounded-lg p-4 mb-4">
       <h3 className="font-bold mb-2">Anthropic Settings</h3>
-      
+
       <div className="form-control mb-4">
         <label htmlFor="anthropic-api-key" className="label">
           <span className="label-text">API Key:</span>
@@ -85,7 +97,7 @@ export function AnthropicSettings({
           </div>
         )}
       </div>
-      
+
       <div className="form-control mb-4">
         <label htmlFor="anthropic-base-url" className="label">
           <span className="label-text">Base URL (optional):</span>
@@ -99,7 +111,7 @@ export function AnthropicSettings({
           className="input input-bordered w-full"
         />
       </div>
-      
+
       <div className="form-control mb-4">
         <label htmlFor="thinking-budget" className="label">
           <span className="label-text">Thinking Budget (tokens):</span>

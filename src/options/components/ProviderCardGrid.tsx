@@ -1,6 +1,5 @@
-import React from 'react';
 import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
-import { useLanguage } from '../LanguageContext';
+import { useAppSelector } from '../../store/hooks';
 
 interface ProviderCardGridProps {
   provider: string;
@@ -13,7 +12,17 @@ export function ProviderCardGrid({
   setProvider,
   openaiCompatibleInstances,
 }: ProviderCardGridProps) {
-  const { t, language } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'No matching models': { zh: '未找到匹配的模型', en: 'No matching models' },
+      'Clear': { zh: '清空', en: 'Clear' }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
 
   const handleSelect = (value: string) => {
     setProvider(value);
@@ -56,7 +65,7 @@ export function ProviderCardGrid({
       <label className="label mb-2">
         <span className="label-text font-bold text-sm opacity-80">{t('Select Provider')}</span>
       </label>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* 内置提供商卡片 */}
         {builtInProviders.map((item) => {
@@ -65,11 +74,10 @@ export function ProviderCardGrid({
             <div
               key={item.id}
               onClick={() => handleSelect(item.id)}
-              className={`card bg-base-100 border cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 ${
-                isActive
-                  ? 'border-2 border-primary shadow-md ring-2 ring-primary/20 bg-primary/5'
-                  : 'border-base-content/10'
-              }`}
+              className={`card bg-base-100 border cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 ${isActive
+                ? 'border-2 border-primary shadow-md ring-2 ring-primary/20 bg-primary/5'
+                : 'border-base-content/10'
+                }`}
             >
               <div className="card-body p-4 relative">
                 {isActive && (
@@ -95,11 +103,10 @@ export function ProviderCardGrid({
             <div
               key={inst.id}
               onClick={() => handleSelect(instValue)}
-              className={`card bg-base-100 border cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 ${
-                isActive
-                  ? 'border-2 border-primary shadow-md ring-2 ring-primary/20 bg-primary/5'
-                  : 'border-base-content/10'
-              }`}
+              className={`card bg-base-100 border cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 ${isActive
+                ? 'border-2 border-primary shadow-md ring-2 ring-primary/20 bg-primary/5'
+                : 'border-base-content/10'
+                }`}
             >
               <div className="card-body p-4 relative">
                 {isActive && (

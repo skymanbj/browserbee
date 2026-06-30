@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useLanguage } from '../LanguageContext';
+import { useState } from 'react';
+import { useAppSelector } from '../../store/hooks';
 
 interface OpenAISettingsProps {
   openaiApiKey: string;
@@ -14,7 +14,19 @@ export function OpenAISettings({
   openaiBaseUrl,
   setOpenaiBaseUrl
 }: OpenAISettingsProps) {
-  const { t } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'OpenAI - Popular and reliable': {
+        zh: 'OpenAI - 流行且可靠',
+        en: 'OpenAI - Popular and reliable'
+      }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
   const [testing, setTesting] = useState(false);
   const [testStatus, setTestStatus] = useState<string | null>(null);
 
@@ -51,7 +63,7 @@ export function OpenAISettings({
   return (
     <div className="border rounded-lg p-4 mb-4">
       <h3 className="font-bold mb-2">OpenAI Settings</h3>
-      
+
       <div className="form-control mb-4">
         <label htmlFor="openai-api-key" className="label">
           <span className="label-text">API Key:</span>
@@ -80,7 +92,7 @@ export function OpenAISettings({
           </div>
         )}
       </div>
-      
+
       <div className="form-control mb-4">
         <label htmlFor="openai-base-url" className="label">
           <span className="label-text">Base URL (optional):</span>

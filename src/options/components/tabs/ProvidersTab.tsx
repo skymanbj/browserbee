@@ -1,45 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { OllamaModel } from '../OllamaModelList';
+import React, { useEffect, useState } from 'react';
+import { OpenAICompatibleInstance } from '../../../models/providers/openai-compatible';
+import { useAppSelector } from '../../../store/hooks';
+import { ModelPricingTable } from '../ModelPricingTable';
 import { ProviderCardGrid } from '../ProviderCardGrid';
 import { ProviderSettings } from '../ProviderSettings';
 import { SaveButton } from '../SaveButton';
-import { ModelPricingTable } from '../ModelPricingTable';
-import { OpenAICompatibleInstance } from '../../../models/providers/openai-compatible';
-import { OpenAICompatibleInstanceManager } from '../OpenAICompatibleInstanceManager';
-import { useLanguage } from '../../LanguageContext';
 
-interface ProvidersTabProps {
+export interface ProvidersTabProps {
   provider: string;
-  setProvider: (provider: string) => void;
+  setProvider: (value: string) => void;
   anthropicApiKey: string;
-  setAnthropicApiKey: (key: string) => void;
+  setAnthropicApiKey: (value: string) => void;
   anthropicBaseUrl: string;
-  setAnthropicBaseUrl: (url: string) => void;
+  setAnthropicBaseUrl: (value: string) => void;
+  anthropicModelId: string;
+  setAnthropicModelId: (value: string) => void;
   thinkingBudgetTokens: number;
-  setThinkingBudgetTokens: (tokens: number) => void;
+  setThinkingBudgetTokens: (value: number) => void;
   openaiApiKey: string;
-  setOpenaiApiKey: (key: string) => void;
+  setOpenaiApiKey: (value: string) => void;
   openaiBaseUrl: string;
-  setOpenaiBaseUrl: (url: string) => void;
+  setOpenaiBaseUrl: (value: string) => void;
+  openaiModelId: string;
+  setOpenaiModelId: (value: string) => void;
   geminiApiKey: string;
-  setGeminiApiKey: (key: string) => void;
+  setGeminiApiKey: (value: string) => void;
   geminiBaseUrl: string;
-  setGeminiBaseUrl: (url: string) => void;
+  setGeminiBaseUrl: (value: string) => void;
+  geminiModelId: string;
+  setGeminiModelId: (value: string) => void;
   ollamaApiKey: string;
-  setOllamaApiKey: (key: string) => void;
+  setOllamaApiKey: (value: string) => void;
   ollamaBaseUrl: string;
-  setOllamaBaseUrl: (url: string) => void;
+  setOllamaBaseUrl: (value: string) => void;
   ollamaModelId: string;
-  setOllamaModelId: (id: string) => void;
-  ollamaCustomModels: OllamaModel[];
-  setOllamaCustomModels: (models: OllamaModel[]) => void;
+  setOllamaModelId: (value: string) => void;
+  ollamaCustomModels: any[];
+  setOllamaCustomModels: (value: any[]) => void;
   newOllamaModel: { id: string; name: string; contextWindow: number };
   setNewOllamaModel: React.Dispatch<React.SetStateAction<{ id: string; name: string; contextWindow: number }>>;
   handleAddOllamaModel: () => void;
   handleRemoveOllamaModel: (id: string) => void;
   handleEditOllamaModel: (idx: number, field: string, value: any) => void;
-  openaiCompatibleInstances: OpenAICompatibleInstance[];
-  setOpenaiCompatibleInstances: (instances: OpenAICompatibleInstance[]) => void;
+  openaiCompatibleInstances: any[];
+  setOpenaiCompatibleInstances: (value: any[]) => void;
   newInstance: { id: string; name: string };
   setNewInstance: React.Dispatch<React.SetStateAction<{ id: string; name: string }>>;
   handleAddInstance: () => void;
@@ -65,16 +69,22 @@ export function ProvidersTab({
   setAnthropicApiKey,
   anthropicBaseUrl,
   setAnthropicBaseUrl,
+  anthropicModelId,
+  setAnthropicModelId,
   thinkingBudgetTokens,
   setThinkingBudgetTokens,
   openaiApiKey,
   setOpenaiApiKey,
   openaiBaseUrl,
   setOpenaiBaseUrl,
+  openaiModelId,
+  setOpenaiModelId,
   geminiApiKey,
   setGeminiApiKey,
   geminiBaseUrl,
   setGeminiBaseUrl,
+  geminiModelId,
+  setGeminiModelId,
   ollamaApiKey,
   setOllamaApiKey,
   ollamaBaseUrl,
@@ -107,7 +117,33 @@ export function ProvidersTab({
   handleSave,
   getModelPricingData,
 }: ProvidersTabProps) {
-  const { t } = useLanguage();
+  const language = useAppSelector((state: any) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'LLM Provider Configuration': { zh: '大语言模型提供商配置', en: 'LLM Provider Configuration' },
+      'Configure your preferred LLM provider and API settings. Your API keys are stored securely in your browser\'s storage.': {
+        zh: '配置您首选的大语言模型提供商和 API 设置。您的 API 密钥安全地存储在浏览器的本地存储中。',
+        en: 'Configure your preferred LLM provider and API settings. Your API keys are stored securely in your browser\'s storage.'
+      },
+      'Select Provider': { zh: '选择模型提供商', en: 'Select Provider' },
+      'API Key': { zh: 'API 密钥', en: 'API Key' },
+      'Base URL (Optional)': { zh: '自定义接口地址 (选填)', en: 'Base URL (Optional)' },
+      'API Model ID': { zh: 'API 模型 ID', en: 'API Model ID' },
+      'Backup & Restore': { zh: '备份与恢复', en: 'Backup & Restore' },
+      'Export Models & Config': { zh: '导出模型与配置', en: 'Export Models & Config' },
+      'Import Models & Config': { zh: '导入模型与配置', en: 'Import Models & Config' },
+      'Import from Page Assist': { zh: '从 Page Assist 导入', en: 'Import from Page Assist' },
+      'Model Price List': { zh: '模型价格列表', en: 'Model Price List' },
+      'OpenAI Compatible Instances': { zh: 'OpenAI 兼容实例', en: 'OpenAI Compatible Instances' },
+      'Close ✕': { zh: '关闭 ✕', en: 'Close ✕' },
+      'Settings saved successfully!': { zh: '设置保存成功！', en: 'Settings saved successfully!' },
+      'Saving...': { zh: '保存中...', en: 'Saving...' }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newInstName, setNewInstName] = useState('');
   const [newInstUrl, setNewInstUrl] = useState('');
@@ -161,10 +197,10 @@ export function ProvidersTab({
       const name = newInstName.trim();
       const url = newInstUrl.trim();
       const key = newInstKey.trim();
-      
+
       const safeId = name.toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'custom';
       const uniqueId = `${safeId}-${Math.random().toString(36).substring(2, 6)}`;
-      
+
       // Auto fetch models in background
       let fetchedModels: any[] = [];
       const formattedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
@@ -206,12 +242,12 @@ export function ProvidersTab({
 
       const updated = [...openaiCompatibleInstances, newInst];
       setOpenaiCompatibleInstances(updated);
-      
+
       // Save directly to storage
       await chrome.storage.sync.set({ openaiCompatibleInstances: updated });
-      
+
       setAddingStatus(t('添加并拉取模型成功！') + ` (${fetchedModels.length} models)`);
-      
+
       // Select the new provider
       setProvider(`openai-compatible:${uniqueId}`);
       setIsAddingNew(false);
@@ -273,7 +309,7 @@ export function ProvidersTab({
         try {
           const content = e.target?.result as string;
           const config = JSON.parse(content);
-          
+
           if (typeof config !== 'object' || config === null) {
             throw new Error("Invalid format: Expected a JSON object");
           }
@@ -329,7 +365,7 @@ export function ProvidersTab({
           if (!Array.isArray(list)) {
             throw new Error("Invalid Page Assist format: Expected a JSON array");
           }
-          
+
           const mapped = list
             .filter(item => item && item.baseUrl && item.apiKey && item.name)
             .map(item => ({
@@ -375,7 +411,7 @@ export function ProvidersTab({
             {t('取消')}
           </button>
         </div>
-        
+
         <div className="form-control mb-4">
           <label className="label">
             <span className="label-text font-medium">{t('提供商名称')}:</span>
@@ -442,7 +478,7 @@ export function ProvidersTab({
 
     const newInstances: OpenAICompatibleInstance[] = selected.map(p => {
       let defaultModels = [{ id: 'default', name: 'Default Model', isReasoningModel: false, contextWindow: 0, maxTokens: 0 }];
-      
+
       const url = p.baseUrl.toLowerCase();
       if (url.includes('siliconflow')) {
         defaultModels = [
@@ -492,14 +528,14 @@ export function ProvidersTab({
           <p className="mb-4 text-base-content/70 text-sm">
             {t("Configure your preferred LLM provider and API settings. Your API keys are stored securely in your browser's storage.")}
           </p>
-          
+
           {/* Provider Card Grid */}
           <ProviderCardGrid
             provider={provider}
             setProvider={setProvider}
             openaiCompatibleInstances={openaiCompatibleInstances}
           />
-          
+
           {/* Provider-specific Settings */}
           <div id="provider-settings-section">
             {isAddingNew ? (
@@ -511,16 +547,22 @@ export function ProvidersTab({
                 setAnthropicApiKey={setAnthropicApiKey}
                 anthropicBaseUrl={anthropicBaseUrl}
                 setAnthropicBaseUrl={setAnthropicBaseUrl}
+                anthropicModelId={anthropicModelId}
+                setAnthropicModelId={setAnthropicModelId}
                 thinkingBudgetTokens={thinkingBudgetTokens}
                 setThinkingBudgetTokens={setThinkingBudgetTokens}
                 openaiApiKey={openaiApiKey}
                 setOpenaiApiKey={setOpenaiApiKey}
                 openaiBaseUrl={openaiBaseUrl}
                 setOpenaiBaseUrl={setOpenaiBaseUrl}
+                openaiModelId={openaiModelId}
+                setOpenaiModelId={setOpenaiModelId}
                 geminiApiKey={geminiApiKey}
                 setGeminiApiKey={setGeminiApiKey}
                 geminiBaseUrl={geminiBaseUrl}
                 setGeminiBaseUrl={setGeminiBaseUrl}
+                geminiModelId={geminiModelId}
+                setGeminiModelId={setGeminiModelId}
                 ollamaApiKey={ollamaApiKey}
                 setOllamaApiKey={setOllamaApiKey}
                 ollamaBaseUrl={ollamaBaseUrl}
@@ -551,8 +593,8 @@ export function ProvidersTab({
               />
             )}
           </div>
- 
-          <SaveButton 
+
+          <SaveButton
             isSaving={isSaving}
             saveStatus={saveStatus}
             handleSave={handleSave}
@@ -562,19 +604,19 @@ export function ProvidersTab({
               (provider === 'gemini' && !geminiApiKey.trim())
             }
           />
- 
+
           <div className="divider mt-6">{t('Backup & Restore')}</div>
-          
+
           {pageAssistProviders.length > 0 && (
             <div className="card bg-base-200 p-4 mb-4 border border-primary/20">
               <h3 className="font-bold text-sm mb-2 text-primary">选择要导入的 Page Assist 提供商：</h3>
               <div className="space-y-2 max-h-60 overflow-y-auto mb-4 bg-base-100 p-2 rounded border">
                 {pageAssistProviders.map((p) => (
                   <label key={p.id} className="flex items-center gap-2 cursor-pointer py-1 hover:bg-base-200 rounded px-1">
-                    <input 
-                      type="checkbox" 
-                      className="checkbox checkbox-xs checkbox-primary" 
-                      checked={p.checked} 
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-xs checkbox-primary"
+                      checked={p.checked}
                       onChange={() => handleTogglePageAssistProvider(p.id)}
                     />
                     <span className="text-sm font-medium">{p.name}</span>
@@ -592,7 +634,7 @@ export function ProvidersTab({
               </div>
             </div>
           )}
- 
+
           <div className="flex flex-wrap gap-4 items-center">
             <button className="btn btn-outline btn-sm" onClick={handleExportConfig}>
               {t('Export Models & Config')}
@@ -603,19 +645,19 @@ export function ProvidersTab({
             <button className="btn btn-outline btn-primary btn-sm" onClick={() => pageAssistFileInputRef.current?.click()}>
               {t('Import from Page Assist')}
             </button>
-            <input 
-              type="file" 
-              ref={configFileInputRef} 
-              onChange={handleImportConfig} 
-              accept=".json" 
-              className="hidden" 
+            <input
+              type="file"
+              ref={configFileInputRef}
+              onChange={handleImportConfig}
+              accept=".json"
+              className="hidden"
             />
-            <input 
-              type="file" 
-              ref={pageAssistFileInputRef} 
-              onChange={handleImportPageAssistClick} 
-              accept=".json" 
-              className="hidden" 
+            <input
+              type="file"
+              ref={pageAssistFileInputRef}
+              onChange={handleImportPageAssistClick}
+              accept=".json"
+              className="hidden"
             />
           </div>
           {configExportStatus && (
@@ -630,7 +672,7 @@ export function ProvidersTab({
           )}
         </div>
       </div>
-      
+
       {/* Model Pricing Table */}
       <ModelPricingTable getModelPricingData={getModelPricingData} />
     </div>

@@ -1,23 +1,32 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useLanguage } from '../../LanguageContext';
-import { SyncManager, CloudSyncProvider } from '../../../tracking/sync/syncManager';
-import { WebDAVSyncProvider } from '../../../tracking/sync/webdavProvider';
-import { GoogleDriveSyncProvider } from '../../../tracking/sync/googleDriveProvider';
+import { useCallback, useEffect, useState } from 'react';
+import { hasHostPermission, requestHostPermission } from '../../../background/permissions';
+import { useAppSelector } from '../../../store/hooks';
 import { MemoryService } from '../../../tracking/memoryService';
 import { PromptTemplateService } from '../../../tracking/promptTemplateService';
-import { hasHostPermission, requestHostPermission } from '../../../background/permissions';
+import { GoogleDriveSyncProvider } from '../../../tracking/sync/googleDriveProvider';
+import { CloudSyncProvider, SyncManager } from '../../../tracking/sync/syncManager';
+import { WebDAVSyncProvider } from '../../../tracking/sync/webdavProvider';
 
 export function SyncTab() {
-  const { t } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'Cloud Sync': { zh: '云同步', en: 'Cloud Sync' }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
 
   // ── Configuration State ─────────────────────────────────────
   const [syncType, setSyncType] = useState<'none' | 'webdav' | 'googledrive'>('none');
-  
+
   // WebDAV fields
   const [webdavUrl, setWebdavUrl] = useState('');
   const [webdavUsername, setWebdavUsername] = useState('');
   const [webdavPassword, setWebdavPassword] = useState('');
-  
+
   // Google Drive fields
   const [gdriveClientId, setGdriveClientId] = useState('');
   const [gdriveClientSecret, setGdriveClientSecret] = useState('');
@@ -149,7 +158,7 @@ export function SyncTab() {
   };
 
   // ── Operations Handlers ─────────────────────────────────────
-  
+
   // Test WebDAV
   const handleTestWebDAV = async () => {
     if (!webdavUrl || !webdavUsername || !webdavPassword) {
@@ -361,7 +370,7 @@ export function SyncTab() {
 
       {/* ── Sync Provider Configuration ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Selector Card */}
         <div className="card bg-base-100 shadow-md lg:col-span-1">
           <div className="card-body">
@@ -417,7 +426,7 @@ export function SyncTab() {
             {syncType === 'webdav' && (
               <div className="space-y-4">
                 <h3 className="font-bold text-md mb-2">WebDAV Settings</h3>
-                
+
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text font-medium">{t('WebDAV URL')}</span>

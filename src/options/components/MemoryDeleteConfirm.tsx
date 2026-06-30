@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLanguage } from '../LanguageContext';
+import { useAppSelector } from '../../store/hooks';
 
 export interface MemoryDeleteConfirmProps {
     /** Whether the dialog is open */
@@ -34,8 +34,23 @@ export function MemoryDeleteConfirm({
     onConfirm,
     onCancel,
 }: MemoryDeleteConfirmProps) {
-    const { t } = useLanguage();
-    
+    const language = useAppSelector((state) => state.settings.language);
+
+    const t = (key: string): string => {
+        const cleanKey = key.trim();
+        const translationDict: Record<string, Record<string, string>> = {
+            'Delete Memory': { zh: '删除单个记忆', en: 'Delete Memory' },
+            'This will permanently remove all stored memories.': {
+                zh: '这将永久删除所有已存储的记忆。',
+                en: 'This will permanently remove all stored memories.'
+            },
+            'Cancel': { zh: '取消', en: 'Cancel' },
+            'Delete': { zh: '删除', en: 'Delete' }
+        };
+        const translated = translationDict[cleanKey]?.[language];
+        return translated ?? key;
+    };
+
     // Close on Escape key
     useEffect(() => {
         if (!open) return;
@@ -93,12 +108,12 @@ export function MemoryDeleteConfirm({
                                     </span>
                                     <span className="truncate">{item.taskDescription}</span>
                                 </li>
-                             ))}
-                             {remainingCount > 0 && (
+                            ))}
+                            {remainingCount > 0 && (
                                 <li className="text-sm text-base-content/50 italic px-2">
                                     {t('...and {count} more').replace('{count}', String(remainingCount))}
                                 </li>
-                             )}
+                            )}
                         </ul>
                     </div>
                 )}

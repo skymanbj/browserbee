@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useLanguage } from '../LanguageContext';
+import { useState } from 'react';
+import { useAppSelector } from '../../store/hooks';
 
 interface GeminiSettingsProps {
   geminiApiKey: string;
@@ -14,7 +14,19 @@ export function GeminiSettings({
   geminiBaseUrl,
   setGeminiBaseUrl
 }: GeminiSettingsProps) {
-  const { t } = useLanguage();
+  const language = useAppSelector((state) => state.settings.language);
+
+  const t = (key: string): string => {
+    const cleanKey = key.trim();
+    const translationDict: Record<string, Record<string, string>> = {
+      'Google Gemini - Good value for money': {
+        zh: 'Google Gemini - 性价比高',
+        en: 'Google Gemini - Good value for money'
+      }
+    };
+    const translated = translationDict[cleanKey]?.[language];
+    return translated ?? key;
+  };
   const [testing, setTesting] = useState(false);
   const [testStatus, setTestStatus] = useState<string | null>(null);
 
@@ -28,7 +40,7 @@ export function GeminiSettings({
     try {
       const url = geminiBaseUrl.trim() || 'https://generativelanguage.googleapis.com';
       const formattedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
-      
+
       const response = await fetch(`${formattedUrl}/v1beta/models?key=${geminiApiKey.trim()}`, {
         method: 'GET'
       });
@@ -49,7 +61,7 @@ export function GeminiSettings({
   return (
     <div className="border rounded-lg p-4 mb-4">
       <h3 className="font-bold mb-2">Google Gemini Settings</h3>
-      
+
       <div className="form-control mb-4">
         <label htmlFor="gemini-api-key" className="label">
           <span className="label-text">API Key:</span>
@@ -78,7 +90,7 @@ export function GeminiSettings({
           </div>
         )}
       </div>
-      
+
       <div className="form-control mb-4">
         <label htmlFor="gemini-base-url" className="label">
           <span className="label-text">Base URL (optional):</span>

@@ -1,15 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAppSelector } from '../../store/hooks';
 import { PromptTemplateService } from '../../tracking/promptTemplateService';
 import { PromptTemplate } from '../../types/promptTemplate';
 import { PromptTemplateEditModal } from './PromptTemplateEditModal';
-import { useLanguage } from '../LanguageContext';
 
 /**
  * Full management UI for prompt templates – list, search, filter by category,
  * create, edit, delete, export, and import.
  */
 export function PromptTemplateManagement() {
-    const { t } = useLanguage();
+    const language = useAppSelector((state) => state.settings.language);
+
+    const t = (key: string): string => {
+        const cleanKey = key.trim();
+        const translationDict: Record<string, Record<string, string>> = {
+            'Prompt Templates': { zh: '提示词模板', en: 'Prompt Templates' }
+        };
+        const translated = translationDict[cleanKey]?.[language];
+        return translated ?? key;
+    };
     // ── Data state ──
     const [templates, setTemplates] = useState<PromptTemplate[]>([]);
     const [loading, setLoading] = useState(true);

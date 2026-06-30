@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { logWithTimestamp } from '../../background/utils';
+import { useAppSelector } from '../../store/hooks';
 import { Session, SessionSummary } from '../../types/session';
-import { useLanguage } from '../LanguageContext';
 
 interface SessionStats {
     total: number;
@@ -22,7 +22,16 @@ async function sendMessage(action: string, payload?: any): Promise<any> {
 }
 
 export function SessionManagement() {
-    const { t } = useLanguage();
+    const language = useAppSelector((state) => state.settings.language);
+
+    const t = (key: string): string => {
+        const cleanKey = key.trim();
+        const translationDict: Record<string, Record<string, string>> = {
+            'Sessions': { zh: '会话管理', en: 'Sessions' }
+        };
+        const translated = translationDict[cleanKey]?.[language];
+        return translated ?? key;
+    };
     // --- State ---
     const [sessions, setSessions] = useState<SessionSummary[]>([]);
     const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -356,13 +365,13 @@ export function SessionManagement() {
                 <div className="form-control flex-1 min-w-[200px]">
                     <div className="input-group">
                         <input
-                             ref={searchInputRef}
-                             type="text"
-                             placeholder={t('搜索会话名称、标签页、URL、消息内容...')}
-                             className="input input-bordered w-full"
-                             value={searchQuery}
-                             onChange={e => setSearchQuery(e.target.value)}
-                         />
+                            ref={searchInputRef}
+                            type="text"
+                            placeholder={t('搜索会话名称、标签页、URL、消息内容...')}
+                            className="input input-bordered w-full"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
                         {searchQuery && (
                             <button className="btn btn-square btn-ghost" onClick={() => setSearchQuery('')}>
                                 ✕

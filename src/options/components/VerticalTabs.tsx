@@ -1,8 +1,30 @@
-import React, { useState } from 'react';
-import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { useState } from 'react';
+import { useAppDispatch, useAppSelector, type RootState } from '../../store/hooks';
+import {
+  setAnthropicApiKey,
+  setAnthropicBaseUrl,
+  setAnthropicModelId,
+  setGeminiApiKey,
+  setGeminiBaseUrl,
+  setGeminiModelId,
+  setIsSaving,
+  setNewInstance,
+  setNewModel,
+  setNewOllamaModel,
+  setOllamaApiKey,
+  setOllamaBaseUrl,
+  setOllamaCustomModels,
+  setOllamaModelId,
+  setOpenaiApiKey,
+  setOpenaiBaseUrl,
+  setOpenaiCompatibleInstances,
+  setOpenaiModelId,
+  setProvider,
+  setSaveStatus,
+  setSelectedInstanceId,
+  setThinkingBudgetTokens,
+} from '../../store/slices/configSlice';
 import { setLanguage } from '../../store/slices/settingsSlice';
-import { OllamaModel } from './OllamaModelList';
 import { ThemeToggle } from './ThemeToggle';
 import { GeneralTab } from './tabs/GeneralTab';
 import { MemoryTab } from './tabs/MemoryTab';
@@ -12,60 +34,33 @@ import { ScheduledTaskTab } from './tabs/ScheduledTaskTab';
 import { SessionTab } from './tabs/SessionTab';
 import { SyncTab } from './tabs/SyncTab';
 
-interface VerticalTabsProps {
-  provider: string;
-  setProvider: (provider: string) => void;
-  anthropicApiKey: string;
-  setAnthropicApiKey: (key: string) => void;
-  anthropicBaseUrl: string;
-  setAnthropicBaseUrl: (url: string) => void;
-  thinkingBudgetTokens: number;
-  setThinkingBudgetTokens: (tokens: number) => void;
-  openaiApiKey: string;
-  setOpenaiApiKey: (key: string) => void;
-  openaiBaseUrl: string;
-  setOpenaiBaseUrl: (url: string) => void;
-  geminiApiKey: string;
-  setGeminiApiKey: (key: string) => void;
-  geminiBaseUrl: string;
-  setGeminiBaseUrl: (url: string) => void;
-  ollamaApiKey: string;
-  setOllamaApiKey: (key: string) => void;
-  ollamaBaseUrl: string;
-  setOllamaBaseUrl: (url: string) => void;
-  ollamaModelId: string;
-  setOllamaModelId: (id: string) => void;
-  ollamaCustomModels: OllamaModel[];
-  setOllamaCustomModels: (models: OllamaModel[]) => void;
-  newOllamaModel: { id: string; name: string; contextWindow: number };
-  setNewOllamaModel: React.Dispatch<React.SetStateAction<{ id: string; name: string; contextWindow: number }>>;
-  handleAddOllamaModel: () => void;
-  handleRemoveOllamaModel: (id: string) => void;
-  handleEditOllamaModel: (idx: number, field: string, value: any) => void;
-  openaiCompatibleInstances: OpenAICompatibleInstance[];
-  setOpenaiCompatibleInstances: (instances: OpenAICompatibleInstance[]) => void;
-  newInstance: { id: string; name: string };
-  setNewInstance: React.Dispatch<React.SetStateAction<{ id: string; name: string }>>;
-  handleAddInstance: () => void;
-  handleRemoveInstance: (id: string) => void;
-  handleUpdateInstance: (id: string, field: string, value: any) => void;
-  handleUpdateInstanceModel: (instanceId: string, idx: number, field: string, value: any) => void;
-  handleAddInstanceModel: (instanceId: string) => void;
-  handleRemoveInstanceModel: (instanceId: string, modelId: string) => void;
-  selectedInstanceId: string | null;
-  setSelectedInstanceId: (id: string | null) => void;
-  newModel: { id: string; name: string; isReasoningModel: boolean; contextWindow: number; maxTokens: number };
-  setNewModel: React.Dispatch<React.SetStateAction<{ id: string; name: string; isReasoningModel: boolean; contextWindow: number; maxTokens: number }>>;
-  isSaving: boolean;
-  saveStatus: string;
-  handleSave: () => void;
-  getModelPricingData: () => any[];
-}
-
-export function VerticalTabs(props: VerticalTabsProps) {
+export function VerticalTabs() {
   const [activeTab, setActiveTab] = useState('general');
   const language = useAppSelector((state) => state.settings.language);
   const dispatch = useAppDispatch();
+
+  const provider = useAppSelector((state: RootState) => state.config.provider);
+  const anthropicApiKey = useAppSelector((state: RootState) => state.config.anthropicApiKey);
+  const anthropicBaseUrl = useAppSelector((state: RootState) => state.config.anthropicBaseUrl);
+  const anthropicModelId = useAppSelector((state: RootState) => state.config.anthropicModelId);
+  const openaiApiKey = useAppSelector((state: RootState) => state.config.openaiApiKey);
+  const openaiBaseUrl = useAppSelector((state: RootState) => state.config.openaiBaseUrl);
+  const openaiModelId = useAppSelector((state: RootState) => state.config.openaiModelId);
+  const geminiApiKey = useAppSelector((state: RootState) => state.config.geminiApiKey);
+  const geminiBaseUrl = useAppSelector((state: RootState) => state.config.geminiBaseUrl);
+  const geminiModelId = useAppSelector((state: RootState) => state.config.geminiModelId);
+  const ollamaApiKey = useAppSelector((state: RootState) => state.config.ollamaApiKey);
+  const ollamaBaseUrl = useAppSelector((state: RootState) => state.config.ollamaBaseUrl);
+  const ollamaModelId = useAppSelector((state: RootState) => state.config.ollamaModelId);
+  const ollamaCustomModels = useAppSelector((state: RootState) => state.config.ollamaCustomModels);
+  const thinkingBudgetTokens = useAppSelector((state: RootState) => state.config.thinkingBudgetTokens);
+  const openaiCompatibleInstances = useAppSelector((state: RootState) => state.config.openaiCompatibleInstances);
+  const selectedInstanceId = useAppSelector((state: RootState) => state.config.selectedInstanceId);
+  const newInstance = useAppSelector((state: RootState) => state.config.newInstance);
+  const newModel = useAppSelector((state: RootState) => state.config.newModel);
+  const newOllamaModel = useAppSelector((state: RootState) => state.config.newOllamaModel);
+  const isSaving = useAppSelector((state: RootState) => state.config.isSaving);
+  const saveStatus = useAppSelector((state: RootState) => state.config.saveStatus);
 
   const t = (key: string): string => {
     const cleanKey = key.trim();
@@ -92,6 +87,174 @@ export function VerticalTabs(props: VerticalTabsProps) {
     { id: 'prompts', label: t('Prompt Templates'), icon: '📋' },
   ];
 
+  const handleSave = () => {
+    dispatch(setIsSaving(true));
+    dispatch(setSaveStatus(''));
+
+    chrome.storage.local.set({ openaiCompatibleInstances });
+
+    chrome.storage.sync.set(
+      {
+        provider,
+        anthropicApiKey,
+        anthropicModelId,
+        anthropicBaseUrl,
+        openaiApiKey,
+        openaiModelId,
+        openaiBaseUrl,
+        geminiApiKey,
+        geminiModelId,
+        geminiBaseUrl,
+        ollamaApiKey,
+        ollamaModelId,
+        ollamaBaseUrl,
+        ollamaCustomModels,
+        thinkingBudgetTokens,
+      },
+      () => {
+        dispatch(setIsSaving(false));
+        dispatch(setSaveStatus('Settings saved successfully!'));
+
+        chrome.runtime.sendMessage(
+          {
+            action: 'providerConfigChanged',
+          },
+          () => {
+            const err = chrome.runtime.lastError;
+            if (err) {
+              console.error('Error sending message:', err.message);
+            }
+          },
+        );
+
+        setTimeout(() => {
+          dispatch(setSaveStatus(''));
+        }, 3000);
+      },
+    );
+  };
+
+  const handleAddOllamaModel = () => {
+    if (!newOllamaModel.id.trim() || !newOllamaModel.name.trim()) return;
+
+    const updatedModels = [...ollamaCustomModels, { ...newOllamaModel }];
+    dispatch(setOllamaCustomModels(updatedModels));
+    dispatch(setNewOllamaModel({ id: '', name: '', contextWindow: 32768 } as any));
+
+    chrome.storage.sync.set({ ollamaCustomModels: updatedModels });
+  };
+
+  const handleRemoveOllamaModel = (id: string) => {
+    const updatedModels = ollamaCustomModels.filter((m: any) => m.id !== id);
+    dispatch(setOllamaCustomModels(updatedModels));
+    if (ollamaModelId === id) dispatch(setOllamaModelId(''));
+
+    chrome.storage.sync.set({ ollamaCustomModels: updatedModels });
+  };
+
+  const handleEditOllamaModel = (idx: number, field: string, value: any) => {
+    const updatedModels = ollamaCustomModels.map((m: any, i: number) => (i === idx ? { ...m, [field]: value } : m));
+    dispatch(setOllamaCustomModels(updatedModels));
+
+    setTimeout(() => {
+      chrome.storage.sync.set({ ollamaCustomModels: updatedModels });
+    }, 0);
+  };
+
+  const handleAddInstance = () => {
+    if (!newInstance.id.trim() || !newInstance.name.trim()) return;
+    if (openaiCompatibleInstances.some((inst: any) => inst.id === newInstance.id)) return;
+
+    const newInst = {
+      id: newInstance.id,
+      name: newInstance.name,
+      apiKey: '',
+      baseUrl: '',
+      modelId: '',
+      models: [],
+    };
+
+    const updated = [...openaiCompatibleInstances, newInst];
+    dispatch(setOpenaiCompatibleInstances(updated));
+    dispatch(setNewInstance({ id: '', name: '' } as any));
+    dispatch(setSelectedInstanceId(newInst.id));
+    dispatch(setProvider(`openai-compatible:${newInst.id}`));
+  };
+
+  const handleRemoveInstance = (id: string) => {
+    const updated = openaiCompatibleInstances.filter((inst: any) => inst.id !== id);
+    dispatch(setOpenaiCompatibleInstances(updated));
+    if (provider === `openai-compatible:${id}`) {
+      dispatch(setProvider('anthropic'));
+    }
+    if (selectedInstanceId === id) {
+      dispatch(setSelectedInstanceId(null));
+    }
+  };
+
+  const handleUpdateInstance = (id: string, field: string, value: any) => {
+    dispatch(
+      setOpenaiCompatibleInstances(
+        openaiCompatibleInstances.map((inst: any) => (inst.id === id ? { ...inst, [field]: value } : inst)),
+      ),
+    );
+  };
+
+  const handleUpdateInstanceModel = (instanceId: string, idx: number, field: string, value: any) => {
+    dispatch(
+      setOpenaiCompatibleInstances(
+        openaiCompatibleInstances.map((inst: any) => {
+          if (inst.id !== instanceId) return inst;
+          const models = inst.models.map((m: any, i: number) => (i === idx ? { ...m, [field]: value } : m));
+          return { ...inst, models };
+        }),
+      ),
+    );
+  };
+
+  const handleAddInstanceModel = (instanceId: string) => {
+    if (!newModel.id.trim() || !newModel.name.trim()) return;
+
+    dispatch(
+      setOpenaiCompatibleInstances(
+        openaiCompatibleInstances.map((inst: any) => {
+          if (inst.id !== instanceId) return inst;
+          return {
+            ...inst,
+            models: [
+              ...inst.models,
+              {
+                id: newModel.id,
+                name: newModel.name,
+                isReasoningModel: newModel.isReasoningModel,
+                contextWindow: newModel.contextWindow || 0,
+                maxTokens: newModel.maxTokens || 0,
+              },
+            ],
+          };
+        }),
+      ),
+    );
+    dispatch(setNewModel({ id: '', name: '', isReasoningModel: false, contextWindow: 0, maxTokens: 0 } as any));
+  };
+
+  const handleRemoveInstanceModel = (instanceId: string, modelId: string) => {
+    dispatch(
+      setOpenaiCompatibleInstances(
+        openaiCompatibleInstances.map((inst: any) => {
+          if (inst.id !== instanceId) return inst;
+          const models = inst.models.filter((m: any) => m.id !== modelId);
+          const modelIdUpdate = inst.modelId === modelId ? '' : inst.modelId;
+          return { ...inst, models, modelId: modelIdUpdate };
+        }),
+      ),
+    );
+  };
+
+  const getModelPricingData = () => {
+    return [];
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'general':
@@ -99,53 +262,59 @@ export function VerticalTabs(props: VerticalTabsProps) {
       case 'providers':
         return (
           <ProvidersTab
-            provider={props.provider}
-            setProvider={props.setProvider}
-            anthropicApiKey={props.anthropicApiKey}
-            setAnthropicApiKey={props.setAnthropicApiKey}
-            anthropicBaseUrl={props.anthropicBaseUrl}
-            setAnthropicBaseUrl={props.setAnthropicBaseUrl}
-            thinkingBudgetTokens={props.thinkingBudgetTokens}
-            setThinkingBudgetTokens={props.setThinkingBudgetTokens}
-            openaiApiKey={props.openaiApiKey}
-            setOpenaiApiKey={props.setOpenaiApiKey}
-            openaiBaseUrl={props.openaiBaseUrl}
-            setOpenaiBaseUrl={props.setOpenaiBaseUrl}
-            geminiApiKey={props.geminiApiKey}
-            setGeminiApiKey={props.setGeminiApiKey}
-            geminiBaseUrl={props.geminiBaseUrl}
-            setGeminiBaseUrl={props.setGeminiBaseUrl}
-            ollamaApiKey={props.ollamaApiKey}
-            setOllamaApiKey={props.setOllamaApiKey}
-            ollamaBaseUrl={props.ollamaBaseUrl}
-            setOllamaBaseUrl={props.setOllamaBaseUrl}
-            ollamaModelId={props.ollamaModelId}
-            setOllamaModelId={props.setOllamaModelId}
-            ollamaCustomModels={props.ollamaCustomModels}
-            setOllamaCustomModels={props.setOllamaCustomModels}
-            newOllamaModel={props.newOllamaModel}
-            setNewOllamaModel={props.setNewOllamaModel}
-            handleAddOllamaModel={props.handleAddOllamaModel}
-            handleRemoveOllamaModel={props.handleRemoveOllamaModel}
-            handleEditOllamaModel={props.handleEditOllamaModel}
-            openaiCompatibleInstances={props.openaiCompatibleInstances}
-            setOpenaiCompatibleInstances={props.setOpenaiCompatibleInstances}
-            newInstance={props.newInstance}
-            setNewInstance={props.setNewInstance}
-            handleAddInstance={props.handleAddInstance}
-            handleRemoveInstance={props.handleRemoveInstance}
-            handleUpdateInstance={props.handleUpdateInstance}
-            handleUpdateInstanceModel={props.handleUpdateInstanceModel}
-            handleAddInstanceModel={props.handleAddInstanceModel}
-            handleRemoveInstanceModel={props.handleRemoveInstanceModel}
-            selectedInstanceId={props.selectedInstanceId}
-            setSelectedInstanceId={props.setSelectedInstanceId}
-            newModel={props.newModel}
-            setNewModel={props.setNewModel}
-            isSaving={props.isSaving}
-            saveStatus={props.saveStatus}
-            handleSave={props.handleSave}
-            getModelPricingData={props.getModelPricingData}
+            provider={provider}
+            setProvider={(value) => dispatch(setProvider(value as any))}
+            anthropicApiKey={anthropicApiKey}
+            setAnthropicApiKey={(value) => dispatch(setAnthropicApiKey(value as any))}
+            anthropicBaseUrl={anthropicBaseUrl}
+            setAnthropicBaseUrl={(value) => dispatch(setAnthropicBaseUrl(value as any))}
+            anthropicModelId={anthropicModelId}
+            setAnthropicModelId={(value) => dispatch(setAnthropicModelId(value as any))}
+            thinkingBudgetTokens={thinkingBudgetTokens}
+            setThinkingBudgetTokens={(value) => dispatch(setThinkingBudgetTokens(value as any))}
+            openaiApiKey={openaiApiKey}
+            setOpenaiApiKey={(value) => dispatch(setOpenaiApiKey(value as any))}
+            openaiBaseUrl={openaiBaseUrl}
+            setOpenaiBaseUrl={(value) => dispatch(setOpenaiBaseUrl(value as any))}
+            openaiModelId={openaiModelId}
+            setOpenaiModelId={(value) => dispatch(setOpenaiModelId(value as any))}
+            geminiApiKey={geminiApiKey}
+            setGeminiApiKey={(value) => dispatch(setGeminiApiKey(value as any))}
+            geminiBaseUrl={geminiBaseUrl}
+            setGeminiBaseUrl={(value) => dispatch(setGeminiBaseUrl(value as any))}
+            geminiModelId={geminiModelId}
+            setGeminiModelId={(value) => dispatch(setGeminiModelId(value as any))}
+            ollamaApiKey={ollamaApiKey}
+            setOllamaApiKey={(value) => dispatch(setOllamaApiKey(value as any))}
+            ollamaBaseUrl={ollamaBaseUrl}
+            setOllamaBaseUrl={(value) => dispatch(setOllamaBaseUrl(value as any))}
+            ollamaModelId={ollamaModelId}
+            setOllamaModelId={(value) => dispatch(setOllamaModelId(value as any))}
+            ollamaCustomModels={ollamaCustomModels}
+            setOllamaCustomModels={(value) => dispatch(setOllamaCustomModels(value as any))}
+            newOllamaModel={newOllamaModel}
+            setNewOllamaModel={(value) => dispatch(setNewOllamaModel(value as any))}
+            handleAddOllamaModel={handleAddOllamaModel}
+            handleRemoveOllamaModel={handleRemoveOllamaModel}
+            handleEditOllamaModel={handleEditOllamaModel}
+            openaiCompatibleInstances={openaiCompatibleInstances}
+            setOpenaiCompatibleInstances={(value) => dispatch(setOpenaiCompatibleInstances(value as any))}
+            newInstance={newInstance}
+            setNewInstance={(value) => dispatch(setNewInstance(value as any))}
+            handleAddInstance={handleAddInstance}
+            handleRemoveInstance={handleRemoveInstance}
+            handleUpdateInstance={handleUpdateInstance}
+            handleUpdateInstanceModel={handleUpdateInstanceModel}
+            handleAddInstanceModel={handleAddInstanceModel}
+            handleRemoveInstanceModel={handleRemoveInstanceModel}
+            selectedInstanceId={selectedInstanceId}
+            setSelectedInstanceId={(value) => dispatch(setSelectedInstanceId(value as any))}
+            newModel={newModel}
+            setNewModel={(value) => dispatch(setNewModel(value as any))}
+            isSaving={isSaving}
+            saveStatus={saveStatus}
+            handleSave={handleSave}
+            getModelPricingData={getModelPricingData}
           />
         );
       case 'sync':
@@ -173,8 +342,7 @@ export function VerticalTabs(props: VerticalTabsProps) {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                className={`tab tab-lg justify-start gap-3 w-full ${activeTab === tab.id ? 'tab-active' : ''
-                  }`}
+                className={`tab tab-lg justify-start gap-3 w-full ${activeTab === tab.id ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
               >
                 <span className="text-lg">{tab.icon}</span>
@@ -191,13 +359,13 @@ export function VerticalTabs(props: VerticalTabsProps) {
             <span className="opacity-70">{language === 'zh' ? '界面语言' : 'Language'}</span>
             <div className="join">
               <button
-                onClick={() => setLanguage('zh')}
+                onClick={() => dispatch(setLanguage('zh'))}
                 className={`join-item btn btn-xs btn-outline ${language === 'zh' ? 'btn-active btn-primary' : 'opacity-70'}`}
               >
                 中文
               </button>
               <button
-                onClick={() => setLanguage('en')}
+                onClick={() => dispatch(setLanguage('en'))}
                 className={`join-item btn btn-xs btn-outline ${language === 'en' ? 'btn-active btn-primary' : 'opacity-70'}`}
               >
                 EN

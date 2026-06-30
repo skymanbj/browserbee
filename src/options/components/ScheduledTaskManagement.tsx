@@ -1,13 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAppSelector } from '../../store/hooks';
 import { ScheduledTask } from '../../types/scheduledTask';
 import { ScheduledTaskEditModal } from './ScheduledTaskEditModal';
-import { useLanguage } from '../LanguageContext';
 
 /**
  * 定时任务管理页面
  */
 export function ScheduledTaskManagement() {
-    const { t } = useLanguage();
+    const language = useAppSelector((state) => state.settings.language);
+
+    const t = (key: string): string => {
+        const cleanKey = key.trim();
+        const translationDict: Record<string, Record<string, string>> = {
+            'Scheduled Tasks': { zh: '定时任务', en: 'Scheduled Tasks' }
+        };
+        const translated = translationDict[cleanKey]?.[language];
+        return translated ?? key;
+    };
     const [tasks, setTasks] = useState<ScheduledTask[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
