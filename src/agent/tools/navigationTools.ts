@@ -1,7 +1,7 @@
 import { DynamicTool } from "langchain/tools";
 import type { Page } from "playwright-crx";
 import { ToolFactory } from "./types";
-import { withActivePage, getCurrentTabId } from "./utils";
+import { isAllowedUrl, withActivePage, getCurrentTabId } from "./utils";
 
 export const browserNavigate: ToolFactory = (page: Page) =>
   new DynamicTool({
@@ -10,6 +10,11 @@ export const browserNavigate: ToolFactory = (page: Page) =>
       "Navigate the browser to a specific URL. Input must be a full URL, e.g. https://example.com",
     func: async (url: string) => {
       try {
+        const validation = isAllowedUrl(url);
+        if (!validation.allowed) {
+          return `Error navigating to '${url}': ${validation.reason}`;
+        }
+
         return await withActivePage(page, async (activePage) => {
           // Navigate to the URL
           await activePage.goto(url);

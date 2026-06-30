@@ -3,7 +3,7 @@ import type { Page } from "playwright-crx";
 import { createNewTab, getWindowForTab, getCrxAppForTab } from "../../background/tabManager";
 import { setCurrentPage } from "../PageContextManager";
 import { ToolFactory } from "./types";
-import { getCurrentTabId } from "./utils";
+import { getCurrentTabId, isAllowedUrl } from "./utils";
 
 export const browserTabList: ToolFactory = (page: Page) =>
   new DynamicTool({
@@ -31,6 +31,14 @@ export const browserTabNew: ToolFactory = (page: Page) =>
       "Open a new tab. Optional input = URL to navigate to (otherwise blank tab). Note: This does NOT automatically switch to the new tab. Use browser_tab_select after creating a new tab if you want to interact with it.",
     func: async (input: string) => {
       try {
+        const url = input.trim();
+        if (url) {
+          const validation = isAllowedUrl(url);
+          if (!validation.allowed) {
+            return `Error opening new tab: ${validation.reason}`;
+          }
+        }
+
         // Get the current tab's ID to find its window
         const currentTabId = await getCurrentTabId(page);
         
@@ -46,7 +54,7 @@ export const browserTabNew: ToolFactory = (page: Page) =>
         }
         
         // Create a new tab in the same window
-        const newTabId = await createNewTab(windowId, input.trim() || undefined);
+        const newTabId = await createNewTab(windowId, url || undefined);
         
         // Get the new tab's index in the context
         const crxApp = await getCrxAppForTab(currentTabId);

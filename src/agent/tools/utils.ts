@@ -46,6 +46,42 @@ export async function getCurrentTabId(page: Page): Promise<number | undefined> {
 export const MAX_RETURN_CHARS = 20000;
 export const MAX_SCREENSHOT_CHARS = 500000;
 
+// URL schemes that the agent must never navigate to.
+const FORBIDDEN_URL_SCHEMES = new Set([
+  "javascript:",
+  "data:",
+  "file:",
+  "vbscript:",
+  "about:",
+  "chrome:",
+  "chrome-extension:"
+]);
+
+/**
+ * Validate that a URL is safe for the agent to navigate to.
+ * @param url The URL to validate
+ * @returns Whether the URL is allowed and an optional reason if not
+ */
+export function isAllowedUrl(url: string): { allowed: true } | { allowed: false; reason: string } {
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return { allowed: false, reason: "URL is empty." };
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (FORBIDDEN_URL_SCHEMES.has(parsed.protocol)) {
+      return {
+        allowed: false,
+        reason: `Navigation to ${parsed.protocol} URLs is not allowed for security reasons.`
+      };
+    }
+    return { allowed: true };
+  } catch {
+    return { allowed: false, reason: "Invalid URL format." };
+  }
+}
+
 /**
  * Helper function to execute a function with the active page from PageContextManager
  * @param page The original page reference

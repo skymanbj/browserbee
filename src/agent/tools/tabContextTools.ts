@@ -3,7 +3,7 @@ import type { Page } from "playwright-crx";
 import { getCurrentPage } from "../PageContextManager";
 import { ScreenshotManager } from "../../tracking/screenshotManager";
 import { ToolFactory } from "./types";
-import { getCurrentTabId } from "./utils";
+import { getCurrentTabId, isAllowedUrl } from "./utils";
 
 /**
  * Tool to get information about the currently active tab
@@ -76,6 +76,11 @@ export const browserNavigateTab: ToolFactory = (page: Page) =>
         
         const indexStr = parts[0].trim();
         const url = parts[1].trim();
+
+        const validation = isAllowedUrl(url);
+        if (!validation.allowed) {
+          return `Error navigating tab: ${validation.reason}`;
+        }
         
         // Parse the tab index
         const idx = Number(indexStr);
