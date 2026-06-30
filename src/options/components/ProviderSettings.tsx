@@ -189,6 +189,8 @@ export function ProviderSettings({
             handleRemoveModel={(modelId: string) => handleRemoveInstanceModel(selectedInstance.id, modelId)}
             handleEditModel={(idx: number, field: string, value: any) => handleUpdateInstanceModel(selectedInstance.id, idx, field, value)}
             handleRemoveInstance={handleRemoveInstance}
+            enabledModelIds={selectedInstance.enabledModelIds || []}
+            setEnabledModelIds={(ids: string[]) => handleUpdateInstance(selectedInstance.id, 'enabledModelIds', ids)}
           />
         );
       })()}

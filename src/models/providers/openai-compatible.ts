@@ -24,6 +24,7 @@ export interface OpenAICompatibleInstance {
   baseUrl: string;
   modelId: string;
   models: OpenAICompatibleModel[];
+  enabledModelIds?: string[];
 }
 
 export class OpenAICompatibleProvider implements LLMProvider {

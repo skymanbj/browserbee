@@ -227,7 +227,18 @@ const translationDict: Record<string, Record<Language, string>> = {
     zh: '当前尚未自动拉取模型列表。请填写 Base URL 和 API Key 后，点击上方「自动拉取已下载模型/自动拉取模型列表」按钮一键获取模型。',
     en: 'Model list is currently empty. Please fill in Base URL & API Key, then click the "Auto-pull Models" button above to fetch.'
   },
-  '搜索模型名称...': { zh: '搜索模型名称...', en: 'Search models...' }
+  '搜索模型名称...': { zh: '搜索模型名称...', en: 'Search models...' },
+  '对话框模型池配置': { zh: '对话框模型池配置', en: 'Sidebar Model Pool Config' },
+  '已启用': { zh: '已启用', en: 'Enabled' },
+  '个模型': { zh: '个模型', en: 'models' },
+  '在下方勾选您想要在侧边栏对话框里显示的模型。未勾选的模型将被隐藏，以保持侧边栏清爽。': {
+    zh: '在下方勾选您想要在侧边栏对话框里显示的模型。未勾选的模型将被隐藏，以保持侧边栏清爽。',
+    en: 'Select models to display in the sidebar. Unchecked models will be hidden to keep the interface clean.'
+  },
+  '过滤池中模型...': { zh: '过滤池中模型...', en: 'Filter models in pool...' },
+  '全选': { zh: '全选', en: 'Select All' },
+  '清空': { zh: '清空', en: 'Clear' },
+  '未找到匹配的模型': { zh: '未找到匹配的模型', en: 'No matching models' }
 };
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

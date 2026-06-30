@@ -20,6 +20,8 @@ interface OpenAICompatibleSettingsProps {
   handleRemoveModel: (id: string) => void;
   handleEditModel: (idx: number, field: string, value: any) => void;
   handleRemoveInstance?: (id: string) => void;
+  enabledModelIds?: string[];
+  setEnabledModelIds?: (ids: string[]) => void;
 }
 
 export function OpenAICompatibleSettings({
@@ -39,17 +41,45 @@ export function OpenAICompatibleSettings({
   handleAddModel,
   handleRemoveModel,
   handleEditModel,
-  handleRemoveInstance
+  handleRemoveInstance,
+  enabledModelIds = [],
+  setEnabledModelIds
 }: OpenAICompatibleSettingsProps) {
   const { t } = useLanguage();
   const [pulling, setPulling] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [modelSearch, setModelSearch] = useState('');
+  const [showModelPool, setShowModelPool] = useState(false);
+  const [poolSearch, setPoolSearch] = useState('');
 
   const filteredModels = models.filter(m => 
     m.id.toLowerCase().includes(modelSearch.toLowerCase()) || 
     m.name.toLowerCase().includes(modelSearch.toLowerCase())
   );
+
+  const filteredPoolModels = models.filter(m => 
+    m.id.toLowerCase().includes(poolSearch.toLowerCase()) || 
+    m.name.toLowerCase().includes(poolSearch.toLowerCase())
+  );
+
+  const onPoolChange = async (updatedIds: string[]) => {
+    if (setEnabledModelIds) {
+      setEnabledModelIds(updatedIds);
+    }
+    
+    // 立即自动写盘并通知后台刷新配置，达到秒级同步
+    try {
+      const localResult = await chrome.storage.local.get({ openaiCompatibleInstances: [] });
+      const currentInsts = localResult.openaiCompatibleInstances || [];
+      const updatedInsts = currentInsts.map((inst: any) => 
+        inst.id === instanceId ? { ...inst, enabledModelIds: updatedIds } : inst
+      );
+      await chrome.storage.local.set({ openaiCompatibleInstances: updatedInsts });
+      chrome.runtime.sendMessage({ action: 'providerConfigChanged' });
+    } catch (err) {
+      console.error('Failed to auto save model pool configuration:', err);
+    }
+  };
 
   const handleAutoPull = async () => {
     if (!baseUrl) {
@@ -233,6 +263,86 @@ export function OpenAICompatibleSettings({
           </div>
         )}
       </div>
+
+      {/* 对话框模型池配置 */}
+      {models.length > 0 && (
+        <div className="collapse collapse-arrow border border-base-content/10 bg-base-200/30 rounded-lg mb-4 text-xs">
+          <input type="checkbox" checked={showModelPool} onChange={() => setShowModelPool(!showModelPool)} className="min-h-0" />
+          <div className="collapse-title font-semibold flex justify-between pr-12 items-center min-h-0 py-2">
+            <span>🛠️ {t('对话框模型池配置')}</span>
+            <span className="font-normal opacity-70">
+              {t('已启用')} {enabledModelIds.length} / {models.length} {t('个模型')}
+            </span>
+          </div>
+          <div className="collapse-content px-4 pb-4">
+            <p className="text-[11px] text-base-content/60 mb-2 leading-relaxed">
+              {t('在下方勾选您想要在侧边栏对话框里显示的模型。未勾选的模型将被隐藏，以保持侧边栏清爽。')}
+            </p>
+            
+            <div className="flex gap-1.5 mb-2">
+              <input
+                type="text"
+                className="input input-bordered input-xs flex-1 text-xs"
+                placeholder={t('过滤池中模型...')}
+                value={poolSearch}
+                onChange={e => setPoolSearch(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn btn-[10px] btn-outline h-6 min-h-0 px-2"
+                onClick={() => {
+                  const allIds = models.map(m => m.id);
+                  onPoolChange(allIds);
+                }}
+              >
+                {t('全选')}
+              </button>
+              <button
+                type="button"
+                className="btn btn-[10px] btn-outline btn-error h-6 min-h-0 px-2"
+                onClick={() => {
+                  // 清空时，至少保留当前正在选用的默认 modelId，防止选择器为空
+                  onPoolChange(modelId ? [modelId] : []);
+                }}
+              >
+                {t('清空')}
+              </button>
+            </div>
+            
+            <div className="border border-base-content/10 rounded-lg max-h-48 overflow-y-auto bg-base-100 p-2 space-y-1">
+              {filteredPoolModels.length === 0 ? (
+                <div className="text-[11px] text-center text-base-content/40 py-4">{t('未找到匹配的模型')}</div>
+              ) : (
+                filteredPoolModels.map(m => {
+                  const isChecked = enabledModelIds.includes(m.id) || m.id === modelId;
+                  return (
+                    <label key={m.id} className="flex items-start gap-2 hover:bg-base-200 p-1 rounded cursor-pointer text-[11px] truncate">
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-xs checkbox-primary mt-0.5"
+                        checked={isChecked}
+                        disabled={m.id === modelId} // 默认选中的模型不允许在此取消勾选，以防界面错乱
+                        onChange={() => {
+                          let updated: string[];
+                          if (isChecked) {
+                            updated = enabledModelIds.filter(id => id !== m.id);
+                          } else {
+                            updated = [...enabledModelIds, m.id];
+                          }
+                          onPoolChange(updated);
+                        }}
+                      />
+                      <span className="font-medium truncate flex-1" title={m.name}>
+                        {m.name} <span className="opacity-50 text-[9px]">({m.id})</span>
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       {handleRemoveInstance && (
         <div className="mt-6 pt-4 border-t border-base-content/10 flex justify-end">

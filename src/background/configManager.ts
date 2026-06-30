@@ -220,7 +220,20 @@ export class ConfigManager {
       const instances = await this.getOpenAICompatibleInstances();
       const instance = instances.find((inst: OpenAICompatibleInstance) => inst.id === instanceId);
       if (instance) {
-        return OpenAICompatibleProvider.getAvailableModels({ openaiCompatibleModels: instance.models || [] } as any);
+        const available = OpenAICompatibleProvider.getAvailableModels({ openaiCompatibleModels: instance.models || [] } as any);
+        // 过滤模型池：如果配置了选中的模型，则仅展示勾选启用的模型
+        if (instance.enabledModelIds && instance.enabledModelIds.length > 0) {
+          const filtered = available.filter(m => instance.enabledModelIds?.includes(m.id));
+          // 确保当前选定的默认模型一定要出现在侧边栏里
+          if (instance.modelId && !filtered.some(m => m.id === instance.modelId)) {
+            const activeModel = available.find(m => m.id === instance.modelId);
+            if (activeModel) {
+              filtered.unshift(activeModel);
+            }
+          }
+          return filtered;
+        }
+        return available;
       }
       return [];
     }
