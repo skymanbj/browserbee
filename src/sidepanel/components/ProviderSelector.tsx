@@ -216,9 +216,9 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
             <option
               key={`${option.provider}|${model.id}`}
               value={`${option.provider}|${model.id}`}
-          style={{ background: '#ffffff', color: '#374151' }}
+              style={{ background: '#ffffff', color: '#374151' }}
             >
-              {option.displayName} - {model.name}
+              {model.name}
             </option>
           ))
         ))}
