@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { OllamaModel } from '../OllamaModelList';
-import { ProviderSelector } from '../ProviderSelector';
+import { ProviderCardGrid } from '../ProviderCardGrid';
 import { ProviderSettings } from '../ProviderSettings';
 import { SaveButton } from '../SaveButton';
 import { ModelPricingTable } from '../ModelPricingTable';
@@ -331,8 +331,8 @@ export function ProvidersTab({
             {t("Configure your preferred LLM provider and API settings. Your API keys are stored securely in your browser's storage.")}
           </p>
           
-          {/* Provider Selector */}
-          <ProviderSelector
+          {/* Provider Card Grid */}
+          <ProviderCardGrid
             provider={provider}
             setProvider={setProvider}
             openaiCompatibleInstances={openaiCompatibleInstances}

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { OllamaModelList, OllamaModel } from './OllamaModelList';
+import { useLanguage } from '../LanguageContext';
 
 interface OllamaSettingsProps {
   ollamaApiKey: string;
@@ -32,6 +33,56 @@ export function OllamaSettings({
   handleRemoveOllamaModel,
   handleEditOllamaModel
 }: OllamaSettingsProps) {
+  const { t } = useLanguage();
+  const [pulling, setPulling] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  const handleAutoPull = async () => {
+    setPulling(true);
+    setStatus(null);
+    try {
+      const url = ollamaBaseUrl.trim() || 'http://localhost:11434';
+      const formattedUrl = url.startsWith('http') ? url : `http://${url}`;
+      
+      const response = await fetch(`${formattedUrl}/api/tags`);
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+      const data = await response.json();
+      if (data && Array.isArray(data.models)) {
+        const fetched: OllamaModel[] = data.models.map((m: any) => ({
+          id: m.name,
+          name: m.name.split(':')[0],
+          contextWindow: 8192 // 默认 contextWindow 改为 8k 以支持更多上下文
+        }));
+        
+        if (fetched.length === 0) {
+          setStatus(t('未找到已下载的模型，请先在本地终端运行 ollama pull <model>'));
+          return;
+        }
+
+        const merged = [...ollamaCustomModels];
+        let addedCount = 0;
+        for (const item of fetched) {
+          if (!merged.some(m => m.id === item.id)) {
+            merged.push(item);
+            addedCount++;
+          }
+        }
+        
+        setOllamaCustomModels(merged);
+        setStatus(t('Models pulled successfully!') + ` (${fetched.length} models, +${addedCount} new)`);
+      } else {
+        throw new Error('Invalid response structure');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setStatus(t('Failed to pull models') + `: ${err.message || err}`);
+    } finally {
+      setPulling(false);
+    }
+  };
+
   return (
     <div className="border rounded-lg p-4 mb-4">
       <h3 className="font-bold mb-2">Ollama Settings</h3>
@@ -70,7 +121,22 @@ export function OllamaSettings({
           placeholder="Ollama server URL (default: http://localhost:11434)"
           className="input input-bordered w-full"
         />
-        <span className="label-text-alt">
+        <div className="flex gap-2 mt-2">
+          <button
+            type="button"
+            className={`btn btn-xs btn-outline ${pulling ? 'loading' : ''}`}
+            onClick={handleAutoPull}
+            disabled={pulling}
+          >
+            📥 {pulling ? t('Auto-pulling...') : t('Auto-pull Models')}
+          </button>
+        </div>
+        {status && (
+          <div className={`text-xs mt-1.5 ${status.includes('successfully') || status.includes('成功') ? 'text-success font-medium' : 'text-error'}`}>
+            {status}
+          </div>
+        )}
+        <span className="label-text-alt mt-2 block">
           If running Ollama locally, you need to enable CORS by setting <code>OLLAMA_ORIGINS=*</code> environment variable. 
           <a href="https://objectgraph.com/blog/ollama-cors/" target="_blank" className="link link-primary ml-1">Learn more</a>
         </span>

@@ -213,7 +213,14 @@ const translationDict: Record<string, Record<Language, string>> = {
   'Create templates to reuse prompt structures and values.': {
     zh: '创建模板以重复使用提示词结构和参数值。',
     en: 'Create templates to reuse prompt structures and values.'
-  }
+  },
+  // Newly added LLM configuration tools
+  'Pull Models': { zh: '拉取模型', en: 'Pull Models' },
+  'Auto-pull Models': { zh: '自动拉取已下载模型', en: 'Auto-pull Models' },
+  'Auto-pulling...': { zh: '正在自动拉取模型...', en: 'Auto-pulling...' },
+  'Failed to pull models': { zh: '拉取模型失败', en: 'Failed to pull models' },
+  'Models pulled successfully!': { zh: '模型拉取成功！', en: 'Models pulled successfully!' },
+  'Test Connection': { zh: '测试连接', en: 'Test Connection' }
 };
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
