@@ -10,6 +10,7 @@ global.chrome = mockChromeAPIs as any;
 // Mock the utils module
 jest.mock('../../../../src/agent/tools/utils', () => ({
   getCurrentTabId: jest.fn() as jest.MockedFunction<any>,
+  isAllowedUrl: jest.fn().mockReturnValue({ allowed: true }),
 }));
 
 // Mock the tab manager

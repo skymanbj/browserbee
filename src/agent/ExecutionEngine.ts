@@ -548,12 +548,10 @@ The <requires_approval> tag is mandatory. Set it to "true" for purchases, data d
           const isSensitiveTool = SENSITIVE_TOOLS.has(toolName);
           const requiresApproval = llmRequiresApproval || isSensitiveTool;
           let reason: string;
-          if (isSensitiveTool && llmRequiresApproval) {
-            reason = "This action is classified as sensitive and the AI also flagged it as risky.";
+          if (llmRequiresApproval) {
+            reason = "The AI assistant has determined this action requires your approval.";
           } else if (isSensitiveTool) {
             reason = `The ${toolName} action is classified as sensitive and requires your approval before execution.`;
-          } else if (llmRequiresApproval) {
-            reason = "The AI assistant has determined this action requires your approval.";
           } else {
             reason = "";
           }

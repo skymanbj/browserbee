@@ -15,6 +15,7 @@ global.chrome = mockChromeAPIs as any;
 jest.mock('../../../../src/agent/tools/utils', () => ({
   withActivePage: jest.fn().mockImplementation((page, fn) => fn(page)),
   getCurrentTabId: jest.fn().mockResolvedValue(123),
+  isAllowedUrl: jest.fn().mockReturnValue({ allowed: true }),
 }));
 
 // Import the tools after mocking dependencies

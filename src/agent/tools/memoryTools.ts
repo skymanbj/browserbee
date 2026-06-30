@@ -9,11 +9,13 @@ export function saveMemory(page: Page) {
     description: "Save a memory of how to accomplish a specific task on a website. Use this when you want to remember a useful sequence of actions for future reference.",
     func: async (input: string): Promise<string> => {
       try {
-        let inputObj;
-        try {
-          inputObj = JSON.parse(input);
-        } catch (parseError) {
-          // Fallback parsing for text format: Domain: ... \n Task: ... \n Tools: ...
+          let inputObj;
+          let usedFallback = false;
+          try {
+            inputObj = JSON.parse(input);
+          } catch (parseError) {
+            usedFallback = true;
+            // Fallback parsing for text format: Domain: ... \n Task: ... \n Tools: ...
           const lines = input.split('\n');
           let textDomain = '';
           let textTaskDescription = '';
@@ -48,6 +50,9 @@ export function saveMemory(page: Page) {
         let { domain } = inputObj;
 
         if (!domain || !taskDescription || !toolSequence || toolSequence.length === 0) {
+          if (usedFallback) {
+            return "Error saving memory: Invalid input format. Please provide valid JSON with domain, taskDescription, and toolSequence.";
+          }
           return "Error: Missing required fields. Please provide domain, taskDescription, and toolSequence.";
         }
 
