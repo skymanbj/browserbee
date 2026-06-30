@@ -129,14 +129,15 @@ export class ExecutionEngine {
   async executePromptWithFallback(
     prompt: string,
     callbacks: ExecutionCallbacks,
-    initialMessages: any[] = []
+    initialMessages: any[] = [],
+    windowId?: number
   ): Promise<void> {
     const streamingSupported = await this.errorHandler.isStreamingSupported();
     const isStreaming = streamingSupported && callbacks.onLlmChunk !== undefined;
 
     try {
       // Use the execution method with appropriate streaming mode
-      await this.executePrompt(prompt, callbacks, initialMessages, isStreaming);
+      await this.executePrompt(prompt, callbacks, initialMessages, isStreaming, windowId);
     } catch (error) {
       console.warn("Execution failed, attempting fallback:", error);
 
@@ -155,7 +156,7 @@ export class ExecutionEngine {
       }
 
       // Continue with fallback using non-streaming mode
-      await this.executePrompt(prompt, callbacks, initialMessages, false);
+      await this.executePrompt(prompt, callbacks, initialMessages, false, windowId);
     }
   }
 
@@ -200,7 +201,8 @@ export class ExecutionEngine {
     chunk: StreamChunk,
     inputTokens: number,
     outputTokens: number,
-    tokenTracker: TokenTrackingService
+    tokenTracker: TokenTrackingService,
+    windowId?: number
   ): { updatedInputTokens: number, updatedOutputTokens: number } {
     let updatedInputTokens = inputTokens;
     let updatedOutputTokens = outputTokens;
@@ -212,13 +214,24 @@ export class ExecutionEngine {
     if (chunk.inputTokens) {
       updatedInputTokens = chunk.inputTokens;
       // Track input tokens with cache tokens if available
-      tokenTracker.trackInputTokens(
-        updatedInputTokens,
-        {
-          write: chunk.cacheWriteTokens,
-          read: chunk.cacheReadTokens
-        }
-      );
+      if (windowId !== undefined) {
+        tokenTracker.trackInputTokens(
+          updatedInputTokens,
+          {
+            write: chunk.cacheWriteTokens,
+            read: chunk.cacheReadTokens
+          },
+          windowId
+        );
+      } else {
+        tokenTracker.trackInputTokens(
+          updatedInputTokens,
+          {
+            write: chunk.cacheWriteTokens,
+            read: chunk.cacheReadTokens
+          }
+        );
+      }
     }
 
     // Always track output tokens (from both message_start and message_delta)
@@ -228,7 +241,11 @@ export class ExecutionEngine {
       // Only track the delta (new tokens)
       if (newOutputTokens > updatedOutputTokens) {
         const delta = newOutputTokens - updatedOutputTokens;
-        tokenTracker.trackOutputTokens(delta);
+        if (windowId !== undefined) {
+          tokenTracker.trackOutputTokens(delta, windowId);
+        } else {
+          tokenTracker.trackOutputTokens(delta);
+        }
         updatedOutputTokens = newOutputTokens;
       }
     }
@@ -241,7 +258,8 @@ export class ExecutionEngine {
    */
   private async processLlmStream(
     messages: any[],
-    adaptedCallbacks: ExecutionCallbacks
+    adaptedCallbacks: ExecutionCallbacks,
+    windowId?: number
   ): Promise<{ accumulatedText: string, toolCallDetected: boolean }> {
     let accumulatedText = "";
     let streamBuffer = "";
@@ -267,7 +285,7 @@ export class ExecutionEngine {
 
       // Track token usage
       if (chunk.type === 'usage') {
-        const result = this.trackTokenUsage(chunk, inputTokens, outputTokens, tokenTracker);
+        const result = this.trackTokenUsage(chunk, inputTokens, outputTokens, tokenTracker, windowId);
         inputTokens = result.updatedInputTokens;
         outputTokens = result.updatedOutputTokens;
       }
@@ -348,7 +366,8 @@ export class ExecutionEngine {
     prompt: string,
     callbacks: ExecutionCallbacks,
     initialMessages: any[] = [],
-    isStreaming: boolean
+    isStreaming: boolean,
+    windowId?: number
   ): Promise<void> {
     // Create adapter to handle streaming vs non-streaming
     const adapter = new CallbackAdapter(callbacks, isStreaming);
@@ -369,7 +388,7 @@ export class ExecutionEngine {
           if (this.errorHandler.isExecutionCancelled()) break;
 
           // ── 1. Call LLM with streaming ───────────────────────────────────────
-          const { accumulatedText } = await this.processLlmStream(messages, adaptedCallbacks);
+          const { accumulatedText } = await this.processLlmStream(messages, adaptedCallbacks, windowId);
 
           // Check for cancellation after LLM response
           if (this.errorHandler.isExecutionCancelled()) break;
@@ -711,7 +730,7 @@ The <requires_approval> tag is mandatory. Set it to "true" for purchases, data d
           (err as any).retryAttempt = retryAttempt + 1;
 
           // Recursive retry with the same parameters
-          return this.executePrompt(prompt, callbacks, initialMessages, isStreaming);
+          return this.executePrompt(prompt, callbacks, initialMessages, isStreaming, windowId);
         } else if (retryAttempt >= MAX_RETRY_ATTEMPTS) {
           // We've exceeded the maximum number of retry attempts
           adaptedCallbacks.onLlmOutput(

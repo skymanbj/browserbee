@@ -14,9 +14,10 @@ const formatTokenCount = (count: number): string => {
 
 interface TokenUsageDisplayProps {
   theme?: 'dark' | 'light';
+  windowId: number | null;
 }
 
-export function TokenUsageDisplay({ theme = 'dark' }: TokenUsageDisplayProps) {
+export function TokenUsageDisplay({ theme = 'dark', windowId }: TokenUsageDisplayProps) {
   const [usage, setUsage] = useState<TokenUsage>({ inputTokens: 0, outputTokens: 0, cost: 0 });
   const [providerConfig, setProviderConfig] = useState<ProviderConfig | null>(null);
 
@@ -26,12 +27,12 @@ export function TokenUsageDisplay({ theme = 'dark' }: TokenUsageDisplayProps) {
     const configManager = ConfigManager.getInstance();
 
     // Get initial usage
-    const initialUsage = tokenTracker.getUsage();
+    const initialUsage = tokenTracker.getUsage(windowId || undefined);
     setUsage(initialUsage);
 
     // Subscribe to local updates
     const unsubscribe = tokenTracker.subscribe(() => {
-      const updatedUsage = tokenTracker.getUsage();
+      const updatedUsage = tokenTracker.getUsage(windowId || undefined);
       setUsage(updatedUsage);
     });
 
@@ -39,26 +40,28 @@ export function TokenUsageDisplay({ theme = 'dark' }: TokenUsageDisplayProps) {
     configManager.getProviderConfig().then(config => {
       setProviderConfig(config);
       // Update token tracker with current provider and model
-      tokenTracker.updateProviderAndModel(config.provider, config.apiModelId || '');
+      tokenTracker.updateProviderAndModel(config.provider, config.apiModelId || '', windowId || undefined);
     });
 
     // Listen for messages from the background script
     const messageListener = (message: any) => {
       if (message.action === 'tokenUsageUpdated' && message.content) {
-        setUsage(message.content);
+        if (windowId === null || windowId === undefined || message.windowId === windowId) {
+          setUsage(message.content);
+        }
       }
     };
 
     chrome.runtime.onMessage.addListener(messageListener);
 
     // Request current usage from background script
-    chrome.runtime.sendMessage({ action: 'getTokenUsage' });
+    chrome.runtime.sendMessage({ action: 'getTokenUsage', windowId });
 
     return () => {
       unsubscribe();
       chrome.runtime.onMessage.removeListener(messageListener);
     };
-  }, []);
+  }, [windowId]);
 
   // const totalTokens = usage.inputTokens + usage.outputTokens;
 

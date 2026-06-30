@@ -130,7 +130,7 @@ export async function clearMessageHistory(tabId?: number, windowId?: number): Pr
     // Clear message history for a specific window
     windowMessageHistories.set(windowId, { provider, originalRequest: null, conversationHistory: [] });
     // Clear screenshots
-    screenshotManager.clear();
+    screenshotManager.clear(windowId);
     logWithTimestamp(`Message history and screenshots cleared for window ${windowId}`);
   } else if (getCurrentTabId()) {
     // Try to get the window ID for the current tab
@@ -139,7 +139,7 @@ export async function clearMessageHistory(tabId?: number, windowId?: number): Pr
       // Clear message history for the current window
       windowMessageHistories.set(currentWindowId, { provider, originalRequest: null, conversationHistory: [] });
       // Clear screenshots
-      screenshotManager.clear();
+      screenshotManager.clear(currentWindowId);
       logWithTimestamp(`Message history and screenshots cleared for current window ${currentWindowId}`);
     }
   } else {
@@ -652,7 +652,7 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
     const useStreaming = true;
     
     // Reset streaming buffer and segment ID
-    resetStreamingState();
+    resetStreamingState(updatedTabState.windowId);
     
     // Get the structured message history
     const history = await getStructuredMessageHistory(targetTabId);
@@ -692,16 +692,17 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
         }
       },
       onLlmOutput: async (content) => {
+        const windowId = getWindowForTab(targetTabId);
         // For non-streaming mode, send the complete output
         if (!useStreaming) {
           sendUIMessage('updateOutput', {
             type: 'llm',
             content: content
-          }, targetTabId);
+          }, targetTabId, windowId);
         } else {
           // For streaming mode, store the final content to ensure it's not lost
           // This will be used in onComplete if needed
-          setStreamingBuffer(content);
+          setStreamingBuffer(content, windowId);
         }
         
         // If this is a reflection prompt, directly save the memory
@@ -745,7 +746,6 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
             }
             
             // Get the window ID for this tab
-            const windowId = getWindowForTab(targetTabId);
             if (windowId) {
               // Update the message history
               windowMessageHistories.set(windowId, history);
@@ -758,11 +758,12 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
         }
       },
       onToolOutput: (content) => {
+        const windowId = getWindowForTab(targetTabId);
         // Normal handling for tool outputs
         sendUIMessage('updateOutput', {
           type: 'system',
           content: content
-        }, targetTabId);
+        }, targetTabId, windowId);
       },
       onToolEnd: (result) => {
         // Check if this is a screenshot result by trying to parse it as JSON
@@ -781,13 +782,14 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
                 screenshotData.source && 
                 screenshotData.source.data) {
               
+              const windowId = getWindowForTab(targetTabId);
               // Send special screenshot message to UI
               sendUIMessage('updateScreenshot', {
                 type: 'screenshot',
                 content: data.note || "Screenshot captured",
                 imageData: screenshotData.source.data,
                 mediaType: screenshotData.source.media_type || 'image/jpeg'
-              }, targetTabId);
+              }, targetTabId, windowId);
               
               logWithTimestamp(`Sent screenshot ${data.id} to UI for tab ${targetTabId}`);
             } else {
@@ -799,6 +801,7 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
         }
       },
       onError: (error) => {
+        const windowId = getWindowForTab(targetTabId);
         // For retryable errors (rate limit or overloaded), show a message but don't complete processing
         if (error?.error?.type === 'rate_limit_error' || error?.error?.type === 'overloaded_error') {
           const errorType = error?.error?.type === 'overloaded_error' ? 'Anthropic servers overloaded' : 'Rate limit exceeded';
@@ -807,25 +810,26 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
           sendUIMessage('updateOutput', {
             type: 'system',
             content: `⚠️ ${errorType}. Retrying... (${error.error.message})`
-          }, targetTabId);
+          }, targetTabId, windowId);
           
           // Explicitly tell the UI to stay in processing mode
           sendUIMessage('rateLimit', {
             isRetrying: true
-          }, targetTabId);
+          }, targetTabId, windowId);
         }
       },
       onFallbackStarted: () => {
+        const windowId = getWindowForTab(targetTabId);
         // Notify the UI that we're falling back but still processing
         logWithTimestamp("Fallback started, notifying UI to maintain processing state");
         sendUIMessage('fallbackStarted', {
           message: "Switching to fallback mode due to error. Processing continues..."
-        }, targetTabId);
+        }, targetTabId, windowId);
         
         // Explicitly tell the UI to stay in processing mode
         sendUIMessage('rateLimit', {
           isRetrying: true
-        }, targetTabId);
+        }, targetTabId, windowId);
       },
       onSegmentComplete: (segment) => {
         if (useStreaming) {
@@ -833,10 +837,10 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
           const windowId = getWindowForTab(targetTabId);
           
           // Finalize the current streaming segment
-          finalizeStreamingSegment(getCurrentSegmentId(), segment, targetTabId, windowId);
+          finalizeStreamingSegment(getCurrentSegmentId(windowId), segment, targetTabId, windowId);
           
           // Increment segment ID for the next segment
-          incrementSegmentId();
+          incrementSegmentId(windowId);
         }
       },
       onToolStart: (toolName, toolInput) => {
@@ -845,7 +849,7 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
           const windowId = getWindowForTab(targetTabId);
           
           // Start a new segment for after the tool execution
-          startNewSegment(getCurrentSegmentId(), targetTabId, windowId);
+          startNewSegment(getCurrentSegmentId(windowId), targetTabId, windowId);
         }
       },
       onComplete: () => {
@@ -854,13 +858,13 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
         
         // Finalize the last segment if needed FIRST
         // This ensures the final LLM output is not lost
-        if (useStreaming && getStreamingBuffer().trim()) {
+        if (useStreaming && getStreamingBuffer(windowId).trim()) {
           // Check if this segment contains a tool call
-          const hasToolCall = /<tool>(.*?)<\/tool>\s*<input>([\s\S]*?)<\/input>/.test(getStreamingBuffer());
+          const hasToolCall = /<tool>(.*?)<\/tool>\s*<input>([\s\S]*?)<\/input>/.test(getStreamingBuffer(windowId));
           
           // If it doesn't have a tool call, it's likely the final output
           if (!hasToolCall) {
-            finalizeStreamingSegment(getCurrentSegmentId(), getStreamingBuffer(), targetTabId, windowId);
+            finalizeStreamingSegment(getCurrentSegmentId(windowId), getStreamingBuffer(windowId), targetTabId, windowId);
           }
         }
         
@@ -909,7 +913,8 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
       agent, 
       prompt, 
       callbacks, 
-      messageHistory
+      messageHistory,
+      updatedWindowId
     );
   } catch (error) {
     const errorMessage = handleError(error, 'executing prompt');

@@ -1,4 +1,4 @@
-import type { Page } from "playwright-crx";
+import type { Page, BrowserContext } from "playwright-crx";
 
 /**
  * PageContextManager is responsible for tracking the currently active page.
@@ -6,7 +6,7 @@ import type { Page } from "playwright-crx";
  */
 export class PageContextManager {
   private static instance: PageContextManager;
-  private currentPage: Page | null = null;
+  private activePages = new Map<BrowserContext, Page>();
 
   private constructor() {
     // Private constructor to enforce singleton pattern
@@ -27,7 +27,12 @@ export class PageContextManager {
    * @param page The page to set as active
    */
   public setCurrentPage(page: Page): void {
-    this.currentPage = page;
+    if (!page) {
+      console.log("PageContextManager: Page is null or undefined");
+      return;
+    }
+    const context = page.context();
+    this.activePages.set(context, page);
     console.log("PageContextManager: Active page updated");
   }
 
@@ -37,7 +42,9 @@ export class PageContextManager {
    * @returns The current active page or the fallback page
    */
   public getCurrentPage(fallbackPage: Page): Page {
-    return this.currentPage || fallbackPage;
+    if (!fallbackPage) return null as any;
+    const context = fallbackPage.context();
+    return this.activePages.get(context) || fallbackPage;
   }
 
   /**
@@ -45,8 +52,10 @@ export class PageContextManager {
    * @param initialPage The initial page to set
    */
   public initialize(initialPage: Page): void {
-    if (!this.currentPage) {
-      this.currentPage = initialPage;
+    if (!initialPage) return;
+    const context = initialPage.context();
+    if (!this.activePages.has(context)) {
+      this.activePages.set(context, initialPage);
       console.log("PageContextManager: Initialized with initial page");
     }
   }
@@ -54,8 +63,15 @@ export class PageContextManager {
   /**
    * Reset the PageContextManager
    */
-  public reset(): void {
-    this.currentPage = null;
+  public reset(context?: BrowserContext | Page): void {
+    if (context) {
+      const targetContext = 'context' in context && typeof context.context === 'function' 
+        ? context.context() 
+        : context as BrowserContext;
+      this.activePages.delete(targetContext);
+    } else {
+      this.activePages.clear();
+    }
     console.log("PageContextManager: Reset");
   }
 }
@@ -88,6 +104,6 @@ export function initializePageContext(initialPage: Page): void {
 /**
  * Helper function to reset the PageContextManager
  */
-export function resetPageContext(): void {
-  PageContextManager.getInstance().reset();
+export function resetPageContext(context?: BrowserContext | Page): void {
+  PageContextManager.getInstance().reset(context);
 }

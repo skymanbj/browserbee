@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { createMockPage } from '../../mocks/playwright';
+import { createMockPage, createMockBrowserContext } from '../../mocks/playwright';
 
 // Import the classes and functions to test
 import {
@@ -17,9 +17,10 @@ describe('PageContextManager', () => {
   let consoleSpy: any;
 
   beforeEach(() => {
-    mockPage1 = createMockPage();
-    mockPage2 = createMockPage();
-    mockPage3 = createMockPage();
+    const sharedContext = createMockBrowserContext() as any;
+    mockPage1 = createMockPage(sharedContext);
+    mockPage2 = createMockPage(sharedContext);
+    mockPage3 = createMockPage(sharedContext);
     
     // Reset the singleton instance before each test
     (PageContextManager as any).instance = undefined;

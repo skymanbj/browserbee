@@ -7,6 +7,7 @@
 export class ScreenshotManager {
   private static instance: ScreenshotManager;
   private screenshots: Map<string, any> = new Map();
+  private screenshotWindowIds: Map<string, number> = new Map();
   private counter: number = 0;
   
   private constructor() {}
@@ -25,11 +26,15 @@ export class ScreenshotManager {
   /**
    * Store a screenshot and return a handle to reference it
    * @param data The screenshot data to store
+   * @param windowId Optional window ID to associate with the screenshot
    * @returns A unique handle to reference the screenshot (e.g., "screenshot#42")
    */
-  storeScreenshot(data: any): string {
+  storeScreenshot(data: any, windowId?: number): string {
     const id = `screenshot#${++this.counter}`;
     this.screenshots.set(id, data);
+    if (windowId !== undefined && windowId !== null) {
+      this.screenshotWindowIds.set(id, windowId);
+    }
     return id;
   }
   
@@ -60,10 +65,21 @@ export class ScreenshotManager {
   }
   
   /**
-   * Clear all screenshots from memory
+   * Clear screenshots from memory
+   * @param windowId Optional window ID to selectively clear screenshots for a window
    */
-  clear(): void {
-    this.screenshots.clear();
-    this.counter = 0;
+  clear(windowId?: number): void {
+    if (windowId !== undefined && windowId !== null) {
+      for (const [id, wId] of this.screenshotWindowIds.entries()) {
+        if (wId === windowId) {
+          this.screenshots.delete(id);
+          this.screenshotWindowIds.delete(id);
+        }
+      }
+    } else {
+      this.screenshots.clear();
+      this.screenshotWindowIds.clear();
+      this.counter = 0;
+    }
   }
 }

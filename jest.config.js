@@ -5,6 +5,8 @@ export default {
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^@google/genai$': '<rootDir>/tests/mocks/googleGenAIMock.ts',
+    '^openai$': '<rootDir>/tests/mocks/openaiMock.ts',
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {

@@ -139,12 +139,14 @@ export class BrowserAgent {
   async executePromptWithFallback(
     prompt: string,
     callbacks: ExecutionCallbacks,
-    initialMessages: any[] = []
+    initialMessages: any[] = [],
+    windowId?: number
   ): Promise<void> {
     return this.executionEngine.executePromptWithFallback(
       prompt,
       callbacks,
-      initialMessages
+      initialMessages,
+      windowId
     );
   }
 
@@ -154,13 +156,15 @@ export class BrowserAgent {
   async executePrompt(
     prompt: string,
     callbacks: ExecutionCallbacks,
-    initialMessages: any[] = []
+    initialMessages: any[] = [],
+    windowId?: number
   ): Promise<void> {
     return this.executionEngine.executePrompt(
       prompt,
       callbacks,
       initialMessages,
-      false // Non-streaming mode
+      false, // Non-streaming mode
+      windowId
     );
   }
 }
@@ -247,11 +251,10 @@ export async function executePrompt(
   agent: BrowserAgent,
   prompt: string,
   callbacks: ExecutionCallbacks,
-  initialMessages: any[] = []
+  initialMessages: any[] = [],
+  windowId?: number
 ): Promise<void> {
-  return agent.executePrompt(prompt, callbacks, initialMessages);
-  // Note: The agent's executePrompt method now includes the isStreaming parameter
-  // with a default value of false, so we don't need to pass it here
+  return agent.executePrompt(prompt, callbacks, initialMessages, windowId);
 }
 
 /**
@@ -261,7 +264,8 @@ export async function executePromptWithFallback(
   agent: BrowserAgent,
   prompt: string,
   callbacks: ExecutionCallbacks,
-  initialMessages: any[] = []
+  initialMessages: any[] = [],
+  windowId?: number
 ): Promise<void> {
-  return agent.executePromptWithFallback(prompt, callbacks, initialMessages);
+  return agent.executePromptWithFallback(prompt, callbacks, initialMessages, windowId);
 }

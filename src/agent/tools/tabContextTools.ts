@@ -4,6 +4,7 @@ import { getCurrentPage } from "../PageContextManager";
 import { ScreenshotManager } from "../../tracking/screenshotManager";
 import { ToolFactory } from "./types";
 import { getCurrentTabId, isAllowedUrl } from "./utils";
+import { getWindowForTab } from "../../background/tabManager";
 
 /**
  * Tool to get information about the currently active tab
@@ -199,8 +200,10 @@ export const browserScreenshotTab: ToolFactory = (page: Page) =>
           }
         };
         
+        const tabId = await getCurrentTabId(targetPage);
+        const windowId = tabId ? getWindowForTab(tabId) : undefined;
         // Store the screenshot in the ScreenshotManager
-        const screenshotId = screenshotManager.storeScreenshot(screenshotData);
+        const screenshotId = screenshotManager.storeScreenshot(screenshotData, windowId);
         
         // Log the screenshot storage
         console.log(`Stored tab screenshot as ${screenshotId} (saved ${base64.length} characters)`);

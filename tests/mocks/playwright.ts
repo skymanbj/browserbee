@@ -113,7 +113,8 @@ function createSimpleMockContext(): MockBrowserContext {
   };
 }
 
-export function createMockPage(): MockPage {
+export function createMockPage(context?: MockBrowserContext): MockPage {
+  const contextInstance = context || createSimpleMockContext();
   const mockPage: MockPage = {
     goto: jest.fn().mockResolvedValue(null),
     click: jest.fn().mockResolvedValue(undefined),
@@ -234,7 +235,7 @@ export function createMockPage(): MockPage {
     close: jest.fn().mockResolvedValue(undefined),
     on: jest.fn().mockReturnValue(undefined),
     off: jest.fn().mockReturnValue(undefined),
-    context: jest.fn().mockImplementation(() => createSimpleMockContext()),
+    context: jest.fn().mockReturnValue(contextInstance),
     setViewportSize: jest.fn().mockResolvedValue(undefined),
     viewportSize: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
     scroll: jest.fn().mockResolvedValue(undefined),

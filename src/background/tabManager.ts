@@ -722,7 +722,13 @@ export function setupTabListeners(): void {
       
       // Reset PageContextManager
       try {
-        resetPageContext();
+        const tabState = getTabState(tabId);
+        if (tabState?.page) {
+          resetPageContext(tabState.page);
+        } else {
+          resetPageContext();
+        }
+        tabStates.delete(tabId);
         logWithTimestamp(`Reset PageContextManager for closed tab ${tabId}`);
       } catch (error) {
         logWithTimestamp(`Error resetting PageContextManager: ${error instanceof Error ? error.message : String(error)}`, 'warn');

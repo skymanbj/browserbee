@@ -242,19 +242,33 @@ export class SessionService {
 
   // --- Current session tracking ---
 
-  private currentSessionId: string | null = null;
+  private windowCurrentSessionIds: Map<number, string> = new Map();
+  private defaultCurrentSessionId: string | null = null;
 
-  public getCurrentSessionId(): string | null {
-    return this.currentSessionId;
+  public getCurrentSessionId(windowId?: number): string | null {
+    if (windowId === undefined || windowId === null) {
+      return this.defaultCurrentSessionId;
+    }
+    return this.windowCurrentSessionIds.get(windowId) || null;
   }
 
-  public setCurrentSessionId(id: string | null): void {
-    this.currentSessionId = id;
+  public setCurrentSessionId(id: string | null, windowId?: number): void {
+    if (windowId === undefined || windowId === null) {
+      this.defaultCurrentSessionId = id;
+    } else {
+      if (id) {
+        this.windowCurrentSessionIds.set(windowId, id);
+      } else {
+        this.windowCurrentSessionIds.delete(windowId);
+      }
+    }
   }
 
   public async getOrCreateCurrentSession(input: CreateSessionInput): Promise<Session> {
-    if (this.currentSessionId && this.sessions.has(this.currentSessionId)) {
-      const existing = this.sessions.get(this.currentSessionId)!;
+    const windowId = input.windowId;
+    const currentSessionId = this.getCurrentSessionId(windowId);
+    if (currentSessionId && this.sessions.has(currentSessionId)) {
+      const existing = this.sessions.get(currentSessionId)!;
       // Update tab info in case it changed
       existing.tabId = input.tabId;
       existing.tabTitle = input.tabTitle;
@@ -264,7 +278,7 @@ export class SessionService {
       return existing;
     }
     const session = await this.create(input);
-    this.currentSessionId = session.id;
+    this.setCurrentSessionId(session.id, windowId);
     return session;
   }
 

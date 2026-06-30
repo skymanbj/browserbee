@@ -326,7 +326,7 @@ export function SidePanel() {
 
     // Reset token tracking
     const tokenTracker = TokenTrackingService.getInstance();
-    tokenTracker.reset();
+    tokenTracker.reset(windowId || undefined);
   };
 
   // Handle reflect and learn
@@ -477,7 +477,7 @@ export function SidePanel() {
           </div>
 
           {/* Add Token Usage Display */}
-          <TokenUsageDisplay />
+          <TokenUsageDisplay windowId={windowId} />
 
           {/* Display approval requests */}
           {approvalRequests.map(req => (

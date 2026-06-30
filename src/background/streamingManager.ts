@@ -1,35 +1,54 @@
 import { sendUIMessage } from './utils';
 
-// Streaming buffer and regex patterns
-let streamingBuffer = '';
+// Maps of windowId -> state
+const windowStreamingBuffers = new Map<number, string>();
+const windowSegmentIds = new Map<number, number>();
+
+// Combined tool call regex and sentence end regex
 const combinedToolCallRegex = /(```(?:xml|bash)\s*)?<tool>(.*?)<\/tool>\s*<input>([\s\S]*?)<\/input>(?:\s*<requires_approval>(.*?)<\/requires_approval>)?(\s*```)?/;
 const sentenceEndRegex = /[.!?]\s+/;
 
-// Current streaming segment ID
-let currentSegmentId = 0;
+// Default window ID for contexts without windowId
+const DEFAULT_WINDOW_ID = -1;
+
+function getStreamingBufferForWindow(windowId?: number): string {
+  const wId = windowId !== undefined && windowId !== null ? windowId : DEFAULT_WINDOW_ID;
+  return windowStreamingBuffers.get(wId) || '';
+}
+
+function setStreamingBufferForWindow(content: string, windowId?: number): void {
+  const wId = windowId !== undefined && windowId !== null ? windowId : DEFAULT_WINDOW_ID;
+  windowStreamingBuffers.set(wId, content);
+}
 
 /**
  * Reset streaming state
  */
-export function resetStreamingState(): void {
-  streamingBuffer = '';
-  currentSegmentId = 0;
+export function resetStreamingState(windowId?: number): void {
+  setStreamingBufferForWindow('', windowId);
+  const wId = windowId !== undefined && windowId !== null ? windowId : DEFAULT_WINDOW_ID;
+  windowSegmentIds.set(wId, 0);
 }
 
 /**
  * Get the current segment ID
  * @returns The current segment ID
  */
-export function getCurrentSegmentId(): number {
-  return currentSegmentId;
+export function getCurrentSegmentId(windowId?: number): number {
+  const wId = windowId !== undefined && windowId !== null ? windowId : DEFAULT_WINDOW_ID;
+  return windowSegmentIds.get(wId) || 0;
 }
 
 /**
  * Increment the segment ID
  * @returns The new segment ID
  */
-export function incrementSegmentId(): number {
-  return ++currentSegmentId;
+export function incrementSegmentId(windowId?: number): number {
+  const wId = windowId !== undefined && windowId !== null ? windowId : DEFAULT_WINDOW_ID;
+  const current = windowSegmentIds.get(wId) || 0;
+  const next = current + 1;
+  windowSegmentIds.set(wId, next);
+  return next;
 }
 
 /**
@@ -38,8 +57,10 @@ export function incrementSegmentId(): number {
  * @param windowId The window ID to send messages to
  */
 export function processStreamingBuffer(tabId?: number, windowId?: number): void {
+  const buffer = getStreamingBufferForWindow(windowId);
+
   // Check if buffer contains a complete tool call (either direct or in a code block)
-  const toolCallMatch = streamingBuffer.match(combinedToolCallRegex);
+  const toolCallMatch = buffer.match(combinedToolCallRegex);
   
   if (toolCallMatch) {
     // When a tool call is detected, we don't send any more streaming chunks
@@ -53,26 +74,26 @@ export function processStreamingBuffer(tabId?: number, windowId?: number): void 
   }
   
   // If no complete tool call, check for complete sentences
-  const sentenceMatch = streamingBuffer.match(sentenceEndRegex);
+  const sentenceMatch = buffer.match(sentenceEndRegex);
   
   if (sentenceMatch) {
-    const lastSentenceEnd = streamingBuffer.lastIndexOf(sentenceMatch[0]) + sentenceMatch[0].length;
+    const lastSentenceEnd = buffer.lastIndexOf(sentenceMatch[0]) + sentenceMatch[0].length;
     
     // Send complete sentences
     sendUIMessage('updateStreamingChunk', {
       type: 'llm',
-      content: streamingBuffer.substring(0, lastSentenceEnd)
+      content: buffer.substring(0, lastSentenceEnd)
     }, tabId, windowId);
     
     // Keep remainder in buffer
-    streamingBuffer = streamingBuffer.substring(lastSentenceEnd);
-  } else if (streamingBuffer.length > 100) {
+    setStreamingBufferForWindow(buffer.substring(lastSentenceEnd), windowId);
+  } else if (buffer.length > 100) {
     // If buffer is getting long without sentence breaks, send it anyway
     sendUIMessage('updateStreamingChunk', {
       type: 'llm',
-      content: streamingBuffer
+      content: buffer
     }, tabId, windowId);
-    streamingBuffer = '';
+    setStreamingBufferForWindow('', windowId);
   }
   // Otherwise keep accumulating in buffer
 }
@@ -84,7 +105,8 @@ export function processStreamingBuffer(tabId?: number, windowId?: number): void 
  * @param windowId The window ID to send messages to
  */
 export function addToStreamingBuffer(chunk: string, tabId?: number, windowId?: number): void {
-  streamingBuffer += chunk;
+  const current = getStreamingBufferForWindow(windowId);
+  setStreamingBufferForWindow(current + chunk, windowId);
   processStreamingBuffer(tabId, windowId);
 }
 
@@ -92,16 +114,16 @@ export function addToStreamingBuffer(chunk: string, tabId?: number, windowId?: n
  * Get the current streaming buffer content
  * @returns The current streaming buffer content
  */
-export function getStreamingBuffer(): string {
-  return streamingBuffer;
+export function getStreamingBuffer(windowId?: number): string {
+  return getStreamingBufferForWindow(windowId);
 }
 
 /**
  * Set the streaming buffer content
  * @param content The content to set
  */
-export function setStreamingBuffer(content: string): void {
-  streamingBuffer = content;
+export function setStreamingBuffer(content: string, windowId?: number): void {
+  setStreamingBufferForWindow(content, windowId);
 }
 
 /**
@@ -110,12 +132,13 @@ export function setStreamingBuffer(content: string): void {
  * @param windowId The window ID to send messages to
  */
 export function clearStreamingBuffer(tabId?: number, windowId?: number): void {
-  if (streamingBuffer.length > 0) {
+  const buffer = getStreamingBufferForWindow(windowId);
+  if (buffer.length > 0) {
     sendUIMessage('updateStreamingChunk', {
       type: 'llm',
-      content: streamingBuffer
+      content: buffer
     }, tabId, windowId);
-    streamingBuffer = '';
+    setStreamingBufferForWindow('', windowId);
   }
 }
 

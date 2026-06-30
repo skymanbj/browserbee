@@ -3,6 +3,7 @@ import type { Page } from "playwright-crx";
 import { ScreenshotManager } from "../../tracking/screenshotManager";
 import { ToolFactory } from "./types";
 import { truncate, MAX_RETURN_CHARS, MAX_SCREENSHOT_CHARS, withActivePage, getCurrentTabId } from "./utils";
+import { getWindowForTab } from "../../background/tabManager";
 
 export const browserGetTitle: ToolFactory = (page: Page) =>
   new DynamicTool({
@@ -616,8 +617,10 @@ export const browserScreenshot: ToolFactory = (page: Page) =>
             }
           };
           
+          const tabId = await getCurrentTabId(activePage);
+          const windowId = tabId ? getWindowForTab(tabId) : undefined;
           // Store the screenshot in the ScreenshotManager
-          const screenshotId = screenshotManager.storeScreenshot(screenshotData);
+          const screenshotId = screenshotManager.storeScreenshot(screenshotData, windowId);
           
           // Log the screenshot storage
           console.log(`Stored screenshot as ${screenshotId} (saved ${base64.length} characters)`);
