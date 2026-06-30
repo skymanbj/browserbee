@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ConfigManager } from '../background/configManager';
+import { useTheme } from '../context/ThemeContext';
 import { TokenTrackingService } from '../tracking/tokenTrackingService';
 import { ApprovalRequest } from './components/ApprovalRequest';
 import { MessageDisplay } from './components/MessageDisplay';
@@ -13,6 +14,8 @@ import { useMessageManagement } from './hooks/useMessageManagement';
 import { useTabManagement } from './hooks/useTabManagement';
 
 export function SidePanel() {
+  const { themeMode, toggleTheme } = useTheme();
+
   // State for tab status
   const [tabStatus, setTabStatus] = useState<'attached' | 'detached' | 'unknown' | 'running' | 'idle' | 'error'>('unknown');
 
@@ -319,12 +322,36 @@ export function SidePanel() {
 
   return (
     <div className="flex flex-col h-screen p-4 bg-base-200">
-      <header className="mb-2">
+      <header className="mb-2 flex items-center justify-between">
         <TabStatusBar
           tabId={tabId}
           tabTitle={tabTitle}
           tabStatus={tabStatus}
         />
+        <button
+          onClick={toggleTheme}
+          className="btn btn-ghost btn-sm rounded-full flex items-center gap-1.5 shrink-0"
+          aria-label={`Switch to ${themeMode === 'light' ? 'dark' : 'light'} theme`}
+          title={`Switch to ${themeMode === 'light' ? 'dark' : 'light'} theme`}
+        >
+          {themeMode === 'light' ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2" />
+              <path d="M12 20v2" />
+              <path d="m4.93 4.93 1.41 1.41" />
+              <path d="m17.66 17.66 1.41 1.41" />
+              <path d="M2 12h2" />
+              <path d="M20 12h2" />
+              <path d="m6.34 17.66-1.41 1.41" />
+              <path d="m19.07 4.93-1.41 1.41" />
+            </svg>
+          )}
+        </button>
       </header>
 
       {hasConfiguredProviders ? (

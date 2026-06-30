@@ -1,7 +1,13 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-/* Glassmorphism Design System */
+/* =========================================================
+   Glassmorphism Design System - Theme Aware
+   ========================================================= */
+
+/* ── Dark Mode (default) ─────────────────────────────── */
+
+/* Container with gradient background for dark mode */
 .glass-container {
   background: radial-gradient(circle at top left, rgba(30, 27, 75, 0.5), rgba(15, 23, 42, 0.95)),
               radial-gradient(circle at bottom right, rgba(88, 28, 135, 0.4), rgba(15, 23, 42, 0.95)) !important;
@@ -10,6 +16,7 @@
   overflow: hidden;
 }
 
+/* Glass card with blur effect */
 .glass-card {
   background: rgba(255, 255, 255, 0.04) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
@@ -25,6 +32,7 @@
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
+/* Glass input field */
 .glass-input {
   background: rgba(255, 255, 255, 0.03) !important;
   backdrop-filter: blur(10px) !important;
@@ -42,6 +50,7 @@
   outline: none !important;
 }
 
+/* Glass button */
 .glass-btn {
   background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -62,6 +71,7 @@
   transform: translateY(0);
 }
 
+/* Glass primary button */
 .glass-btn-primary {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(168, 85, 247, 0.5)) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -74,6 +84,7 @@
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5) !important;
 }
 
+/* Glass badge */
 .glass-badge {
   background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -83,26 +94,9 @@
   color: #e2e8f0 !important;
 }
 
-/* Custom Scrollbar for Glass UI */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+/* ── Light Mode ──────────────────────────────────────── */
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* Glassmorphism Light Mode Definitions */
+/* Container with gradient background for light mode */
 .glass-container-light {
   background: radial-gradient(circle at top left, rgba(220, 225, 245, 0.85), rgba(240, 243, 248, 0.95)),
               radial-gradient(circle at bottom right, rgba(235, 220, 248, 0.8), rgba(240, 243, 248, 0.95)) !important;
@@ -111,6 +105,7 @@
   overflow: hidden;
 }
 
+/* Glass card with blur effect for light mode */
 .glass-card-light {
   background: rgba(255, 255, 255, 0.45) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
@@ -127,6 +122,7 @@
   border-color: rgba(255, 255, 255, 0.8) !important;
 }
 
+/* Glass input field for light mode */
 .glass-input-light {
   background: rgba(255, 255, 255, 0.55) !important;
   backdrop-filter: blur(10px) !important;
@@ -144,6 +140,7 @@
   outline: none !important;
 }
 
+/* Glass button for light mode */
 .glass-btn-light {
   background: rgba(255, 255, 255, 0.5) !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
@@ -164,6 +161,7 @@
   transform: translateY(0);
 }
 
+/* Glass primary button for light mode */
 .glass-btn-primary-light {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(168, 85, 247, 0.6)) !important;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
@@ -176,6 +174,7 @@
   box-shadow: 0 6px 15px rgba(99, 102, 241, 0.25) !important;
 }
 
+/* Glass badge for light mode */
 .glass-badge-light {
   background: rgba(255, 255, 255, 0.5) !important;
   border: 1px solid rgba(0, 0, 0, 0.06) !important;
@@ -185,4 +184,60 @@
   color: #334155 !important;
 }
 
+/* ── Custom Scrollbar ────────────────────────────────── */
 
+/* Thin scrollbar for modern look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Light mode scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ── Page Background ─────────────────────────────────── */
+
+/* Ensure proper background for body based on theme */
+html[data-theme="dark"] body {
+  background: #0f172a;
+}
+
+html[data-theme="light"] body {
+  background: #f0f4f8;
+}
+
+/* ── Utility Animations ──────────────────────────────── */
+
+/* Smooth theme transition */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Exclude interactive elements from color transition */
+button, input, textarea, select, a {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Glass card transitions exclude the general transition */
+.glass-card, .glass-card-light {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

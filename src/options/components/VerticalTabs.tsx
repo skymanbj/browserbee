@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
 import { OllamaModel } from './OllamaModelList';
+import { ThemeToggle } from './ThemeToggle';
 import { GeneralTab } from './tabs/GeneralTab';
 import { MemoryTab } from './tabs/MemoryTab';
 import { PromptTemplateTab } from './tabs/PromptTemplateTab';
@@ -142,8 +143,8 @@ export function VerticalTabs(props: VerticalTabsProps) {
   return (
     <div className="flex min-h-screen bg-base-200">
       {/* Left Sidebar - Vertical Tabs */}
-      <div className="w-64 bg-base-100 shadow-lg">
-        <div className="p-4">
+      <div className="w-64 bg-base-100 shadow-lg flex flex-col">
+        <div className="p-4 flex-1">
           <h1 className="text-2xl font-bold text-primary mb-6">BrowserBee 🐝</h1>
           <div className="tabs tabs-vertical w-full">
             {tabs.map((tab) => (
@@ -158,6 +159,11 @@ export function VerticalTabs(props: VerticalTabsProps) {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Theme Toggle at bottom of sidebar */}
+        <div className="p-4 border-t border-base-200">
+          <ThemeToggle />
         </div>
       </div>
 
