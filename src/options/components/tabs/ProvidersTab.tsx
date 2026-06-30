@@ -108,26 +108,119 @@ export function ProvidersTab({
   getModelPricingData,
 }: ProvidersTabProps) {
   const { t } = useLanguage();
-  const [showCompatManager, setShowCompatManager] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newInstName, setNewInstName] = useState('');
+  const [newInstUrl, setNewInstUrl] = useState('');
+  const [newInstKey, setNewInstKey] = useState('');
+  const [addingStatus, setAddingStatus] = useState<string | null>(null);
+  const [isPullingNew, setIsPullingNew] = useState(false);
 
+  // Link grid selection with detail form
   useEffect(() => {
-    const handler = () => setShowCompatManager(true);
+    if (provider.startsWith('openai-compatible:')) {
+      const instId = provider.split(':')[1];
+      setSelectedInstanceId(instId);
+      setIsAddingNew(false);
+    } else {
+      setIsAddingNew(false);
+    }
+  }, [provider, setSelectedInstanceId]);
+
+  // Listen for the Add card click from grid
+  useEffect(() => {
+    const handler = () => {
+      setIsAddingNew(true);
+      setNewInstName('');
+      setNewInstUrl('');
+      setNewInstKey('');
+      setAddingStatus(null);
+      setTimeout(() => {
+        document.getElementById('provider-settings-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 80);
+    };
     window.addEventListener('browserbee:addOpenAICompatible', handler);
     return () => window.removeEventListener('browserbee:addOpenAICompatible', handler);
   }, []);
 
-  // Notify ProviderSelector to reset its display when manager closes
-  const handleCloseCompatManager = () => {
-    setShowCompatManager(false);
-    window.dispatchEvent(new CustomEvent('browserbee:closeOpenAICompatible'));
-  };
-
-  // Auto-show manager when an instance is selected
+  // Switch back to default provider on deletion
   useEffect(() => {
-    if (provider.startsWith('openai-compatible:')) {
-      setShowCompatManager(true);
+    const handler = (e: any) => {
+      const deletedId = e.detail?.id;
+      if (provider === `openai-compatible:${deletedId}`) {
+        setProvider('anthropic');
+      }
+    };
+    window.addEventListener('browserbee:deletedInstance', handler);
+    return () => window.removeEventListener('browserbee:deletedInstance', handler);
+  }, [provider, setProvider]);
+
+  const handleCreateAndPull = async () => {
+    setIsPullingNew(true);
+    setAddingStatus(null);
+    try {
+      const name = newInstName.trim();
+      const url = newInstUrl.trim();
+      const key = newInstKey.trim();
+      
+      const safeId = name.toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'custom';
+      const uniqueId = `${safeId}-${Math.random().toString(36).substring(2, 6)}`;
+      
+      // Auto fetch models in background
+      let fetchedModels: any[] = [];
+      const formattedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+      try {
+        const response = await fetch(`${formattedUrl}/models`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(key ? { 'Authorization': `Bearer ${key}` } : {})
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const list = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : null);
+          if (list) {
+            fetchedModels = list.map((m: any) => {
+              const id = m.id || m.name || '';
+              return {
+                id,
+                name: m.name || id,
+                isReasoningModel: id.toLowerCase().includes('reasoning') || id.toLowerCase().includes('deepseek-r1') || id.toLowerCase().includes('thought'),
+                contextWindow: 128000,
+                maxTokens: 4096
+              };
+            }).filter((m: any) => m.id);
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('Failed to fetch models in creation', fetchErr);
+      }
+
+      const newInst = {
+        id: uniqueId,
+        name,
+        apiKey: key,
+        baseUrl: url,
+        modelId: fetchedModels[0]?.id || '',
+        models: fetchedModels
+      };
+
+      const updated = [...openaiCompatibleInstances, newInst];
+      setOpenaiCompatibleInstances(updated);
+      
+      // Save directly to storage
+      await chrome.storage.sync.set({ openaiCompatibleInstances: updated });
+      
+      setAddingStatus(t('添加并拉取模型成功！') + ` (${fetchedModels.length} models)`);
+      
+      // Select the new provider
+      setProvider(`openai-compatible:${uniqueId}`);
+      setIsAddingNew(false);
+    } catch (err: any) {
+      setAddingStatus(t('创建失败') + `: ${err.message || err}`);
+    } finally {
+      setIsPullingNew(false);
     }
-  }, [provider]);
+  };
 
   const configFileInputRef = React.useRef<HTMLInputElement>(null);
   const [configExportStatus, setConfigExportStatus] = useState("");
@@ -271,6 +364,75 @@ export function ProvidersTab({
     setPageAssistProviders(prev => prev.map(p => p.id === id ? { ...p, checked: !p.checked } : p));
   };
 
+  const renderAddNewForm = () => {
+    return (
+      <div className="border border-dashed border-primary rounded-lg p-6 mb-4 bg-primary/5">
+        <div className="flex justify-between items-center mb-4 border-b border-primary/20 pb-2">
+          <h3 className="font-bold text-base text-primary flex items-center gap-2">
+            <span>➕</span> {t('新建自定义兼容服务')}
+          </h3>
+          <button type="button" className="btn btn-xs btn-ghost text-base-content/60" onClick={() => setIsAddingNew(false)}>
+            {t('取消')}
+          </button>
+        </div>
+        
+        <div className="form-control mb-4">
+          <label className="label">
+            <span className="label-text font-medium">{t('提供商名称')}:</span>
+          </label>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            placeholder="e.g. DeepSeek, SiliconFlow, OpenRouter"
+            value={newInstName}
+            onChange={e => setNewInstName(e.target.value)}
+          />
+        </div>
+
+        <div className="form-control mb-4">
+          <label className="label">
+            <span className="label-text font-medium">{t('接口地址 (Base URL)')}:</span>
+          </label>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            placeholder="e.g. https://api.deepseek.com/v1"
+            value={newInstUrl}
+            onChange={e => setNewInstUrl(e.target.value)}
+          />
+        </div>
+
+        <div className="form-control mb-4">
+          <label className="label">
+            <span className="label-text font-medium">{t('API 密钥 (API Key)')}:</span>
+          </label>
+          <input
+            type="password"
+            className="input input-bordered w-full"
+            placeholder="Enter API Key"
+            value={newInstKey}
+            onChange={e => setNewInstKey(e.target.value)}
+          />
+        </div>
+
+        {addingStatus && (
+          <div className={`text-xs mb-4 font-medium ${addingStatus.includes('成功') || addingStatus.includes('success') ? 'text-success' : 'text-error'}`}>
+            {addingStatus}
+          </div>
+        )}
+
+        <button
+          type="button"
+          className={`btn btn-primary w-full ${isPullingNew ? 'loading' : ''}`}
+          onClick={handleCreateAndPull}
+          disabled={!newInstName.trim() || !newInstUrl.trim() || isPullingNew}
+        >
+          {isPullingNew ? t('正在自动拉取模型...') : `➕ ${t('添加并自动拉取模型')}`}
+        </button>
+      </div>
+    );
+  };
+
   const confirmImportPageAssist = () => {
     const selected = pageAssistProviders.filter(p => p.checked);
     if (selected.length === 0) {
@@ -339,77 +501,56 @@ export function ProvidersTab({
           />
           
           {/* Provider-specific Settings */}
-          <ProviderSettings
-            provider={provider}
-            anthropicApiKey={anthropicApiKey}
-            setAnthropicApiKey={setAnthropicApiKey}
-            anthropicBaseUrl={anthropicBaseUrl}
-            setAnthropicBaseUrl={setAnthropicBaseUrl}
-            thinkingBudgetTokens={thinkingBudgetTokens}
-            setThinkingBudgetTokens={setThinkingBudgetTokens}
-            openaiApiKey={openaiApiKey}
-            setOpenaiApiKey={setOpenaiApiKey}
-            openaiBaseUrl={openaiBaseUrl}
-            setOpenaiBaseUrl={setOpenaiBaseUrl}
-            geminiApiKey={geminiApiKey}
-            setGeminiApiKey={setGeminiApiKey}
-            geminiBaseUrl={geminiBaseUrl}
-            setGeminiBaseUrl={setGeminiBaseUrl}
-            ollamaApiKey={ollamaApiKey}
-            setOllamaApiKey={setOllamaApiKey}
-            ollamaBaseUrl={ollamaBaseUrl}
-            setOllamaBaseUrl={setOllamaBaseUrl}
-            ollamaModelId={ollamaModelId}
-            setOllamaModelId={setOllamaModelId}
-            ollamaCustomModels={ollamaCustomModels}
-            setOllamaCustomModels={setOllamaCustomModels}
-            newOllamaModel={newOllamaModel}
-            setNewOllamaModel={setNewOllamaModel}
-            handleAddOllamaModel={handleAddOllamaModel}
-            handleRemoveOllamaModel={handleRemoveOllamaModel}
-            handleEditOllamaModel={handleEditOllamaModel}
-            openaiCompatibleInstances={openaiCompatibleInstances}
-            setOpenaiCompatibleInstances={setOpenaiCompatibleInstances}
-            newInstance={newInstance}
-            setNewInstance={setNewInstance}
-            handleAddInstance={handleAddInstance}
-            handleRemoveInstance={handleRemoveInstance}
-            handleUpdateInstance={handleUpdateInstance}
-            handleUpdateInstanceModel={handleUpdateInstanceModel}
-            handleAddInstanceModel={handleAddInstanceModel}
-            handleRemoveInstanceModel={handleRemoveInstanceModel}
-            selectedInstanceId={selectedInstanceId}
-            setSelectedInstanceId={setSelectedInstanceId}
-            newModel={newModel}
-            setNewModel={setNewModel}
-          />
-          {/* OpenAI Compatible Instance Manager - shown when adding or editing */}
-          {showCompatManager && !provider.startsWith('openai-compatible:') && (
-            <div className="border rounded-lg p-4 mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-bold">{t('OpenAI Compatible Instances')}</h3>
-                <button className="btn btn-sm btn-ghost" onClick={handleCloseCompatManager}>
-                  {t('Close ✕')}
-                </button>
-              </div>
-              <OpenAICompatibleInstanceManager
-              instances={openaiCompatibleInstances}
-              setInstances={setOpenaiCompatibleInstances}
-              newInstance={newInstance}
-              setNewInstance={setNewInstance}
-              handleAddInstance={handleAddInstance}
-              handleRemoveInstance={handleRemoveInstance}
-              handleUpdateInstance={handleUpdateInstance}
-              handleUpdateInstanceModel={handleUpdateInstanceModel}
-              handleAddInstanceModel={handleAddInstanceModel}
-              handleRemoveInstanceModel={handleRemoveInstanceModel}
-              selectedInstanceId={selectedInstanceId}
-              setSelectedInstanceId={setSelectedInstanceId}
-              newModel={newModel}
-              setNewModel={setNewModel}
-            />
-            </div>
-          )}
+          <div id="provider-settings-section">
+            {isAddingNew ? (
+              renderAddNewForm()
+            ) : (
+              <ProviderSettings
+                provider={provider}
+                anthropicApiKey={anthropicApiKey}
+                setAnthropicApiKey={setAnthropicApiKey}
+                anthropicBaseUrl={anthropicBaseUrl}
+                setAnthropicBaseUrl={setAnthropicBaseUrl}
+                thinkingBudgetTokens={thinkingBudgetTokens}
+                setThinkingBudgetTokens={setThinkingBudgetTokens}
+                openaiApiKey={openaiApiKey}
+                setOpenaiApiKey={setOpenaiApiKey}
+                openaiBaseUrl={openaiBaseUrl}
+                setOpenaiBaseUrl={setOpenaiBaseUrl}
+                geminiApiKey={geminiApiKey}
+                setGeminiApiKey={setGeminiApiKey}
+                geminiBaseUrl={geminiBaseUrl}
+                setGeminiBaseUrl={setGeminiBaseUrl}
+                ollamaApiKey={ollamaApiKey}
+                setOllamaApiKey={setOllamaApiKey}
+                ollamaBaseUrl={ollamaBaseUrl}
+                setOllamaBaseUrl={setOllamaBaseUrl}
+                ollamaModelId={ollamaModelId}
+                setOllamaModelId={setOllamaModelId}
+                ollamaCustomModels={ollamaCustomModels}
+                setOllamaCustomModels={setOllamaCustomModels}
+                newOllamaModel={newOllamaModel}
+                setNewOllamaModel={setNewOllamaModel}
+                handleAddOllamaModel={handleAddOllamaModel}
+                handleRemoveOllamaModel={handleRemoveOllamaModel}
+                handleEditOllamaModel={handleEditOllamaModel}
+                openaiCompatibleInstances={openaiCompatibleInstances}
+                setOpenaiCompatibleInstances={setOpenaiCompatibleInstances}
+                newInstance={newInstance}
+                setNewInstance={setNewInstance}
+                handleAddInstance={handleAddInstance}
+                handleRemoveInstance={handleRemoveInstance}
+                handleUpdateInstance={handleUpdateInstance}
+                handleUpdateInstanceModel={handleUpdateInstanceModel}
+                handleAddInstanceModel={handleAddInstanceModel}
+                handleRemoveInstanceModel={handleRemoveInstanceModel}
+                selectedInstanceId={selectedInstanceId}
+                setSelectedInstanceId={setSelectedInstanceId}
+                newModel={newModel}
+                setNewModel={setNewModel}
+              />
+            )}
+          </div>
  
           <SaveButton 
             isSaving={isSaving}

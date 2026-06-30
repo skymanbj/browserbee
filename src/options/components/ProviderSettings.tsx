@@ -161,24 +161,37 @@ export function ProviderSettings({
         />
       )}
       
-      {provider.startsWith('openai-compatible:') && (
-        <OpenAICompatibleInstanceManager
-          instances={openaiCompatibleInstances}
-          setInstances={setOpenaiCompatibleInstances}
-          newInstance={newInstance}
-          setNewInstance={setNewInstance}
-          handleAddInstance={handleAddInstance}
-          handleRemoveInstance={handleRemoveInstance}
-          handleUpdateInstance={handleUpdateInstance}
-          handleUpdateInstanceModel={handleUpdateInstanceModel}
-          handleAddInstanceModel={handleAddInstanceModel}
-          handleRemoveInstanceModel={handleRemoveInstanceModel}
-          selectedInstanceId={selectedInstanceId}
-          setSelectedInstanceId={setSelectedInstanceId}
-          newModel={newModel}
-          setNewModel={setNewModel}
-        />
-      )}
+      {provider.startsWith('openai-compatible:') && (() => {
+        const selectedInstance = openaiCompatibleInstances.find(inst => inst.id === provider.split(':')[1]) || null;
+        if (!selectedInstance) return null;
+        return (
+          <OpenAICompatibleSettings
+            instanceId={selectedInstance.id}
+            instanceName={selectedInstance.name}
+            setInstanceName={(name: string) => handleUpdateInstance(selectedInstance.id, 'name', name)}
+            apiKey={selectedInstance.apiKey}
+            setApiKey={(key: string) => handleUpdateInstance(selectedInstance.id, 'apiKey', key)}
+            baseUrl={selectedInstance.baseUrl}
+            setBaseUrl={(url: string) => handleUpdateInstance(selectedInstance.id, 'baseUrl', url)}
+            modelId={selectedInstance.modelId}
+            setModelId={(id: string) => handleUpdateInstance(selectedInstance.id, 'modelId', id)}
+            models={selectedInstance.models.map(m => ({
+              id: m.id,
+              name: m.name,
+              isReasoningModel: m.isReasoningModel || false,
+              contextWindow: m.contextWindow || 0,
+              maxTokens: m.maxTokens || 0,
+            }))}
+            setModels={(models: Model[]) => handleUpdateInstance(selectedInstance.id, 'models', models)}
+            newModel={newModel}
+            setNewModel={setNewModel}
+            handleAddModel={() => handleAddInstanceModel(selectedInstance.id)}
+            handleRemoveModel={(modelId: string) => handleRemoveInstanceModel(selectedInstance.id, modelId)}
+            handleEditModel={(idx: number, field: string, value: any) => handleUpdateInstanceModel(selectedInstance.id, idx, field, value)}
+            handleRemoveInstance={handleRemoveInstance}
+          />
+        );
+      })()}
     </>
   );
 }

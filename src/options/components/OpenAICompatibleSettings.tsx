@@ -3,6 +3,7 @@ import { ModelList, Model } from './ModelList';
 import { useLanguage } from '../LanguageContext';
 
 interface OpenAICompatibleSettingsProps {
+  instanceId: string;
   instanceName: string;
   setInstanceName: (name: string) => void;
   apiKey: string;
@@ -18,9 +19,11 @@ interface OpenAICompatibleSettingsProps {
   handleAddModel: () => void;
   handleRemoveModel: (id: string) => void;
   handleEditModel: (idx: number, field: string, value: any) => void;
+  handleRemoveInstance?: (id: string) => void;
 }
 
 export function OpenAICompatibleSettings({
+  instanceId,
   instanceName,
   setInstanceName,
   apiKey,
@@ -35,7 +38,8 @@ export function OpenAICompatibleSettings({
   setNewModel,
   handleAddModel,
   handleRemoveModel,
-  handleEditModel
+  handleEditModel,
+  handleRemoveInstance
 }: OpenAICompatibleSettingsProps) {
   const { t } = useLanguage();
   const [pulling, setPulling] = useState(false);
@@ -189,6 +193,24 @@ export function OpenAICompatibleSettings({
           </div>
         )}
       </div>
+      
+      {handleRemoveInstance && (
+        <div className="mt-6 pt-4 border-t border-base-content/10 flex justify-end">
+          <button
+            type="button"
+            className="btn btn-sm btn-error btn-outline gap-1.5"
+            onClick={() => {
+              if (confirm(t('确定要删除这个提供商吗？'))) {
+                handleRemoveInstance(instanceId);
+                // 派发事件让父组件切回内置默认提供商
+                window.dispatchEvent(new CustomEvent('browserbee:deletedInstance', { detail: { id: instanceId } }));
+              }
+            }}
+          >
+            🗑️ {t('删除此提供商')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

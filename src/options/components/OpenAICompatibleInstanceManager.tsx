@@ -129,6 +129,7 @@ export function OpenAICompatibleInstanceManager({
         <div className="flex-1">
           {selectedInstance ? (
             <OpenAICompatibleSettings
+              instanceId={selectedInstance.id}
               instanceName={selectedInstance.name}
               setInstanceName={(name: string) => handleUpdateInstance(selectedInstance.id, 'name', name)}
               apiKey={selectedInstance.apiKey}
