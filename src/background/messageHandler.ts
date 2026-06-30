@@ -926,20 +926,17 @@ async function handleScheduledTaskGetStats(
 }
 
 // Chat session management handlers (for SidePanel)
-function handleGetSessions(
+async function handleGetSessions(
   message: any,
   sendResponse: (response?: any) => void
-): void {
+): Promise<void> {
   try {
     const windowId = message.windowId || chrome.windows.WINDOW_ID_CURRENT;
-    Promise.all([
+    const [sessions, activeSessionId] = await Promise.all([
       SessionManager.getAllSessions(),
       SessionManager.getActiveSessionId(windowId)
-    ]).then(([sessions, activeSessionId]) => {
-      sendResponse({ success: true, sessions, activeSessionId });
-    }).catch((error: any) => {
-      sendResponse({ success: false, error: String(error) });
-    });
+    ]);
+    sendResponse({ success: true, sessions, activeSessionId });
   } catch (error: any) {
     sendResponse({ success: false, error: String(error) });
   }
@@ -959,79 +956,70 @@ async function handleCreateSession(
   }
 }
 
-function handleSetActiveSession(
+async function handleSetActiveSession(
   message: any,
   sendResponse: (response?: any) => void
-): void {
+): Promise<void> {
   try {
     const windowId = message.windowId || chrome.windows.WINDOW_ID_CURRENT;
-    Promise.all([
+    const [session, _] = await Promise.all([
       SessionManager.getSession(message.sessionId),
       SessionManager.setActiveSessionId(windowId, message.sessionId)
-    ]).then(([session]) => {
-      if (session) {
-        sendResponse({ success: true, session });
-      } else {
-        sendResponse({ success: false, error: 'Session not found' });
-      }
-    }).catch((error: any) => {
-      sendResponse({ success: false, error: String(error) });
-    });
+    ]);
+    if (session) {
+      sendResponse({ success: true, session });
+    } else {
+      sendResponse({ success: false, error: 'Session not found' });
+    }
   } catch (error: any) {
     sendResponse({ success: false, error: String(error) });
   }
 }
 
-function handleDeleteSession(
+async function handleDeleteSession(
   message: any,
   sendResponse: (response?: any) => void
-): void {
+): Promise<void> {
   try {
     const windowId = message.windowId || chrome.windows.WINDOW_ID_CURRENT;
-    SessionManager.deleteSession(message.sessionId).then(async () => {
-      const sessions = await SessionManager.getAllSessions();
-      const activeSessionId = await SessionManager.getActiveSessionId(windowId);
-      
-      // If deleted session was active, switch to another session
-      let newActiveSessionId = activeSessionId;
-      if (activeSessionId === message.sessionId) {
-        newActiveSessionId = sessions.length > 0 ? sessions[0].id : null;
-        if (newActiveSessionId) {
-          await SessionManager.setActiveSessionId(windowId, newActiveSessionId);
-        }
+    await SessionManager.deleteSession(message.sessionId);
+    
+    const sessions = await SessionManager.getAllSessions();
+    let activeSessionId = await SessionManager.getActiveSessionId(windowId);
+    
+    // If deleted session was active, switch to another session
+    if (activeSessionId === message.sessionId) {
+      activeSessionId = sessions.length > 0 ? sessions[0].id : null;
+      if (activeSessionId) {
+        await SessionManager.setActiveSessionId(windowId, activeSessionId);
       }
-      
-      sendResponse({ success: true, sessions, activeSessionId: newActiveSessionId });
-    }).catch((error: any) => {
-      sendResponse({ success: false, error: String(error) });
-    });
+    }
+    
+    sendResponse({ success: true, sessions, activeSessionId });
   } catch (error: any) {
     sendResponse({ success: false, error: String(error) });
   }
 }
 
-function handleRenameSession(
+async function handleRenameSession(
   message: any,
   sendResponse: (response?: any) => void
-): void {
+): Promise<void> {
   try {
-    SessionManager.getSession(message.sessionId).then(async (session) => {
-      if (session) {
-        session.title = message.title;
-        session.updatedAt = Date.now();
-        const sessions = await SessionManager.getAllSessions();
-        const index = sessions.findIndex(s => s.id === message.sessionId);
-        if (index !== -1) {
-          sessions[index] = session;
-          await SessionManager.saveAllSessions(sessions);
-        }
-        sendResponse({ success: true, session });
-      } else {
-        sendResponse({ success: false, error: 'Session not found' });
+    const session = await SessionManager.getSession(message.sessionId);
+    if (session) {
+      session.title = message.title;
+      session.updatedAt = Date.now();
+      const sessions = await SessionManager.getAllSessions();
+      const index = sessions.findIndex(s => s.id === message.sessionId);
+      if (index !== -1) {
+        sessions[index] = session;
+        await SessionManager.saveAllSessions(sessions);
       }
-    }).catch((error: any) => {
-      sendResponse({ success: false, error: String(error) });
-    });
+      sendResponse({ success: true, session });
+    } else {
+      sendResponse({ success: false, error: 'Session not found' });
+    }
   } catch (error: any) {
     sendResponse({ success: false, error: String(error) });
   }
