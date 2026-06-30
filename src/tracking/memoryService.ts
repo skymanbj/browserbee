@@ -10,6 +10,11 @@ export interface AgentMemory {
   createdAt: number;  // Timestamp
 }
 
+export interface MemorySyncProvider {
+  syncUpload(memories: AgentMemory[]): Promise<{ success: boolean; error?: string }>;
+  syncDownload(): Promise<{ memories: AgentMemory[]; success: boolean; error?: string }>;
+}
+
 export class MemoryService {
   private static instance: MemoryService;
   private db: IDBDatabase | null = null;
@@ -694,5 +699,88 @@ export class MemoryService {
         reject(error);
       }
     });
+  }
+
+  /**
+   * Sync memories to cloud
+   */
+  public async syncToCloud(provider: MemorySyncProvider): Promise<void> {
+    const memories = await this.getAllMemories();
+    const result = await provider.syncUpload(memories);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to upload memories to cloud');
+    }
+  }
+
+  /**
+   * Sync memories from cloud (overwrite local)
+   */
+  public async syncFromCloud(provider: MemorySyncProvider): Promise<void> {
+    const result = await provider.syncDownload();
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to download memories from cloud');
+    }
+    
+    await this.clearMemories();
+    for (const mem of result.memories) {
+      delete mem.id;
+      await this.storeMemory(mem);
+    }
+  }
+
+  /**
+   * Sync memories with cloud using a merge strategy
+   */
+  public async syncMerge(provider: MemorySyncProvider): Promise<{ uploaded: number; downloaded: number }> {
+    const result = await provider.syncDownload();
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to download memories for merge');
+    }
+
+    const cloudMemories = result.memories;
+    const localMemories = await this.getAllMemories();
+
+    const mergedMemories = [...localMemories];
+    let downloadedCount = 0;
+
+    for (const cloudMem of cloudMemories) {
+      const existing = mergedMemories.find(m =>
+        m.domain.toLowerCase() === cloudMem.domain.toLowerCase() &&
+        m.taskDescription.toLowerCase() === cloudMem.taskDescription.toLowerCase()
+      );
+
+      if (existing) {
+        if ((cloudMem.createdAt || 0) > (existing.createdAt || 0)) {
+          existing.toolSequence = cloudMem.toolSequence;
+          existing.createdAt = cloudMem.createdAt;
+          downloadedCount++;
+        }
+      } else {
+        mergedMemories.push({
+          domain: cloudMem.domain,
+          taskDescription: cloudMem.taskDescription,
+          toolSequence: cloudMem.toolSequence,
+          createdAt: cloudMem.createdAt
+        });
+        downloadedCount++;
+      }
+    }
+
+    await this.clearMemories();
+    for (const mem of mergedMemories) {
+      delete mem.id;
+      await this.storeMemory(mem);
+    }
+
+    const finalMemories = await this.getAllMemories();
+    const uploadResult = await provider.syncUpload(finalMemories);
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.error || 'Failed to upload merged memories');
+    }
+
+    return {
+      uploaded: finalMemories.length,
+      downloaded: downloadedCount
+    };
   }
 }

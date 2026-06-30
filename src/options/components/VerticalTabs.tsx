@@ -8,6 +8,7 @@ import { PromptTemplateTab } from './tabs/PromptTemplateTab';
 import { ProvidersTab } from './tabs/ProvidersTab';
 import { ScheduledTaskTab } from './tabs/ScheduledTaskTab';
 import { SessionTab } from './tabs/SessionTab';
+import { SyncTab } from './tabs/SyncTab';
 import { useLanguage } from '../LanguageContext';
 
 interface VerticalTabsProps {
@@ -67,6 +68,7 @@ export function VerticalTabs(props: VerticalTabsProps) {
   const tabs = [
     { id: 'general', label: t('General'), icon: '🏠' },
     { id: 'providers', label: t('LLM Configuration'), icon: '🤖' },
+    { id: 'sync', label: t('Cloud Sync'), icon: '☁️' },
     { id: 'memory', label: t('Memory'), icon: '🧠' },
     { id: 'sessions', label: t('Sessions'), icon: '💬' },
     { id: 'scheduledTasks', label: t('Scheduled Tasks'), icon: '⏰' },
@@ -129,6 +131,8 @@ export function VerticalTabs(props: VerticalTabsProps) {
             getModelPricingData={props.getModelPricingData}
           />
         );
+      case 'sync':
+        return <SyncTab />;
       case 'memory':
         return <MemoryTab />;
       case 'sessions':

@@ -214,6 +214,49 @@ const translationDict: Record<string, Record<Language, string>> = {
     zh: '创建模板以重复使用提示词结构和参数值。',
     en: 'Create templates to reuse prompt structures and values.'
   },
+  // Cloud Sync
+  'Cloud Sync': { zh: '云端同步', en: 'Cloud Sync' },
+  'Cloud Sync Management': { zh: '云端数据同步', en: 'Cloud Sync Management' },
+  'Configure cloud providers (Google Drive or WebDAV) to backup, restore, or merge all your extension data.': {
+    zh: '配置云端服务（Google Drive 或 WebDAV）以备份、恢复或合并您的全部插件数据。',
+    en: 'Configure cloud providers (Google Drive or WebDAV) to backup, restore, or merge all your extension data.'
+  },
+  'Sync Provider': { zh: '选择同步服务', en: 'Sync Provider' },
+  'Disabled': { zh: '已禁用', en: 'Disabled' },
+  'WebDAV URL': { zh: 'WebDAV 路径', en: 'WebDAV URL' },
+  'Username': { zh: '用户名', en: 'Username' },
+  'Password': { zh: '密码', en: 'Password' },
+  'Google Drive Client ID': { zh: 'Google Drive 客户端 ID', en: 'Google Drive Client ID' },
+  'Google Drive Client Secret': { zh: 'Google Drive 客户端密钥', en: 'Google Drive Client Secret' },
+  'Connect & Authorize': { zh: '授权并绑定', en: 'Connect & Authorize' },
+  'Disconnect': { zh: '断开绑定', en: 'Disconnect' },
+  'Linked to Google Drive': { zh: '已成功绑定 Google Drive', en: 'Linked to Google Drive' },
+  'Connection OK!': { zh: '连接成功！', en: 'Connection OK!' },
+  'Sync Operations': { zh: '同步操作', en: 'Sync Operations' },
+  'Smart Merge Sync 🔄': { zh: '双向智能同步 🔄', en: 'Smart Merge Sync 🔄' },
+  'Backup to Cloud 📤': { zh: '备份到云端 📤', en: 'Backup to Cloud 📤' },
+  'Restore from Cloud 📥': { zh: '从云端恢复 📥', en: 'Restore from Cloud 📥' },
+  'Merge Sync downloads cloud data, merges it intelligently with your local data, and uploads the merged state back.': {
+    zh: '双向智能同步会下载云端数据，与本地进行智能去重合并，并再次上传最新状态。',
+    en: 'Merge Sync downloads cloud data, merges it intelligently with your local data, and uploads the merged state back.'
+  },
+  'Backup overwrites the cloud data with your current local data.': {
+    zh: '备份到云端会使用本地的最新数据完全覆盖云端的备份文件。',
+    en: 'Backup overwrites the cloud data with your current local data.'
+  },
+  'Restore overwrites your local data with the cloud backup. All current local data will be replaced.': {
+    zh: '从云端恢复会下载云端备份并彻底覆写本地的所有数据。现有本地数据将被覆盖。',
+    en: 'Restore overwrites your local data with the cloud backup. All current local data will be replaced.'
+  },
+  'Sync Status': { zh: '同步状态', en: 'Sync Status' },
+  'Last Synced': { zh: '上次同步时间', en: 'Last Synced' },
+  'Never': { zh: '从未同步', en: 'Never' },
+  'Data range to be synced': { zh: '同步涵盖的数据范围', en: 'Data range to be synced' },
+  '🧠 Interaction Memories': { zh: '🧠 网页交互记忆', en: '🧠 Interaction Memories' },
+  '📋 Prompt Templates': { zh: '📋 提示词模板', en: '📋 Prompt Templates' },
+  '⏰ Scheduled Tasks': { zh: '⏰ 后台定时任务', en: '⏰ Scheduled Tasks' },
+  '💬 Chat Sessions': { zh: '💬 侧边栏会话历史', en: '💬 Chat Sessions' },
+  '⚙️ LLM & System Settings': { zh: '⚙️ 大模型与系统设置', en: '⚙️ LLM & System Settings' },
   // Newly added LLM configuration tools
   'Pull Models': { zh: '拉取模型', en: 'Pull Models' },
   'Auto-pull Models': { zh: '自动拉取已下载模型', en: 'Auto-pull Models' },
