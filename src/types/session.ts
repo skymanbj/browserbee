@@ -1,3 +1,25 @@
+import { Message } from '../sidepanel/types';
+
+// Generic message format that works with all providers (extracted from agentController)
+export interface GenericMessage {
+  role: string;
+  content: string | any;
+}
+
+// Session data structure for chat history and context persistence (SidePanel)
+export interface ChatSession {
+  id: string;          // Unique session identifier
+  title: string;       // Session display name
+  createdAt: number;   // Timestamp
+  updatedAt: number;   // Timestamp
+  messages: Message[]; // Raw message history for the React UI MessageDisplay
+  agentHistory: {
+    originalRequest: GenericMessage | null;
+    conversationHistory: GenericMessage[];
+  };                   // Internal agent execution context for LLM prompts
+}
+
+// Session data structure for Options page session management
 export interface SessionMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;

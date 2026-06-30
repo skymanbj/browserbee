@@ -3,6 +3,7 @@ import { TokenTrackingService } from '../tracking/tokenTrackingService';
 import { cancelExecution, clearMessageHistory, executePrompt, getAgentStatus, initializeAgent } from './agentController';
 import { triggerReflection } from './reflectionController';
 import { ScheduledTaskService } from './scheduledTaskService';
+import { SessionManager } from './sessionManager';
 import { SessionService } from './sessionService';
 import { attachToTab, forceResetPlaywright, getTabState, getWindowForTab } from './tabManager';
 import { BackgroundMessage } from './types';
@@ -281,6 +282,26 @@ export function handleMessage(
             logWithTimestamp(`Error in handleSessionClearAll: ${errorMessage}`, 'error');
             sendResponse({ success: false, error: errorMessage });
           });
+        return true;
+
+      case 'getSessions':
+        handleGetSessions(message, sendResponse);
+        return true;
+
+      case 'createSession':
+        handleCreateSession(message, sendResponse);
+        return true;
+
+      case 'setActiveSession':
+        handleSetActiveSession(message, sendResponse);
+        return true;
+
+      case 'deleteSession':
+        handleDeleteSession(message, sendResponse);
+        return true;
+
+      case 'renameSession':
+        handleRenameSession(message, sendResponse);
         return true;
 
       default:
@@ -899,6 +920,121 @@ async function handleScheduledTaskGetStats(
   try {
     const stats = await getTaskService().getStats();
     sendResponse({ success: true, stats });
+  } catch (error: any) {
+    sendResponse({ success: false, error: String(error) });
+  }
+}
+
+// Chat session management handlers (for SidePanel)
+function handleGetSessions(
+  message: any,
+  sendResponse: (response?: any) => void
+): void {
+  try {
+    const windowId = message.windowId || chrome.windows.WINDOW_ID_CURRENT;
+    Promise.all([
+      SessionManager.getAllSessions(),
+      SessionManager.getActiveSessionId(windowId)
+    ]).then(([sessions, activeSessionId]) => {
+      sendResponse({ success: true, sessions, activeSessionId });
+    }).catch((error: any) => {
+      sendResponse({ success: false, error: String(error) });
+    });
+  } catch (error: any) {
+    sendResponse({ success: false, error: String(error) });
+  }
+}
+
+function handleCreateSession(
+  message: any,
+  sendResponse: (response?: any) => void
+): void {
+  try {
+    const windowId = message.windowId || chrome.windows.WINDOW_ID_CURRENT;
+    SessionManager.createSession(message.title).then(async (session) => {
+      await SessionManager.setActiveSessionId(windowId, session.id);
+      sendResponse({ success: true, session });
+    }).catch((error: any) => {
+      sendResponse({ success: false, error: String(error) });
+    });
+  } catch (error: any) {
+    sendResponse({ success: false, error: String(error) });
+  }
+}
+
+function handleSetActiveSession(
+  message: any,
+  sendResponse: (response?: any) => void
+): void {
+  try {
+    const windowId = message.windowId || chrome.windows.WINDOW_ID_CURRENT;
+    Promise.all([
+      SessionManager.getSession(message.sessionId),
+      SessionManager.setActiveSessionId(windowId, message.sessionId)
+    ]).then(([session]) => {
+      if (session) {
+        sendResponse({ success: true, session });
+      } else {
+        sendResponse({ success: false, error: 'Session not found' });
+      }
+    }).catch((error: any) => {
+      sendResponse({ success: false, error: String(error) });
+    });
+  } catch (error: any) {
+    sendResponse({ success: false, error: String(error) });
+  }
+}
+
+function handleDeleteSession(
+  message: any,
+  sendResponse: (response?: any) => void
+): void {
+  try {
+    const windowId = message.windowId || chrome.windows.WINDOW_ID_CURRENT;
+    SessionManager.deleteSession(message.sessionId).then(async () => {
+      const sessions = await SessionManager.getAllSessions();
+      const activeSessionId = await SessionManager.getActiveSessionId(windowId);
+      
+      // If deleted session was active, switch to another session
+      let newActiveSessionId = activeSessionId;
+      if (activeSessionId === message.sessionId) {
+        newActiveSessionId = sessions.length > 0 ? sessions[0].id : null;
+        if (newActiveSessionId) {
+          await SessionManager.setActiveSessionId(windowId, newActiveSessionId);
+        }
+      }
+      
+      sendResponse({ success: true, sessions, activeSessionId: newActiveSessionId });
+    }).catch((error: any) => {
+      sendResponse({ success: false, error: String(error) });
+    });
+  } catch (error: any) {
+    sendResponse({ success: false, error: String(error) });
+  }
+}
+
+function handleRenameSession(
+  message: any,
+  sendResponse: (response?: any) => void
+): void {
+  try {
+    SessionManager.getSession(message.sessionId).then(async (session) => {
+      if (session) {
+        session.title = message.title;
+        session.updatedAt = Date.now();
+        const sessions = await SessionManager.getAllSessions();
+        const index = sessions.findIndex(s => s.id === message.sessionId);
+        if (index !== -1) {
+          sessions[index] = session;
+          await SessionManager.saveAllSessions(sessions);
+        }
+        sendResponse({ success: true, session });
+      } else {
+        sendResponse({ success: false, error: 'Session not found' });
+      }
+    }).catch((error: any) => {
+      sendResponse({ success: false, error: String(error) });
+    });
   } catch (error: any) {
     sendResponse({ success: false, error: String(error) });
   }
