@@ -31,6 +31,9 @@ export function SidePanel() {
   // State to track if any LLM providers are configured
   const [hasConfiguredProviders, setHasConfiguredProviders] = useState<boolean>(false);
 
+  // State for runtime permission errors reported by the background script
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+
   // Check if any providers are configured when component mounts
   useEffect(() => {
     const checkProviders = async () => {
@@ -52,6 +55,21 @@ export function SidePanel() {
 
     return () => {
       chrome.runtime.onMessage.removeListener(handleMessage);
+    };
+  }, []);
+
+  // Listen for permission-required messages from the background script
+  useEffect(() => {
+    const handlePermissionMessage = (message: any) => {
+      if (message.action === 'permissionRequired' && typeof message.reason === 'string') {
+        setPermissionError(message.reason);
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(handlePermissionMessage);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(handlePermissionMessage);
     };
   }, []);
 
@@ -377,6 +395,31 @@ export function SidePanel() {
           )}
         </button>
       </header>
+
+      {permissionError && (
+        <div className="alert alert-warning mb-2 shadow-sm">
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold">Permission required</span>
+            <span>{permissionError}</span>
+          </div>
+          <button
+            onClick={() => {
+              setPermissionError(null);
+              // Retry tab initialization if we have a current tab
+              if (tabId !== null && windowId !== null) {
+                chrome.runtime.sendMessage({
+                  action: 'initializeTab',
+                  tabId,
+                  windowId
+                });
+              }
+            }}
+            className="btn btn-sm btn-primary whitespace-nowrap"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {hasConfiguredProviders ? (
         <>

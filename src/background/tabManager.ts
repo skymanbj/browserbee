@@ -1,6 +1,7 @@
 import { crx } from 'playwright-crx';
 import { BrowserAgent } from '../agent/AgentCore';
 import { setCurrentPage, resetPageContext } from '../agent/PageContextManager';
+import { ensurePermissionForTab, hasDebuggerPermission, notifyPermissionRequired } from './permissions';
 import { handleMessage } from './messageHandler';
 import { TabState, WindowState } from './types';
 import { logWithTimestamp, handleError } from './utils';
@@ -183,7 +184,15 @@ export async function getCrxApp(windowId?: number, forceNew = false): Promise<Aw
  * @returns Promise resolving to the Playwright instance
  */
 function createCrxApp(): Promise<Awaited<ReturnType<typeof crx.start>>> {
-  return crx.start().then(app => {
+  // Safety check: crx.start requires the debugger permission. attachToTab already
+  // requests it, but this guard ensures we fail clearly if createCrxApp is ever
+  // called from another path without permission.
+  return hasDebuggerPermission().then(granted => {
+    if (!granted) {
+      return Promise.reject(new Error("Debugger permission is required to start the automation engine."));
+    }
+    return crx.start();
+  }).then(app => {
     // Set up event listeners
     app.addListener('attached', ({ tabId }) => {
       addAttachedTab(tabId);
@@ -303,6 +312,18 @@ export async function attachToTab(tabId: number, windowId?: number, retryCount: 
       // If windowId is not provided, get it from the tab
       if (!windowId && tab.windowId) {
         windowId = tab.windowId;
+      }
+      
+      // Ensure we have the runtime permissions needed to automate this tab.
+      // This requests debugger and host permissions from the user when necessary.
+      const permissionResult = await ensurePermissionForTab(tab);
+      if (!permissionResult.granted) {
+        logWithTimestamp(`Permission denied for tab ${tabId}: ${permissionResult.reason}`, 'warn');
+        notifyPermissionRequired(permissionResult.reason, tabId, windowId);
+        return {
+          error: "permission_required",
+          reason: permissionResult.reason
+        };
       }
       
       // Check if the tab needs navigation to a supported URL
