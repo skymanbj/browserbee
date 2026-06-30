@@ -403,20 +403,50 @@ export function SidePanel() {
             <span>{permissionError}</span>
           </div>
           <button
-            onClick={() => {
-              setPermissionError(null);
-              // Retry tab initialization if we have a current tab
-              if (tabId !== null && windowId !== null) {
+            onClick={async () => {
+              if (tabId === null || windowId === null) {
+                setPermissionError('No active tab found. Please switch to a web page tab and try again.');
+                return;
+              }
+
+              try {
+                // Request debugger permission from the side panel (user gesture context).
+                const debuggerGranted = await chrome.permissions.request({
+                  permissions: ['debugger']
+                });
+                if (!debuggerGranted) {
+                  setPermissionError('The debugger permission is required to automate the browser. Please grant it and try again.');
+                  return;
+                }
+
+                // Also request host permission for the current tab's URL.
+                const tab = await chrome.tabs.get(tabId);
+                if (tab.url && (tab.url.startsWith('http://') || tab.url.startsWith('https://'))) {
+                  const origin = new URL(tab.url).origin + '/*';
+                  const hostGranted = await chrome.permissions.request({
+                    origins: [origin]
+                  });
+                  if (!hostGranted) {
+                    setPermissionError(`Host permission for ${new URL(tab.url).hostname} is required to automate this page. Please grant it and try again.`);
+                    return;
+                  }
+                }
+
+                // Permissions granted — clear the error and retry attachment.
+                setPermissionError(null);
                 chrome.runtime.sendMessage({
                   action: 'initializeTab',
                   tabId,
                   windowId
                 });
+              } catch (error) {
+                console.error('Error requesting permissions:', error);
+                setPermissionError('Failed to request permissions: ' + (error instanceof Error ? error.message : String(error)));
               }
             }}
             className="btn btn-sm btn-primary whitespace-nowrap"
           >
-            Retry
+            Grant permission
           </button>
         </div>
       )}
