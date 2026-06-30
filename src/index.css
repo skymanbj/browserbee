@@ -305,6 +305,47 @@ html[data-theme="light"] .input textarea::placeholder {
   opacity: 1;
 }
 
+/* Ensure input/textarea actual text is visible in light mode */
+html[data-theme="light"] input,
+html[data-theme="light"] textarea,
+html[data-theme="light"] .input input,
+html[data-theme="light"] .input textarea {
+  color: #1e293b !important;
+}
+
+/* DaisyUI input field text color in light mode */
+html[data-theme="light"] .input input::-moz-placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+html[data-theme="light"] .input input::placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+/* Ensure all text inputs have proper colors in light mode */
+html[data-theme="light"] input[type="text"],
+html[data-theme="light"] input[type="password"],
+html[data-theme="light"] input[type="email"],
+html[data-theme="light"] input[type="number"],
+html[data-theme="light"] input[type="search"],
+html[data-theme="light"] input[type="tel"],
+html[data-theme="light"] input[type="url"],
+html[data-theme="light"] textarea {
+  color: #1e293b !important;
+}
+
+/* DaisyUI select dropdown */
+html[data-theme="light"] select {
+  color: #1e293b !important;
+}
+
+html[data-theme="light"] select option {
+  color: #1e293b !important;
+  background: #ffffff !important;
+}
+
 /* ── Utility Animations ──────────────────────────────── */
 
 /* Smooth theme transition */
