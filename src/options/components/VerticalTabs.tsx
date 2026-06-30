@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { GeneralTab } from './tabs/GeneralTab';
-import { ProvidersTab } from './tabs/ProvidersTab';
-import { MemoryTab } from './tabs/MemoryTab';
-import { OllamaModel } from './OllamaModelList';
 import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
+import { OllamaModel } from './OllamaModelList';
+import { GeneralTab } from './tabs/GeneralTab';
+import { MemoryTab } from './tabs/MemoryTab';
+import { ProvidersTab } from './tabs/ProvidersTab';
+import { ScheduledTaskTab } from './tabs/ScheduledTaskTab';
 
 interface VerticalTabsProps {
   provider: string;
@@ -62,6 +63,7 @@ export function VerticalTabs(props: VerticalTabsProps) {
     { id: 'general', label: 'General', icon: '🏠' },
     { id: 'providers', label: 'LLM Configuration', icon: '🤖' },
     { id: 'memory', label: 'Memory', icon: '🧠' },
+    { id: 'scheduledTasks', label: 'Scheduled Tasks', icon: '⏰' },
   ];
 
   const renderTabContent = () => {
@@ -122,6 +124,8 @@ export function VerticalTabs(props: VerticalTabsProps) {
         );
       case 'memory':
         return <MemoryTab />;
+      case 'scheduledTasks':
+        return <ScheduledTaskTab />;
       default:
         return <GeneralTab />;
     }
@@ -137,9 +141,8 @@ export function VerticalTabs(props: VerticalTabsProps) {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                className={`tab tab-lg justify-start gap-3 w-full ${
-                  activeTab === tab.id ? 'tab-active' : ''
-                }`}
+                className={`tab tab-lg justify-start gap-3 w-full ${activeTab === tab.id ? 'tab-active' : ''
+                  }`}
                 onClick={() => setActiveTab(tab.id)}
               >
                 <span className="text-lg">{tab.icon}</span>

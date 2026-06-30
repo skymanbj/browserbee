@@ -1,6 +1,7 @@
-import './setup';
 import { MemoryService } from '../tracking/memoryService';
 import { setupMessageListeners } from './messageHandler';
+import { ScheduledTaskService } from './scheduledTaskService';
+import './setup';
 import { cleanupOnUnload, setupTabListeners } from './tabManager';
 import { logWithTimestamp } from './utils';
 
@@ -21,6 +22,9 @@ function initializeExtension(): void {
 
   // Set up command listeners
   setupCommandListeners();
+
+  // Set up alarm listeners for scheduled tasks
+  setupAlarmListeners();
 }
 
 /**
@@ -233,6 +237,42 @@ function setupCommandListeners(): void {
   logWithTimestamp('Command listeners set up');
 }
 
+/**
+ * Set up alarm listeners for scheduled tasks
+ */
+function setupAlarmListeners(): void {
+  logWithTimestamp('Setting up alarm listeners for scheduled tasks');
+
+  // Initialize the ScheduledTaskService
+  const taskService = ScheduledTaskService.getInstance();
+
+  // Initialize on install/update
+  chrome.runtime.onInstalled.addListener(() => {
+    taskService.init().then(() => {
+      logWithTimestamp('ScheduledTaskService initialized successfully');
+    }).catch((error: any) => {
+      logWithTimestamp(`ScheduledTaskService initialization error: ${error}`, 'error');
+    });
+  });
+
+  // Also initialize immediately on service worker start
+  taskService.init().then(() => {
+    logWithTimestamp('ScheduledTaskService initialized on startup');
+  }).catch((error: any) => {
+    logWithTimestamp(`ScheduledTaskService startup initialization error: ${error}`, 'error');
+  });
+
+  // Listen for alarms
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    logWithTimestamp(`Alarm fired: ${alarm.name}`);
+    taskService.handleAlarm(alarm).catch((error: any) => {
+      logWithTimestamp(`Error handling alarm: ${error}`, 'error');
+    });
+  });
+
+  logWithTimestamp('Alarm listeners set up');
+}
+
 // Initialize the extension
 initializeExtension();
 
@@ -240,5 +280,6 @@ initializeExtension();
 export default {
   initializeExtension,
   setupEventListeners,
-  setupCommandListeners
+  setupCommandListeners,
+  setupAlarmListeners
 };
