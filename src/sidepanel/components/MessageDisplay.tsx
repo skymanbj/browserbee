@@ -325,6 +325,26 @@ const ConversationTurnComponent: React.FC<{
               </svg>
               <span>编辑</span>
             </button>
+            {/* 重新提交按钮 */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm('确定要重新提交此轮对话吗？')) {
+                  onEditTurn(turn.promptMessageIndex, turn.prompt, turn.attachments);
+                }
+              }}
+              disabled={isProcessing}
+              className="btn btn-ghost btn-xs flex items-center gap-1 opacity-60 hover:opacity-100 text-secondary font-medium"
+              title="重新提交此提问"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M16 3h5v5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M8 21H3v-5"/>
+              </svg>
+              <span>重新提交</span>
+            </button>
             <button
               onClick={handleDeleteClick}
               disabled={isProcessing}

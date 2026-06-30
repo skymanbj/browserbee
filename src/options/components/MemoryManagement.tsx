@@ -3,6 +3,7 @@ import { normalizeDomain } from '../../tracking/domainUtils';
 import { AgentMemory, MemoryService } from '../../tracking/memoryService';
 import { MemoryDeleteConfirm } from './MemoryDeleteConfirm';
 import { MemoryEditModal } from './MemoryEditModal';
+import { useLanguage } from '../LanguageContext';
 
 /** Possible sources for a memory badge */
 type MemorySource = 'pre-built' | 'auto-reflection' | 'user-saved';
@@ -49,6 +50,7 @@ function formatDate(timestamp: number): string {
 }
 
 export function MemoryManagement() {
+  const { t } = useLanguage();
   // ── Data state ────────────────────────────────────────────
   const [allMemories, setAllMemories] = useState<AgentMemory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -503,25 +505,24 @@ export function MemoryManagement() {
         <div className="card-body">
           <h2 className="card-title text-xl flex items-center gap-2">
             <span aria-hidden="true">🧠</span>
-            Memory Management
+            {t('Memory Management')}
           </h2>
           <p className="text-sm text-base-content/70">
-            BrowserBee stores memories of successful interactions with websites to improve future performance.
-            View, edit, delete, or export your memories below.
+            {t('BrowserBee stores memories of successful interactions with websites to improve future performance. View, edit, delete, or export your memories below.')}
           </p>
 
           {/* Stats bar */}
           <div className="flex flex-wrap items-center gap-4 mt-2">
             <div className="stat px-2 py-1 min-w-0">
-              <div className="stat-title text-xs">Total Memories</div>
+              <div className="stat-title text-xs">{t('Total Memories')}</div>
               <div className="stat-value text-xl">{allMemories.length}</div>
             </div>
             <div className="stat px-2 py-1 min-w-0">
-              <div className="stat-title text-xs">Domains</div>
+              <div className="stat-title text-xs">{t('Domains')}</div>
               <div className="stat-value text-xl">{domainCount}</div>
             </div>
             <div className="stat px-2 py-1 min-w-0">
-              <div className="stat-title text-xs">Selected</div>
+              <div className="stat-title text-xs">{t('Selected')}</div>
               <div className="stat-value text-xl">{selectedIds.size}</div>
             </div>
           </div>
@@ -541,7 +542,7 @@ export function MemoryManagement() {
                 <input
                   type="text"
                   className="input input-bordered input-sm w-full pl-8"
-                  placeholder="Search by domain or task..."
+                  placeholder={t('Search by domain or task...')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   aria-label="Search memories"
@@ -558,7 +559,7 @@ export function MemoryManagement() {
                   onClick={() => setFilterMode(mode)}
                   aria-pressed={filterMode === mode}
                 >
-                  {mode === 'all' ? 'All' : mode === 'pre-built' ? 'Pre-built' : 'User'}
+                  {mode === 'all' ? t('All') : mode === 'pre-built' ? t('Pre-built') : t('User')}
                 </button>
               ))}
             </div>
@@ -580,7 +581,7 @@ export function MemoryManagement() {
                 disabled={filteredMemories.length === 0}
                 aria-label="Select all visible memories"
               />
-              Select all ({filteredMemories.length})
+              {t('Select all')} ({filteredMemories.length})
             </label>
 
             <div className="divider divider-horizontal mx-1" />
@@ -592,7 +593,7 @@ export function MemoryManagement() {
               onClick={handleBatchDelete}
               aria-label="Delete selected memories"
             >
-              🗑️ Delete Selected ({selectedIds.size})
+              🗑️ {t('Delete Selected')} ({selectedIds.size})
             </button>
 
             {/* Clear all */}
@@ -602,7 +603,7 @@ export function MemoryManagement() {
               onClick={handleClearAll}
               aria-label="Clear all memories"
             >
-              🚫 Clear All
+              🚫 {t('Clear All')}
             </button>
 
             <div className="divider divider-horizontal mx-1" />
@@ -614,7 +615,7 @@ export function MemoryManagement() {
               onClick={handleExport}
               aria-label="Export memories"
             >
-              📤 Export
+              📤 {t('Export')}
             </button>
 
             {/* Import */}
@@ -623,7 +624,7 @@ export function MemoryManagement() {
               onClick={() => fileInputRef.current?.click()}
               aria-label="Import memories"
             >
-              📥 Import
+              📥 {t('Import')}
             </button>
 
             {/* Hidden file input for import */}
@@ -643,7 +644,7 @@ export function MemoryManagement() {
               aria-label="Refresh memories"
               title="Refresh"
             >
-              🔄 Refresh
+              🔄 {t('Refresh')}
             </button>
           </div>
 
@@ -691,10 +692,9 @@ export function MemoryManagement() {
             /* Empty state */
             <div className="text-center py-8 text-base-content/50">
               <div className="text-3xl mb-3" aria-hidden="true">🧠</div>
-              <p className="font-medium text-lg mb-1">No memories yet</p>
+              <p className="font-medium text-lg mb-1">{t('No memories yet')}</p>
               <p className="text-sm">
-                Memories will be created automatically when BrowserBee completes tasks on websites.
-                You can also import memories from a JSON backup.
+                {t('Memories will be created automatically when BrowserBee completes tasks on websites. You can also import memories from a JSON backup.')}
               </p>
             </div>
           ) : Object.keys(groupedMemories).length === 0 ? (

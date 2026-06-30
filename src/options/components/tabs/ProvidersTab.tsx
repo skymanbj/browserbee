@@ -6,6 +6,7 @@ import { SaveButton } from '../SaveButton';
 import { ModelPricingTable } from '../ModelPricingTable';
 import { OpenAICompatibleInstance } from '../../../models/providers/openai-compatible';
 import { OpenAICompatibleInstanceManager } from '../OpenAICompatibleInstanceManager';
+import { useLanguage } from '../../LanguageContext';
 
 interface ProvidersTabProps {
   provider: string;
@@ -106,6 +107,7 @@ export function ProvidersTab({
   handleSave,
   getModelPricingData,
 }: ProvidersTabProps) {
+  const { t } = useLanguage();
   const [showCompatManager, setShowCompatManager] = useState(false);
 
   useEffect(() => {
@@ -324,10 +326,9 @@ export function ProvidersTab({
     <div className="space-y-6">
       <div className="card bg-base-100 shadow-md">
         <div className="card-body">
-          <h2 className="card-title text-xl">LLM Provider Configuration</h2>
-          <p className="mb-4">
-            Configure your preferred LLM provider and API settings.
-            Your API keys are stored securely in your browser's storage.
+          <h2 className="card-title text-xl">{t('LLM Provider Configuration')}</h2>
+          <p className="mb-4 text-base-content/70 text-sm">
+            {t("Configure your preferred LLM provider and API settings. Your API keys are stored securely in your browser's storage.")}
           </p>
           
           {/* Provider Selector */}
@@ -386,9 +387,9 @@ export function ProvidersTab({
           {showCompatManager && !provider.startsWith('openai-compatible:') && (
             <div className="border rounded-lg p-4 mb-4">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="font-bold">OpenAI Compatible Instances</h3>
+                <h3 className="font-bold">{t('OpenAI Compatible Instances')}</h3>
                 <button className="btn btn-sm btn-ghost" onClick={handleCloseCompatManager}>
-                  Close ✕
+                  {t('Close ✕')}
                 </button>
               </div>
               <OpenAICompatibleInstanceManager
@@ -409,7 +410,7 @@ export function ProvidersTab({
             />
             </div>
           )}
-
+ 
           <SaveButton 
             isSaving={isSaving}
             saveStatus={saveStatus}
@@ -420,8 +421,8 @@ export function ProvidersTab({
               (provider === 'gemini' && !geminiApiKey.trim())
             }
           />
-
-          <div className="divider mt-6">Backup & Restore</div>
+ 
+          <div className="divider mt-6">{t('Backup & Restore')}</div>
           
           {pageAssistProviders.length > 0 && (
             <div className="card bg-base-200 p-4 mb-4 border border-primary/20">
@@ -450,16 +451,16 @@ export function ProvidersTab({
               </div>
             </div>
           )}
-
+ 
           <div className="flex flex-wrap gap-4 items-center">
             <button className="btn btn-outline btn-sm" onClick={handleExportConfig}>
-              Export Models & Config
+              {t('Export Models & Config')}
             </button>
             <button className="btn btn-outline btn-sm" onClick={triggerConfigFileInput}>
-              Import Models & Config
+              {t('Import Models & Config')}
             </button>
             <button className="btn btn-outline btn-primary btn-sm" onClick={() => pageAssistFileInputRef.current?.click()}>
-              Import from Page Assist
+              {t('Import from Page Assist')}
             </button>
             <input 
               type="file" 

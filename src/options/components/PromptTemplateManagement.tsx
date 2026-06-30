@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PromptTemplateService } from '../../tracking/promptTemplateService';
 import { PromptTemplate } from '../../types/promptTemplate';
 import { PromptTemplateEditModal } from './PromptTemplateEditModal';
+import { useLanguage } from '../LanguageContext';
 
 /**
  * Full management UI for prompt templates – list, search, filter by category,
  * create, edit, delete, export, and import.
  */
 export function PromptTemplateManagement() {
+    const { t } = useLanguage();
     // ── Data state ──
     const [templates, setTemplates] = useState<PromptTemplate[]>([]);
     const [loading, setLoading] = useState(true);
@@ -179,23 +181,22 @@ export function PromptTemplateManagement() {
                 <div className="card-body">
                     <h2 className="card-title text-xl flex items-center gap-2">
                         <span aria-hidden="true">📋</span>
-                        提示词模板
+                        {t('Prompt Templates')}
                     </h2>
                     <p className="text-sm text-base-content/70">
-                        管理和复用你的提示词模板。使用 <code className="bg-base-200 px-1 rounded">{'{{变量名}}'}</code> 语法创建可动态替换的模板。
-                        在侧边栏输入框即可快速选用。
+                        {t('Manage reusable templates for prompts. BrowserBee allows saving structures you use frequently to launch tasks quickly.')}
                     </p>
                     <div className="flex flex-wrap items-center gap-4 mt-2">
                         <div className="stat px-2 py-1 min-w-0">
-                            <div className="stat-title text-xs">模板总数</div>
+                            <div className="stat-title text-xs">{t('模板总数')}</div>
                             <div className="stat-value text-xl">{templates.length}</div>
                         </div>
                         <div className="stat px-2 py-1 min-w-0">
-                            <div className="stat-title text-xs">分类数</div>
+                            <div className="stat-title text-xs">{t('分类数')}</div>
                             <div className="stat-value text-xl">{categories.length}</div>
                         </div>
                         <div className="stat px-2 py-1 min-w-0">
-                            <div className="stat-title text-xs">内置模板</div>
+                            <div className="stat-title text-xs">{t('内置模板')}</div>
                             <div className="stat-value text-xl">{templates.filter(t => t.isBuiltIn).length}</div>
                         </div>
                     </div>
@@ -213,7 +214,7 @@ export function PromptTemplateManagement() {
                                 <input
                                     type="text"
                                     className="input input-bordered input-sm w-full pl-8"
-                                    placeholder="搜索模板名称、内容或分类..."
+                                    placeholder={t('搜索模板名称、内容或分类...')}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     aria-label="搜索模板"
@@ -227,7 +228,7 @@ export function PromptTemplateManagement() {
                                 className={`join-item btn btn-sm ${!selectedCategory ? 'btn-active' : ''}`}
                                 onClick={() => setSelectedCategory(null)}
                             >
-                                全部
+                                {t('全部')}
                             </button>
                             {categories.map((cat) => (
                                 <button
@@ -244,17 +245,17 @@ export function PromptTemplateManagement() {
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                         <button className="btn btn-primary btn-sm" onClick={handleNewTemplate}>
                             <span aria-hidden="true">➕</span>
-                            新建模板
+                            {t('新建模板')}
                         </button>
                         <button className="btn btn-ghost btn-sm" onClick={handleExport} disabled={templates.length === 0}>
-                            📤 导出
+                            📤 {t('导出')}
                         </button>
                         <button className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()}>
-                            📥 导入
+                            📥 {t('导入')}
                         </button>
                         <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
                         <button className="btn btn-ghost btn-sm ml-auto" onClick={loadTemplates} disabled={loading}>
-                            🔄 刷新
+                            🔄 {t('刷新')}
                         </button>
                     </div>
 

@@ -8,6 +8,7 @@ import { PromptTemplateTab } from './tabs/PromptTemplateTab';
 import { ProvidersTab } from './tabs/ProvidersTab';
 import { ScheduledTaskTab } from './tabs/ScheduledTaskTab';
 import { SessionTab } from './tabs/SessionTab';
+import { useLanguage } from '../LanguageContext';
 
 interface VerticalTabsProps {
   provider: string;
@@ -61,14 +62,15 @@ interface VerticalTabsProps {
 
 export function VerticalTabs(props: VerticalTabsProps) {
   const [activeTab, setActiveTab] = useState('general');
+  const { t, language, setLanguage } = useLanguage();
 
   const tabs = [
-    { id: 'general', label: 'General', icon: '🏠' },
-    { id: 'providers', label: 'LLM Configuration', icon: '🤖' },
-    { id: 'memory', label: 'Memory', icon: '🧠' },
-    { id: 'sessions', label: 'Sessions', icon: '💬' },
-    { id: 'scheduledTasks', label: 'Scheduled Tasks', icon: '⏰' },
-    { id: 'prompts', label: 'Prompt Templates', icon: '📋' },
+    { id: 'general', label: t('General'), icon: '🏠' },
+    { id: 'providers', label: t('LLM Configuration'), icon: '🤖' },
+    { id: 'memory', label: t('Memory'), icon: '🧠' },
+    { id: 'sessions', label: t('Sessions'), icon: '💬' },
+    { id: 'scheduledTasks', label: t('Scheduled Tasks'), icon: '⏰' },
+    { id: 'prompts', label: t('Prompt Templates'), icon: '📋' },
   ];
 
   const renderTabContent = () => {
@@ -161,9 +163,26 @@ export function VerticalTabs(props: VerticalTabsProps) {
           </div>
         </div>
 
-        {/* Theme Toggle at bottom of sidebar */}
-        <div className="p-4 border-t border-base-200">
+        {/* Theme Toggle and Language Toggle at bottom of sidebar */}
+        <div className="p-4 border-t border-base-200 flex flex-col gap-3">
           <ThemeToggle />
+          <div className="flex items-center justify-between px-2 text-xs">
+            <span className="opacity-70">{language === 'zh' ? '界面语言' : 'Language'}</span>
+            <div className="join">
+              <button 
+                onClick={() => setLanguage('zh')} 
+                className={`join-item btn btn-xs btn-outline ${language === 'zh' ? 'btn-active btn-primary' : 'opacity-70'}`}
+              >
+                中文
+              </button>
+              <button 
+                onClick={() => setLanguage('en')} 
+                className={`join-item btn btn-xs btn-outline ${language === 'en' ? 'btn-active btn-primary' : 'opacity-70'}`}
+              >
+                EN
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ScheduledTask } from '../../types/scheduledTask';
 import { ScheduledTaskEditModal } from './ScheduledTaskEditModal';
+import { useLanguage } from '../LanguageContext';
 
 /**
  * 定时任务管理页面
  */
 export function ScheduledTaskManagement() {
+    const { t } = useLanguage();
     const [tasks, setTasks] = useState<ScheduledTask[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -230,9 +232,9 @@ export function ScheduledTaskManagement() {
         <div className="p-6">
             {/* Header */}
             <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">定时任务调度器</h2>
+                <h2 className="text-2xl font-bold mb-2">{t('定时任务调度器')}</h2>
                 <p className="text-base-content/70 text-sm">
-                    使用 chrome.alarms 实现周期性任务自动执行。可定时执行 AI 指令，如自动摘要、数据监控等。
+                    {t('使用 chrome.alarms 实现周期性任务自动执行。可定时执行 AI 指令，如自动摘要、数据监控等。')}
                 </p>
             </div>
 
@@ -246,15 +248,15 @@ export function ScheduledTaskManagement() {
             {/* Stats */}
             <div className="stats shadow mb-6 w-full">
                 <div className="stat">
-                    <div className="stat-title">全部任务</div>
+                    <div className="stat-title">{t('全部任务')}</div>
                     <div className="stat-value">{stats.total}</div>
                 </div>
                 <div className="stat">
-                    <div className="stat-title text-success">运行中</div>
+                    <div className="stat-title text-success">{t('运行中')}</div>
                     <div className="stat-value text-success">{stats.active}</div>
                 </div>
                 <div className="stat">
-                    <div className="stat-title text-warning">已暂停</div>
+                    <div className="stat-title text-warning">{t('已暂停')}</div>
                     <div className="stat-value text-warning">{stats.paused}</div>
                 </div>
             </div>
@@ -262,21 +264,21 @@ export function ScheduledTaskManagement() {
             {/* Actions Bar */}
             <div className="flex flex-wrap gap-3 mb-6 items-center">
                 <button className="btn btn-primary btn-sm gap-2" onClick={() => openEdit()}>
-                    ➕ 新建任务
+                    ➕ {t('新建任务')}
                 </button>
                 <button className="btn btn-ghost btn-sm gap-2" onClick={handleExport}>
-                    📤 导出
+                    📤 {t('导出')}
                 </button>
                 <button className="btn btn-ghost btn-sm gap-2" onClick={handleImport}>
-                    📥 导入
+                    📥 {t('导入')}
                 </button>
                 <button className="btn btn-ghost btn-sm gap-2" onClick={loadTasks}>
-                    🔄 刷新
+                    🔄 {t('刷新')}
                 </button>
                 <div className="divider divider-horizontal mx-1"></div>
                 <input
                     type="text"
-                    placeholder="搜索任务名称或描述..."
+                    placeholder={t('搜索任务名称或描述...')}
                     className="input input-bordered input-sm w-64"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
@@ -285,15 +287,15 @@ export function ScheduledTaskManagement() {
                     <button
                         className={`join-item btn btn-sm ${filter === 'all' ? 'btn-active' : ''}`}
                         onClick={() => setFilter('all')}
-                    >全部</button>
+                    >{t('全部')}</button>
                     <button
                         className={`join-item btn btn-sm ${filter === 'active' ? 'btn-active' : ''}`}
                         onClick={() => setFilter('active')}
-                    >运行中</button>
+                    >{t('运行中')}</button>
                     <button
                         className={`join-item btn btn-sm ${filter === 'paused' ? 'btn-active' : ''}`}
                         onClick={() => setFilter('paused')}
-                    >已暂停</button>
+                    >{t('已暂停')}</button>
                 </div>
             </div>
 
@@ -303,15 +305,15 @@ export function ScheduledTaskManagement() {
                     <div className="card-body items-center text-center py-12">
                         {search || filter !== 'all' ? (
                             <>
-                                <p className="text-lg font-medium mb-2">没有匹配的定时任务</p>
-                                <p className="text-sm text-base-content/60">请调整搜索条件或筛选器</p>
+                                <p className="text-lg font-medium mb-2">{t('没有匹配的定时任务')}</p>
+                                <p className="text-sm text-base-content/60">{t('请调整搜索条件或筛选器')}</p>
                             </>
                         ) : (
                             <>
-                                <p className="text-lg font-medium mb-2">还没有定时任务</p>
-                                <p className="text-sm text-base-content/60 mb-4">点击"新建任务"按钮创建你的第一个定时任务</p>
+                                <p className="text-lg font-medium mb-2">{t('还没有定时任务')}</p>
+                                <p className="text-sm text-base-content/60 mb-4">{t('点击"新建任务"按钮创建你的第一个定时任务')}</p>
                                 <button className="btn btn-primary" onClick={() => openEdit()}>
-                                    创建定时任务
+                                    {t('创建定时任务')}
                                 </button>
                             </>
                         )}

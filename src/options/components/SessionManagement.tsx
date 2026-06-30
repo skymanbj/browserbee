@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { logWithTimestamp } from '../../background/utils';
 import { Session, SessionSummary } from '../../types/session';
+import { useLanguage } from '../LanguageContext';
 
 interface SessionStats {
     total: number;
@@ -21,6 +22,7 @@ async function sendMessage(action: string, payload?: any): Promise<any> {
 }
 
 export function SessionManagement() {
+    const { t } = useLanguage();
     // --- State ---
     const [sessions, setSessions] = useState<SessionSummary[]>([]);
     const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -294,21 +296,18 @@ export function SessionManagement() {
                         <p>消息数: {selectedSession.messageCount}</p>
                         <p>创建: {formatDate(selectedSession.createdAt)}</p>
                         <p>更新: {formatDate(selectedSession.updatedAt)}</p>
-                        {selectedSession.tokenUsage && (
-                            <p>Token: 输入 {selectedSession.tokenUsage.input} / 输出 {selectedSession.tokenUsage.output} / 总计 {selectedSession.tokenUsage.total}</p>
-                        )}
                     </div>
 
                     {/* Messages */}
-                    <div className="divider text-sm">对话消息</div>
+                    <div className="divider text-sm">{t('对话消息')}</div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                         {selectedSession.messages.length === 0 && (
-                            <p className="text-base-content/50 text-center py-4">暂无消息</p>
+                            <p className="text-base-content/50 text-center py-4">{t('暂无消息')}</p>
                         )}
                         {selectedSession.messages.map((msg, idx) => (
                             <div key={idx} className={`chat ${msg.role === 'user' ? 'chat-end' : 'chat-start'}`}>
                                 <div className="chat-header text-xs mb-1">
-                                    {msg.role === 'user' ? '👤 用户' : '🤖 助手'}
+                                    {msg.role === 'user' ? t('👤 用户') : t('🤖 助手')}
                                     <time className="ml-2 opacity-50">{new Date(msg.timestamp).toLocaleTimeString('zh-CN')}</time>
                                     {msg.tokenCount !== undefined && (
                                         <span className="ml-2 opacity-50">{msg.tokenCount} tokens</span>
@@ -338,15 +337,15 @@ export function SessionManagement() {
             {/* Stats bar */}
             <div className="stats shadow">
                 <div className="stat">
-                    <div className="stat-title">会话总数</div>
+                    <div className="stat-title">{t('会话总数')}</div>
                     <div className="stat-value text-primary">{stats.total}</div>
                 </div>
                 <div className="stat">
-                    <div className="stat-title">消息总数</div>
+                    <div className="stat-title">{t('消息总数')}</div>
                     <div className="stat-value text-secondary">{stats.totalMessages}</div>
                 </div>
                 <div className="stat">
-                    <div className="stat-title">Token 总量</div>
+                    <div className="stat-title">{t('累计 Token')}</div>
                     <div className="stat-value text-accent">{stats.totalTokens.toLocaleString()}</div>
                 </div>
             </div>
@@ -357,13 +356,13 @@ export function SessionManagement() {
                 <div className="form-control flex-1 min-w-[200px]">
                     <div className="input-group">
                         <input
-                            ref={searchInputRef}
-                            type="text"
-                            placeholder="搜索会话名称、标签页、URL、消息内容..."
-                            className="input input-bordered w-full"
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                        />
+                             ref={searchInputRef}
+                             type="text"
+                             placeholder={t('搜索会话名称、标签页、URL、消息内容...')}
+                             className="input input-bordered w-full"
+                             value={searchQuery}
+                             onChange={e => setSearchQuery(e.target.value)}
+                         />
                         {searchQuery && (
                             <button className="btn btn-square btn-ghost" onClick={() => setSearchQuery('')}>
                                 ✕
@@ -379,12 +378,12 @@ export function SessionManagement() {
                     disabled={sessions.length === 0}
                     title="导出选中的会话，如未选中则导出全部"
                 >
-                    导出
+                    {t('导出')}
                 </button>
 
                 {/* Import */}
                 <button className="btn btn-outline btn-sm" onClick={() => fileInputRef.current?.click()}>
-                    导入
+                    {t('导入')}
                 </button>
                 <input
                     type="file"
@@ -398,10 +397,10 @@ export function SessionManagement() {
                 {selectedIds.size > 0 && (
                     <>
                         <button className="btn btn-error btn-sm" onClick={() => setShowDeleteConfirm(true)}>
-                            删除选中 ({selectedIds.size})
+                            {t('删除选中')} ({selectedIds.size})
                         </button>
                         <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())}>
-                            取消选择
+                            {t('取消选择')}
                         </button>
                     </>
                 )}
@@ -412,7 +411,7 @@ export function SessionManagement() {
                     onClick={() => setClearAllConfirm(true)}
                     disabled={sessions.length === 0}
                 >
-                    清除全部
+                    {t('清除全部')}
                 </button>
             </div>
 
@@ -433,7 +432,7 @@ export function SessionManagement() {
                                     />
                                     <span className="text-xs text-base-content/60">
                                         {selectedIds.size > 0
-                                            ? `已选 ${selectedIds.size} / ${sessions.length}`
+                                            ? `${t('已选')} ${selectedIds.size} / ${sessions.length}`
                                             : `${sessions.length} 个会话`}
                                     </span>
                                 </div>
@@ -443,7 +442,7 @@ export function SessionManagement() {
                             <div className="divide-y divide-base-200 max-h-[500px] overflow-y-auto">
                                 {sessions.length === 0 && (
                                     <div className="text-center py-8 text-base-content/50">
-                                        {searchQuery ? '未找到匹配的会话' : '暂无会话记录'}
+                                        {searchQuery ? t('未找到匹配的会话') : t('暂无会话记录')}
                                     </div>
                                 )}
                                 {sessions.map(session => (
