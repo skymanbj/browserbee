@@ -420,6 +420,14 @@ export interface RenameSessionMessage {
   windowId?: number;
 }
 
+export interface UpdateHistoryMessage {
+  action: 'updateHistory';
+  tabId: number;
+  windowId?: number;
+  originalRequest: any;
+  conversationHistory: any[];
+}
+
 export type BackgroundMessage =
   | ExecutePromptMessage
   | CancelExecutionMessage
@@ -465,7 +473,8 @@ export type BackgroundMessage =
   | CreateSessionMessage
   | SetActiveSessionMessage
   | DeleteSessionMessage
-  | RenameSessionMessage;
+  | RenameSessionMessage
+  | UpdateHistoryMessage;
 
 // New message types for enhanced tab management
 export interface TabStatusChangedMessage {

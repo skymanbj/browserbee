@@ -920,3 +920,26 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
     sendUIMessage('processingComplete', null, tabId);
   }
 }
+
+/**
+ * Update the entire message history for a specific window (used for turn editing/resubmission)
+ */
+export async function updateMessageHistory(
+  tabId: number,
+  originalRequest: Anthropic.MessageParam | null,
+  conversationHistory: Anthropic.MessageParam[]
+): Promise<void> {
+  const windowId = getWindowForTab(tabId);
+  if (!windowId) {
+    logWithTimestamp(`Cannot update message history: No window ID found for tab ${tabId}`, 'warn');
+    return;
+  }
+  
+  const provider = await getCurrentProvider();
+  windowMessageHistories.set(windowId, {
+    provider,
+    originalRequest,
+    conversationHistory
+  });
+  logWithTimestamp(`Message history updated/truncated for window ${windowId}`);
+}

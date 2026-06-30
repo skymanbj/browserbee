@@ -244,6 +244,41 @@ export const useMessageManagement = () => {
     }
   };
 
+  const truncateMessagesForEdit = async (promptIndex: number) => {
+    if (!tabInfo) return { originalRequest: null, conversationHistory: [] };
+    const { tabId, windowId } = tabInfo;
+
+    const truncatedMessages = messages.slice(0, promptIndex);
+    const { originalRequest, conversationHistory } = convertUiMessagesToAgentHistory(truncatedMessages);
+
+    setMessages(truncatedMessages);
+
+    // Sync to background
+    await new Promise<void>((resolve) => {
+      chrome.runtime.sendMessage({
+        action: 'updateHistory',
+        tabId,
+        windowId,
+        originalRequest,
+        conversationHistory
+      }, () => resolve());
+    });
+
+    if (activeSessionId) {
+      try {
+        await SessionManager.updateSession(
+          activeSessionId,
+          truncatedMessages,
+          { originalRequest, conversationHistory }
+        );
+      } catch (error) {
+        console.error('Failed to update session during edit:', error);
+      }
+    }
+
+    return { originalRequest, conversationHistory };
+  };
+
   return {
     messages,
     streamingSegments,
@@ -262,6 +297,7 @@ export const useMessageManagement = () => {
     deleteMultipleMessages,
     currentSegmentId,
     saveMessagesToSession,
+    truncateMessagesForEdit,
     // Session values
     sessions,
     activeSessionId,
@@ -271,4 +307,31 @@ export const useMessageManagement = () => {
     deleteSession,
     renameSession
   };
+};
+
+const convertUiMessagesToAgentHistory = (uiMessages: Message[]) => {
+  const historyItems: { role: 'user' | 'assistant'; content: string }[] = [];
+
+  uiMessages.forEach(msg => {
+    if (msg.type === 'system') {
+      const content = msg.content;
+      if (content.startsWith('New prompt: "')) {
+        let promptText = '';
+        if (content.endsWith('"')) {
+          promptText = content.substring('New prompt: "'.length, content.length - 1);
+        } else {
+          const match = content.match(/^New prompt: "(.*?)"(?:\s*\(\d+ attachment)/);
+          promptText = match ? match[1] : content.substring('New prompt: "'.length);
+        }
+        historyItems.push({ role: 'user', content: promptText });
+      }
+    } else if (msg.type === 'llm') {
+      historyItems.push({ role: 'assistant', content: msg.content });
+    }
+  });
+
+  const originalRequest = historyItems.length > 0 ? historyItems[0] : null;
+  const conversationHistory = historyItems.length > 1 ? historyItems.slice(1) : [];
+
+  return { originalRequest, conversationHistory };
 };

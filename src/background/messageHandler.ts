@@ -1,6 +1,6 @@
 import { handleApprovalResponse } from '../agent/approvalManager';
 import { TokenTrackingService } from '../tracking/tokenTrackingService';
-import { cancelExecution, clearMessageHistory, executePrompt, getAgentStatus, initializeAgent } from './agentController';
+import { cancelExecution, clearMessageHistory, executePrompt, getAgentStatus, initializeAgent, updateMessageHistory } from './agentController';
 import { triggerReflection } from './reflectionController';
 import { ScheduledTaskService } from './scheduledTaskService';
 import { SessionManager } from './sessionManager';
@@ -304,6 +304,15 @@ export function handleMessage(
         handleRenameSession(message, sendResponse);
         return true;
 
+      case 'updateHistory':
+        handleUpdateHistory(message, sendResponse)
+          .catch((error: any) => {
+            const errorMessage = handleError(error, 'updating history');
+            logWithTimestamp(`Error in async handleUpdateHistory: ${errorMessage}`, 'error');
+            sendResponse({ success: false, error: errorMessage });
+          });
+        return true;
+
       default:
         logWithTimestamp(`Unhandled message action: ${(message as any).action}`, 'warn');
         sendResponse({ success: false, error: 'Unhandled message action' });
@@ -380,7 +389,8 @@ function isBackgroundMessage(message: any): message is BackgroundMessage {
       message.action === 'createSession' ||
       message.action === 'setActiveSession' ||
       message.action === 'deleteSession' ||
-      message.action === 'renameSession'
+      message.action === 'renameSession' ||
+      message.action === 'updateHistory'
     )
   );
 }
@@ -1028,6 +1038,16 @@ async function handleRenameSession(
   } catch (error: any) {
     sendResponse({ success: false, error: String(error) });
   }
+}
+
+async function handleUpdateHistory(
+  message: any,
+  sendResponse: (response?: any) => void
+): Promise<void> {
+  if (message.tabId) {
+    await updateMessageHistory(message.tabId, message.originalRequest, message.conversationHistory || []);
+  }
+  sendResponse({ success: true });
 }
 
 /**

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ConfigManager } from '../background/configManager';
 import { useTheme } from '../context/ThemeContext';
 import { TokenTrackingService } from '../tracking/tokenTrackingService';
+import { FileAttachment } from '../background/types';
 import { ApprovalRequest } from './components/ApprovalRequest';
 import { MessageDisplay } from './components/MessageDisplay';
 import { OutputHeader } from './components/OutputHeader';
@@ -73,6 +74,7 @@ export function SidePanel() {
     deleteMultipleMessages,
     currentSegmentId,
     saveMessagesToSession,
+    truncateMessagesForEdit,
     sessions,
     activeSessionId,
     initSessions,
@@ -254,6 +256,28 @@ export function SidePanel() {
     }
   };
 
+  // Handle turn editing and resubmission
+  const handleEditTurn = async (promptIndex: number, newPrompt: string, attachments?: FileAttachment[]) => {
+    setIsProcessing(true);
+    setTabStatus('running');
+
+    try {
+      // 1. Truncate UI messages and sync to background
+      await truncateMessagesForEdit(promptIndex);
+
+      // 2. Add the new user prompt system message
+      addSystemMessage(`New prompt: "${newPrompt}"${attachments && attachments.length > 0 ? ` (${attachments.length} attachment${attachments.length > 1 ? 's' : ''})` : ''}`, attachments);
+
+      // 3. Re-execute prompt
+      await executePrompt(newPrompt, attachments);
+    } catch (error) {
+      console.error('Error during edit and resubmit:', error);
+      addSystemMessage('Error: ' + (error instanceof Error ? error.message : String(error)));
+      setIsProcessing(false);
+      setTabStatus('error');
+    }
+  };
+
   // Handle cancellation - also reject any pending approval requests
   const handleCancel = () => {
     // If there are any pending approval requests, reject them all
@@ -380,7 +404,7 @@ export function SidePanel() {
                   isStreaming={isStreaming}
                   onDeleteMessage={deleteMessage}
                   onDeleteTurn={deleteMultipleMessages}
-                  onEditTurn={() => { }}
+                  onEditTurn={handleEditTurn}
                   isProcessing={isProcessing}
                 />
               </div>
