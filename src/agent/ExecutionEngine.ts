@@ -11,6 +11,30 @@ import { requestApproval } from "./approvalManager";
 const MAX_STEPS = 50;            // prevent infinite loops
 const MAX_OUTPUT_TOKENS = 1024;  // max tokens for LLM response
 
+// Tools that always require user approval before execution, regardless of what
+// the LLM says in the <requires_approval> tag. This is a safety guard against
+// prompt injection or models that incorrectly mark risky actions as safe.
+const SENSITIVE_TOOLS = new Set([
+  "browser_navigate",
+  "browser_navigate_back",
+  "browser_navigate_forward",
+  "browser_click",
+  "browser_type",
+  "browser_handle_dialog",
+  "browser_click_xy",
+  "browser_move_mouse",
+  "browser_drag",
+  "browser_press_key",
+  "browser_keyboard_type",
+  "browser_tab_new",
+  "browser_tab_select",
+  "browser_tab_close",
+  "browser_navigate_tab",
+  "save_memory",
+  "delete_memory",
+  "clear_all_memories"
+]);
+
 /**
  * Callback interface for execution
  */
@@ -519,9 +543,20 @@ The <requires_approval> tag is mandatory. Set it to "true" for purchases, data d
           }
           const tool = this.toolManager.findTool(toolName);
 
-          // Check if the LLM has marked this as requiring approval
-          const requiresApproval = llmRequiresApproval;
-          const reason = llmRequiresApproval ? "The AI assistant has determined this action requires your approval." : "";
+          // Determine whether approval is required. Sensitive tools always require
+          // approval as a defense-in-depth measure, even if the LLM claims otherwise.
+          const isSensitiveTool = SENSITIVE_TOOLS.has(toolName);
+          const requiresApproval = llmRequiresApproval || isSensitiveTool;
+          let reason: string;
+          if (isSensitiveTool && llmRequiresApproval) {
+            reason = "This action is classified as sensitive and the AI also flagged it as risky.";
+          } else if (isSensitiveTool) {
+            reason = `The ${toolName} action is classified as sensitive and requires your approval before execution.`;
+          } else if (llmRequiresApproval) {
+            reason = "The AI assistant has determined this action requires your approval.";
+          } else {
+            reason = "";
+          }
 
           if (!tool) {
             messages.push(
