@@ -284,13 +284,14 @@ export const PromptForm: React.FC<PromptFormProps> = ({
                 {getSkillEmojiOrShortName(skill.name)}
               </button>
 
-              {/* 删除自定义技能按钮 (Hover 时显示) */}
+              {/* 删除自定义技能按钮 - 简洁下划线样式，Hover 时显示 */}
               {!skill.id.startsWith('default_') && (
                 <button
                   type="button"
                   onClick={(e) => handleDeleteSkill(e, skill.id)}
-                  className="absolute -top-1.5 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-rose-500 text-white font-bold text-[8px] cursor-pointer shadow-sm"
+                  className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 flex items-center justify-center rounded-full border transition-all duration-150 opacity-0 group-hover:opacity-100 hover:scale-110 cursor-pointer ${theme === 'dark' ? 'border-rose-400/60 text-rose-400 hover:bg-rose-500/20' : 'border-rose-400/80 text-rose-500 hover:bg-rose-50'}`}
                   title="删除技能"
+                  style={{ fontSize: '10px', lineHeight: '1' }}
                 >
                   ✕
                 </button>
