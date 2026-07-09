@@ -1,7 +1,8 @@
 import { faPaperPlane, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
+import { FileAttachment } from '../../background/types';
 import { PromptTemplateService } from '../../tracking/promptTemplateService';
 import {
   extractVariables,
@@ -10,9 +11,15 @@ import {
   STORAGE_KEY,
 } from '../../types/promptTemplate';
 import { UserSkill } from '../../types/skill';
+import {
+  checkAttachmentLimits,
+  getAcceptedFileTypes,
+  processFiles
+} from '../utils/fileUtils';
+import { AttachmentPreview } from './AttachmentPreview';
 
 interface PromptFormProps {
-  onSubmit: (prompt: string) => void;
+  onSubmit: (prompt: string, attachments?: FileAttachment[]) => void;
   onCancel: () => void;
   isProcessing: boolean;
   tabStatus: 'attached' | 'detached' | 'unknown' | 'running' | 'idle' | 'error';
@@ -40,6 +47,16 @@ const DEFAULT_SKILLS: UserSkill[] = [
   }
 ];
 
+// 提取开头的 Emoji 字符，或者在没有 Emoji 时提取名字的前2个字符作为缩写
+const getSkillEmojiOrShortName = (name: string): string => {
+  const emojiRegex = /^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]+)/u;
+  const match = name.match(emojiRegex);
+  if (match) {
+    return match[1];
+  }
+  return name.slice(0, 2);
+};
+
 export const PromptForm: React.FC<PromptFormProps> = ({
   onSubmit,
   onCancel,
@@ -51,7 +68,10 @@ export const PromptForm: React.FC<PromptFormProps> = ({
   const [skills, setSkills] = useState<UserSkill[]>(DEFAULT_SKILLS);
   const [isSaving, setIsSaving] = useState(false);
   const [newSkillName, setNewSkillName] = useState('');
-
+  const [isCreatingSkill, setIsCreatingSkill] = useState(false);
+  const [createSkillName, setCreateSkillName] = useState('');
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   // ── Prompt templates state ──
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
@@ -120,8 +140,9 @@ export const PromptForm: React.FC<PromptFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || isProcessing || tabStatus === 'detached') return;
-    onSubmit(prompt);
-    setPrompt(''); // Clear the prompt after submission
+    onSubmit(prompt, attachments.length > 0 ? attachments : undefined);
+    setPrompt('');
+    setAttachments([]);
   };
 
   const handleApplySkill = (skillPrompt: string) => {
@@ -196,11 +217,60 @@ export const PromptForm: React.FC<PromptFormProps> = ({
     });
   };
 
+  // ── File attachment handling ──
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    const check = checkAttachmentLimits(attachments, fileArray);
+    if (!check.ok) {
+      alert(check.message);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    try {
+      const processed = await processFiles(fileArray);
+      setAttachments(prev => [...prev, ...processed]);
+    } catch (err) {
+      console.error('Failed to process files:', err);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // ── Create new skill directly ──
+  const handleCreateSkillFromEmpty = () => {
+    if (!createSkillName.trim()) return;
+    const newSkill: UserSkill = {
+      id: 'skill_' + Date.now(),
+      name: createSkillName.trim(),
+      prompt: prompt.trim() || '新建技能指令...',
+      createdAt: Date.now()
+    };
+    chrome.storage.local.get('browserbee_user_skills', (result) => {
+      const userSkills = (result['browserbee_user_skills'] || []) as UserSkill[];
+      userSkills.push(newSkill);
+      chrome.storage.local.set({ 'browserbee_user_skills': userSkills }, () => {
+        setIsCreatingSkill(false);
+        setCreateSkillName('');
+      });
+    });
+  };
+
   return (
-    <div className="mt-4 flex flex-col gap-2">
-      <div className="flex items-center gap-1 text-xs w-full overflow-hidden select-none">
-        {/* 左侧“常用技能”与可滑动技能按钮列表 */}
-        <div className="flex items-center gap-1 overflow-x-auto flex-grow [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-0.5">
+    <div className="mt-4 flex flex-col gap-1.5">
+      <div className="flex items-center gap-1 text-[11px] w-full py-0.5 select-none overflow-visible">
+        {/* 常用技能与可滑动技能按钮列表 */}
+        <div className="flex items-center gap-1 overflow-x-auto flex-grow [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-1">
           <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} font-medium select-none mr-0.5 shrink-0`}>常用技能:</span>
           {skills.map(skill => (
             <div key={skill.id} className="relative group shrink-0">
@@ -208,10 +278,10 @@ export const PromptForm: React.FC<PromptFormProps> = ({
                 type="button"
                 onClick={() => handleApplySkill(skill.prompt)}
                 disabled={isProcessing || tabStatus === 'detached'}
-                className={`btn btn-[10px] h-6 min-h-[24px] ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} rounded-full px-2.5 py-0 font-medium lowercase select-none`}
-                title={skill.prompt}
+                className={`text-xs h-[20px] px-2.5 flex items-center justify-center ${theme === 'dark' ? 'bg-white/10 hover:bg-white/15 text-gray-200 border border-white/5' : 'bg-black/5 hover:bg-black/10 text-gray-700 border border-black/5'} rounded-full font-medium select-none transition-colors`}
+                title={`${skill.name}: ${skill.prompt}`}
               >
-                {skill.name}
+                {getSkillEmojiOrShortName(skill.name)}
               </button>
 
               {/* 删除自定义技能按钮 (Hover 时显示) */}
@@ -219,7 +289,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
                 <button
                   type="button"
                   onClick={(e) => handleDeleteSkill(e, skill.id)}
-                  className="absolute -top-1 -right-1 hidden group-hover:flex items-center justify-center w-3.5 h-3.5 rounded-full bg-rose-500 text-white font-bold text-[8px] cursor-pointer"
+                  className="absolute -top-1.5 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-rose-500 text-white font-bold text-[8px] cursor-pointer shadow-sm"
                   title="删除技能"
                 >
                   ✕
@@ -229,27 +299,37 @@ export const PromptForm: React.FC<PromptFormProps> = ({
           ))}
         </div>
 
-        {/* 右侧固定操作区 */}
-        <div className="flex items-center gap-1 shrink-0 ml-auto">
+        {/* 右侧固定操作区 —— 取消文字，只保留emoji，减少空间占用 */}
+        <div className="flex items-center gap-1 shrink-0 ml-auto pl-1">
           {/* Show template picker button */}
           <button
             type="button"
             onClick={() => setShowTemplatePicker(!showTemplatePicker)}
-            className={`btn btn-xs btn-ghost ${theme === 'dark' ? 'text-amber-400 hover:bg-white/5' : 'text-amber-600 hover:bg-black/5'} font-bold min-h-[24px] h-6 px-1.5 ${showTemplatePicker ? 'opacity-70' : ''}`}
-            title="从提示词模板库选择"
+            className={`text-xs h-[20px] w-6 flex items-center justify-center rounded ${theme === 'dark' ? 'text-amber-400 hover:bg-white/5' : 'text-amber-600 hover:bg-black/5'} ${showTemplatePicker ? 'opacity-70' : ''}`}
+            title="提示词模板库"
           >
-            📋 模板
+            📋
           </button>
 
-          {/* 如果当前输入框有内容，且未处于保存面板状态，显示“⭐ 存为技能”按钮 */}
+          {/* 新建技能按钮（始终显示） */}
+          <button
+            type="button"
+            onClick={() => setIsCreatingSkill(true)}
+            className={`text-xs h-[20px] w-6 flex items-center justify-center rounded ${theme === 'dark' ? 'text-emerald-400 hover:bg-white/5' : 'text-emerald-600 hover:bg-black/5'}`}
+            title="新建常用技能"
+          >
+            ✨
+          </button>
+
+          {/* 如果当前输入框有内容，且未处于保存面板状态，显示"⭐ 存为技能"按钮 */}
           {prompt.trim() && !isSaving && (
             <button
               type="button"
               onClick={() => setIsSaving(true)}
-              className={`btn btn-xs btn-ghost ${theme === 'dark' ? 'text-indigo-400 hover:bg-white/5' : 'text-indigo-600 hover:bg-black/5'} font-bold min-h-[24px] h-6 px-1.5`}
-              title="将输入框的指令保存为常用技能"
+              className={`text-xs h-[20px] w-6 flex items-center justify-center rounded ${theme === 'dark' ? 'text-indigo-400 hover:bg-white/5' : 'text-indigo-600 hover:bg-black/5'}`}
+              title="将输入指令保存为技能"
             >
-              ⭐ 存为技能
+              ⭐
             </button>
           )}
         </div>
@@ -370,7 +450,79 @@ export const PromptForm: React.FC<PromptFormProps> = ({
         </div>
       )}
 
-      {/* 新建技能面板 */}
+      {/* ── 隐藏的文件输入 ── */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept={getAcceptedFileTypes()}
+        multiple
+        className="hidden"
+      />
+
+      {/* ── 新建技能弹窗 ── */}
+      {isCreatingSkill && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className={`p-4 rounded-lg shadow-xl max-w-sm w-full mx-2 ${theme === 'dark' ? 'bg-gray-800 border border-white/10' : 'bg-white border border-gray-200'}`}>
+            <h3 className={`text-sm font-bold mb-3 flex items-center gap-1.5 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-700'}`}>
+              ✨ 新建常用技能
+            </h3>
+            <div className="space-y-2">
+              <div className="flex flex-col gap-1">
+                <label className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                  技能名称
+                </label>
+                <input
+                  type="text"
+                  placeholder="如: 翻译成日文"
+                  value={createSkillName}
+                  onChange={(e) => setCreateSkillName(e.target.value)}
+                  className={`input input-sm ${theme === 'dark' ? 'glass-input' : 'glass-input-light'} w-full text-xs`}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreateSkillFromEmpty();
+                    if (e.key === 'Escape') {
+                      setIsCreatingSkill(false);
+                      setCreateSkillName('');
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                  指令内容
+                </label>
+                <textarea
+                  placeholder="输入技能对应的指令..."
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className={`textarea textarea-sm ${theme === 'dark' ? 'glass-input' : 'glass-input-light'} w-full text-xs`}
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-3 justify-end">
+              <button
+                type="button"
+                onClick={() => { setIsCreatingSkill(false); setCreateSkillName(''); }}
+                className={`btn btn-xs ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} h-7 min-h-[28px]`}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateSkillFromEmpty}
+                className={`btn btn-xs ${theme === 'dark' ? 'glass-btn-primary' : 'glass-btn-primary-light'} h-7 min-h-[28px]`}
+                disabled={!createSkillName.trim()}
+              >
+                ✨ 创建技能
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 存为技能面板 */}
       {isSaving && (
         <div className={`flex items-center gap-1.5 p-1.5 ${theme === 'dark' ? 'bg-indigo-950/40 border border-white/5' : 'bg-slate-200/50 border border-black/5'} rounded-md text-xs animate-fade-in`}>
           <span className={`font-semibold ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} flex-shrink-0`}>技能名称:</span>
@@ -410,9 +562,31 @@ export const PromptForm: React.FC<PromptFormProps> = ({
         </div>
       )}
 
+      {/* ── 附件预览区域（位于输入框上方） ── */}
+      {attachments.length > 0 && (
+        <div className="flex items-center gap-1.5 mb-1 px-1 overflow-x-auto">
+          <AttachmentPreview
+            attachments={attachments}
+            removable={true}
+            onRemove={handleRemoveAttachment}
+          />
+        </div>
+      )}
+
       {/* 原指令输入表单 */}
-      <form onSubmit={handleSubmit} className="relative">
-        <div className="w-full">
+      <form onSubmit={handleSubmit} className="flex items-end gap-1.5 w-full">
+        {/* 添加文件按钮 —— 移到输入框同一行的最左侧 */}
+        <button
+          type="button"
+          onClick={handleFileButtonClick}
+          className={`btn btn-sm btn-ghost shrink-0 ${theme === 'dark' ? 'text-sky-400 hover:bg-white/5' : 'text-sky-600 hover:bg-black/5'} h-10 w-8 p-0 flex items-center justify-center text-lg leading-none`}
+          style={{ minHeight: '40px' }}
+          title="上传文件或图片"
+        >
+          📎
+        </button>
+
+        <div className="relative flex-grow">
           <TextareaAutosize
             className={`${theme === 'dark' ? 'glass-input' : 'glass-input-light'} textarea w-full pr-12`}
             value={prompt}

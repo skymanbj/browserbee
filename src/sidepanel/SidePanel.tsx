@@ -261,16 +261,19 @@ export function SidePanel() {
   });
 
   // Handle form submission
-  const handleSubmit = async (prompt: string) => {
+  const handleSubmit = async (prompt: string, attachments?: FileAttachment[]) => {
     setIsProcessing(true);
     // Update the tab status to running
     setTabStatus('running');
 
     // Add a system message to indicate a new prompt
-    addSystemMessage(`New prompt: "${prompt}"`);
+    const attachmentInfo = attachments && attachments.length > 0
+      ? ` (${attachments.length} attachment${attachments.length > 1 ? 's' : ''})`
+      : '';
+    addSystemMessage(`New prompt: "${prompt}"${attachmentInfo}`, attachments);
 
     try {
-      await executePrompt(prompt);
+      await executePrompt(prompt, attachments);
     } catch (error) {
       console.error('Error:', error);
       addSystemMessage('Error: ' + (error instanceof Error ? error.message : String(error)));
