@@ -6,17 +6,20 @@ export type ThemeMode = 'light' | 'dark';
 export interface SettingsState {
   theme: ThemeMode;
   language: Language;
+  soul: string;
   isInitialized: boolean;
 }
 
 interface SettingsLoadResult {
   theme: ThemeMode;
   language: Language;
+  soul: string;
 }
 
 const initialState: SettingsState = {
   theme: 'dark',
   language: 'zh',
+  soul: '',
   isInitialized: false,
 };
 
@@ -30,10 +33,12 @@ export const initializeFromStorage = createAsyncThunk<
       const result = await chrome.storage.sync.get({
         browserbee_theme_mode: 'dark',
         browserbee_language: 'zh',
+        browserbee_soul: '',
       });
       return {
         theme: (result.browserbee_theme_mode as ThemeMode) || 'dark',
         language: (result.browserbee_language as Language) || 'zh',
+        soul: (result.browserbee_soul as string) || '',
       };
     }
   } catch (error) {
@@ -45,10 +50,11 @@ export const initializeFromStorage = createAsyncThunk<
     return {
       theme: prefersDark ? 'dark' : 'light',
       language: 'zh',
+      soul: '',
     };
   }
 
-  return { theme: 'dark' as ThemeMode, language: 'zh' as Language };
+  return { theme: 'dark' as ThemeMode, language: 'zh' as Language, soul: '' as string };
 });
 
 const settingsSlice = createSlice({
@@ -61,15 +67,19 @@ const settingsSlice = createSlice({
     setLanguage(state, action: PayloadAction<Language>) {
       state.language = action.payload;
     },
+    setSoul(state, action: PayloadAction<string>) {
+      state.soul = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(initializeFromStorage.fulfilled, (state, action) => {
       state.theme = action.payload.theme;
       state.language = action.payload.language;
+      state.soul = action.payload.soul;
       state.isInitialized = true;
     });
   },
 });
 
-export const { setTheme, setLanguage } = settingsSlice.actions;
+export const { setTheme, setLanguage, setSoul } = settingsSlice.actions;
 export default settingsSlice.reducer;

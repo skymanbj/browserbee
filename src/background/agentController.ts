@@ -631,6 +631,14 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
           if (promptManager && typeof promptManager.setCurrentPageContext === 'function') {
             promptManager.setCurrentPageContext(currentUrl, currentTitle);
           }
+          if (promptManager && typeof promptManager.setSoul === 'function') {
+            try {
+              const soulResult = await chrome.storage.sync.get({ browserbee_soul: '' });
+              if (soulResult.browserbee_soul) {
+                promptManager.setSoul(soulResult.browserbee_soul as string);
+              }
+            } catch { /* ignore */ }
+          }
         }
       } catch (error) {
         logWithTimestamp("Could not get current page info: " + String(error), 'warn');

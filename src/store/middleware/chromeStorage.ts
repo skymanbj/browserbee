@@ -16,7 +16,7 @@ export const chromeStorageMiddleware: Middleware = (storeApi) => (next) => async
   const result = next(action);
 
   const state = storeApi.getState() as {
-    settings?: { theme?: string; language?: string };
+    settings?: { theme?: string; language?: string; soul?: string };
     config?: { providers?: unknown[]; activeProviderId?: string | null; models?: unknown[] };
     memory?: { items?: unknown[] };
   };
@@ -31,6 +31,8 @@ export const chromeStorageMiddleware: Middleware = (storeApi) => (next) => async
       await storage.set({ [storageKey('theme_mode')]: state.settings?.theme });
     } else if (action.type === 'settings/setLanguage') {
       await storage.set({ [storageKey('language')]: state.settings?.language });
+    } else if (action.type === 'settings/setSoul') {
+      await storage.set({ [storageKey('soul')]: state.settings?.soul });
     } else if (action.type === 'config/setProviders' || action.type === 'config/setActiveProvider' || action.type === 'config/setModels') {
       await storage.set({
         [storageKey('config')]: {

@@ -5,12 +5,12 @@ import { BrowserTool } from "./tools/types";
  */
 export class PromptManager {
   private tools: BrowserTool[];
+  private soulText: string = "";
   
   constructor(tools: BrowserTool[]) {
     this.tools = tools;
   }
   
-  // Store the current page context
   private currentPageContext: string = "";
   
   /**
@@ -28,6 +28,10 @@ Use your judgment to determine whether the request is meant to be performed on t
 Remember to follow the verification-first workflow: navigate → observe → analyze → act`;
   }
   
+  setSoul(soul: string): void {
+    this.soulText = soul;
+  }
+  
   /**
    * Build the fixed system prompt for the agent.
    */
@@ -36,9 +40,11 @@ Remember to follow the verification-first workflow: navigate → observe → ana
       .map(t => `${t.name}: ${t.description}`)
       .join("\n\n");
     
-    // Include the current page context if available
     const pageContextSection = this.currentPageContext ? 
       `\n\n## CURRENT PAGE CONTEXT\n${this.currentPageContext}\n` : "";
+    
+    const soulSection = this.soulText ? 
+      `\n\n## SOUL\n${this.soulText}\n` : "";
   
     return `You are a browser-automation assistant called **BrowserBee 🐝**.
 
@@ -46,7 +52,7 @@ CRITICAL RULE: You MUST ALWAYS use tools to perform actions. Never describe what
 
   You have access to these tools:
   
-  ${toolDescriptions}${pageContextSection}
+  ${toolDescriptions}${pageContextSection}${soulSection}
   
   ────────────────────────────────────────
   ## MULTI-TAB OPERATION INSTRUCTIONS

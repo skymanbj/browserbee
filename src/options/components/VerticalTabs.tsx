@@ -32,6 +32,7 @@ import { PromptTemplateTab } from './tabs/PromptTemplateTab';
 import { ProvidersTab } from './tabs/ProvidersTab';
 import { ScheduledTaskTab } from './tabs/ScheduledTaskTab';
 import { SessionTab } from './tabs/SessionTab';
+import { SoulTab } from './tabs/SoulTab';
 import { SyncTab } from './tabs/SyncTab';
 
 export function VerticalTabs() {
@@ -68,6 +69,7 @@ export function VerticalTabs() {
       'General': { zh: '通用设置', en: 'General' },
       'LLM Configuration': { zh: '大模型配置', en: 'LLM Configuration' },
       'Memory': { zh: '记忆管理', en: 'Memory' },
+      'Soul': { zh: '灵魂', en: 'Soul' },
       'Sessions': { zh: '会话管理', en: 'Sessions' },
       'Scheduled Tasks': { zh: '定时任务', en: 'Scheduled Tasks' },
       'Prompt Templates': { zh: '提示词模板', en: 'Prompt Templates' },
@@ -82,6 +84,7 @@ export function VerticalTabs() {
     { id: 'providers', label: t('LLM Configuration'), icon: '🤖' },
     { id: 'sync', label: t('Cloud Sync'), icon: '☁️' },
     { id: 'memory', label: t('Memory'), icon: '🧠' },
+    { id: 'soul', label: t('Soul'), icon: '👻' },
     { id: 'sessions', label: t('Sessions'), icon: '💬' },
     { id: 'scheduledTasks', label: t('Scheduled Tasks'), icon: '⏰' },
     { id: 'prompts', label: t('Prompt Templates'), icon: '📋' },
@@ -321,6 +324,8 @@ export function VerticalTabs() {
         return <SyncTab />;
       case 'memory':
         return <MemoryTab />;
+      case 'soul':
+        return <SoulTab />;
       case 'sessions':
         return <SessionTab />;
       case 'scheduledTasks':

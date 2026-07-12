@@ -13,7 +13,58 @@ export function SyncTab() {
   const t = (key: string): string => {
     const cleanKey = key.trim();
     const translationDict: Record<string, Record<string, string>> = {
-      'Cloud Sync': { zh: '云同步', en: 'Cloud Sync' }
+      'Cloud Sync': { zh: '云同步', en: 'Cloud Sync' },
+      'Cloud Sync Management': { zh: '云同步管理', en: 'Cloud Sync Management' },
+      'Configure cloud providers (Google Drive or WebDAV) to backup, restore, or merge all your extension data.': {
+        zh: '配置云服务（Google Drive 或 WebDAV）来备份、恢复或合并你的扩展数据。',
+        en: 'Configure cloud providers (Google Drive or WebDAV) to backup, restore, or merge all your extension data.'
+      },
+      '🧠 Interaction Memories': { zh: '🧠 交互记忆', en: '🧠 Interaction Memories' },
+      '📋 Prompt Templates': { zh: '📋 提示词模板', en: '📋 Prompt Templates' },
+      '⏰ Scheduled Tasks': { zh: '⏰ 定时任务', en: '⏰ Scheduled Tasks' },
+      '💬 Chat Sessions': { zh: '💬 聊天会话', en: '💬 Chat Sessions' },
+      'Sync Provider': { zh: '同步服务', en: 'Sync Provider' },
+      'Disabled': { zh: '已禁用', en: 'Disabled' },
+      'WebDAV URL': { zh: 'WebDAV 地址', en: 'WebDAV URL' },
+      'Username': { zh: '用户名', en: 'Username' },
+      'Password': { zh: '密码', en: 'Password' },
+      'Test Connection': { zh: '测试连接', en: 'Test Connection' },
+      'Connection OK!': { zh: '连接成功！', en: 'Connection OK!' },
+      'Google Drive Settings': { zh: 'Google Drive 设置', en: 'Google Drive Settings' },
+      'Linked to Google Drive': { zh: '已连接 Google Drive', en: 'Linked to Google Drive' },
+      'Disconnect': { zh: '断开连接', en: 'Disconnect' },
+      'Google Drive Client ID': { zh: 'Google Drive 客户端 ID', en: 'Google Drive Client ID' },
+      'Google Drive Client Secret': { zh: 'Google Drive 客户端密钥', en: 'Google Drive Client Secret' },
+      'Connect & Authorize': { zh: '连接并授权', en: 'Connect & Authorize' },
+      'Sync Operations': { zh: '同步操作', en: 'Sync Operations' },
+      'Smart Merge Sync 🔄': { zh: '智能合并同步 🔄', en: 'Smart Merge Sync 🔄' },
+      'Merge Sync downloads cloud data, merges it intelligently with your local data, and uploads the merged state back.': {
+        zh: '合并同步会下载云端数据，与本地数据智能合并后上传。',
+        en: 'Merge Sync downloads cloud data, merges it intelligently with your local data, and uploads the merged state back.'
+      },
+      'Backup to Cloud 📤': { zh: '备份到云端 📤', en: 'Backup to Cloud 📤' },
+      'Backup overwrites the cloud data with your current local data.': {
+        zh: '备份会用本地数据覆盖云端数据。',
+        en: 'Backup overwrites the cloud data with your current local data.'
+      },
+      'Restore from Cloud 📥': { zh: '从云端恢复 📥', en: 'Restore from Cloud 📥' },
+      'Restore overwrites your local data with the cloud backup. All current local data will be replaced.': {
+        zh: '恢复会用云端备份覆盖本地数据，当前本地数据将被替换。',
+        en: 'Restore overwrites your local data with the cloud backup. All current local data will be replaced.'
+      },
+      'Sync Status': { zh: '同步状态', en: 'Sync Status' },
+      'Last Synced': { zh: '上次同步', en: 'Last Synced' },
+      'Never': { zh: '从未', en: 'Never' },
+      'Sync Now': { zh: '立即同步', en: 'Sync Now' },
+      'Backup': { zh: '备份', en: 'Backup' },
+      'Restore': { zh: '恢复', en: 'Restore' },
+      'WebDAV Settings': { zh: 'WebDAV 设置', en: 'WebDAV Settings' },
+      'Cloud sync is currently disabled.': { zh: '云同步当前已禁用。', en: 'Cloud sync is currently disabled.' },
+      'Choose WebDAV or Google Drive to configure.': { zh: '选择 WebDAV 或 Google Drive 进行配置。', en: 'Choose WebDAV or Google Drive to configure.' },
+      '⚠️ Connection required. Enter your Google API OAuth credentials below to bind.': {
+        zh: '⚠️ 需要先连接。请在下方输入 Google API OAuth 凭据进行绑定。',
+        en: '⚠️ Connection required. Enter your Google API OAuth credentials below to bind.'
+      },
     };
     const translated = translationDict[cleanKey]?.[language];
     return translated ?? key;
@@ -418,14 +469,14 @@ export function SyncTab() {
             {syncType === 'none' && (
               <div className="flex flex-col items-center justify-center py-12 text-base-content/40">
                 <span className="text-4xl mb-2">💤</span>
-                <p className="text-sm font-medium">Cloud sync is currently disabled.</p>
-                <p className="text-xs">Choose WebDAV or Google Drive to configure.</p>
+                <p className="text-sm font-medium">{t('Cloud sync is currently disabled.')}</p>
+                <p className="text-xs">{t('Choose WebDAV or Google Drive to configure.')}</p>
               </div>
             )}
 
             {syncType === 'webdav' && (
               <div className="space-y-4">
-                <h3 className="font-bold text-md mb-2">WebDAV Settings</h3>
+                <h3 className="font-bold text-md mb-2">{t('WebDAV Settings')}</h3>
 
                 <div className="form-control">
                   <label className="label">
@@ -483,7 +534,7 @@ export function SyncTab() {
 
             {syncType === 'googledrive' && (
               <div className="space-y-4">
-                <h3 className="font-bold text-md mb-2">Google Drive Settings</h3>
+                <h3 className="font-bold text-md mb-2">{t('Google Drive Settings')}</h3>
 
                 {isGdriveAuthorized ? (
                   <div className="alert alert-success py-3 flex items-center justify-between shadow-sm">
@@ -501,7 +552,7 @@ export function SyncTab() {
                   </div>
                 ) : (
                   <div className="alert alert-warning py-3 text-sm shadow-sm">
-                    ⚠️ Connection required. Enter your Google API OAuth credentials below to bind.
+                    {t('⚠️ Connection required. Enter your Google API OAuth credentials below to bind.')}
                   </div>
                 )}
 
@@ -572,7 +623,7 @@ export function SyncTab() {
                   disabled={loading}
                 >
                   {loading && <span className="loading loading-spinner loading-xs" />}
-                  Sync Now
+                  {t('Sync Now')}
                 </button>
               </div>
 
@@ -589,7 +640,7 @@ export function SyncTab() {
                   onClick={triggerBackupToCloud}
                   disabled={loading}
                 >
-                  Backup
+                  {t('Backup')}
                 </button>
               </div>
 
@@ -606,7 +657,7 @@ export function SyncTab() {
                   onClick={triggerRestoreFromCloud}
                   disabled={loading}
                 >
-                  Restore
+                  {t('Restore')}
                 </button>
               </div>
             </div>
