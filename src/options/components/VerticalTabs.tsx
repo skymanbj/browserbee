@@ -98,6 +98,7 @@ export function VerticalTabs() {
 
     chrome.storage.sync.set(
       {
+        openaiCompatibleInstances,
         provider,
         anthropicApiKey,
         anthropicModelId,
@@ -187,12 +188,17 @@ export function VerticalTabs() {
   const handleRemoveInstance = (id: string) => {
     const updated = openaiCompatibleInstances.filter((inst: any) => inst.id !== id);
     dispatch(setOpenaiCompatibleInstances(updated));
+    let newProvider = provider;
     if (provider === `openai-compatible:${id}`) {
+      newProvider = 'anthropic';
       dispatch(setProvider('anthropic'));
     }
     if (selectedInstanceId === id) {
       dispatch(setSelectedInstanceId(null));
     }
+    chrome.storage.local.set({ openaiCompatibleInstances: updated });
+    chrome.storage.sync.set({ openaiCompatibleInstances: updated, provider: newProvider });
+    chrome.runtime.sendMessage({ action: 'providerConfigChanged' });
   };
 
   const handleUpdateInstance = (id: string, field: string, value: any) => {

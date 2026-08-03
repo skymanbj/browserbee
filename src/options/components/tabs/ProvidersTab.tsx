@@ -204,31 +204,64 @@ export function ProvidersTab({
       // Auto fetch models in background
       let fetchedModels: any[] = [];
       const formattedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+
+      // 动态请求主机权限（扩展 options 页面需要 host_permission 才能 fetch 外部 API）
       try {
-        const response = await fetch(`${formattedUrl}/models`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(key ? { 'Authorization': `Bearer ${key}` } : {})
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const list = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : null);
-          if (list) {
-            fetchedModels = list.map((m: any) => {
-              const id = m.id || m.name || '';
-              return {
-                id,
-                name: m.name || id,
-                isReasoningModel: id.toLowerCase().includes('reasoning') || id.toLowerCase().includes('deepseek-r1') || id.toLowerCase().includes('thought'),
-                contextWindow: 128000,
-                maxTokens: 4096
-              };
-            }).filter((m: any) => m.id);
+        const origin = new URL(formattedUrl).origin + '/*';
+        const hasPermission = await chrome.permissions.contains({ origins: [origin] });
+        if (!hasPermission) {
+          const granted = await chrome.permissions.request({ origins: [origin] });
+          if (!granted) {
+            throw new Error(`需要授权访问 ${new URL(formattedUrl).hostname} 才能拉取模型列表`);
           }
         }
-      } catch (fetchErr) {
-        console.warn('Failed to fetch models in creation', fetchErr);
+      } catch (permErr: any) {
+        if (permErr.message?.includes('需要授权')) {
+          throw permErr;
+        }
+        console.warn('Permission check skipped:', permErr);
+      }
+
+      // 智能构造多个候选模型列表 URL
+      // 部分提供商（如商汤）的 baseUrl 已包含 /v1，需要避免重复拼接
+      const hasV1 = /\/v1\/?$/.test(formattedUrl);
+      const baseWithoutV1 = formattedUrl.replace(/\/v1\/?$/, '');
+      const candidateUrls: string[] = [
+        `${formattedUrl}/models`,
+        `${formattedUrl}/v1/models`,
+      ];
+      if (hasV1) {
+        candidateUrls.push(`${baseWithoutV1}/models`);
+        candidateUrls.push(`${baseWithoutV1}/v1/models`);
+      }
+      for (const candidateUrl of candidateUrls) {
+        try {
+          const response = await fetch(candidateUrl, {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(key ? { 'Authorization': `Bearer ${key}` } : {})
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const list = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : null);
+            if (list) {
+              fetchedModels = list.map((m: any) => {
+                const id = m.id || m.name || '';
+                return {
+                  id,
+                  name: m.name || id,
+                  isReasoningModel: id.toLowerCase().includes('reasoning') || id.toLowerCase().includes('deepseek-r1') || id.toLowerCase().includes('thought'),
+                  contextWindow: 128000,
+                  maxTokens: 4096
+                };
+              }).filter((m: any) => m.id);
+              break; // 成功获取后退出循环
+            }
+          }
+        } catch (fetchErr) {
+          console.warn(`Failed to fetch models from ${candidateUrl}:`, fetchErr);
+        }
       }
 
       const newInst = {
@@ -244,6 +277,7 @@ export function ProvidersTab({
       setOpenaiCompatibleInstances(updated);
 
       // Save directly to storage
+      await chrome.storage.local.set({ openaiCompatibleInstances: updated });
       await chrome.storage.sync.set({ openaiCompatibleInstances: updated });
 
       setAddingStatus(t('添加并拉取模型成功！') + ` (${fetchedModels.length} models)`);
@@ -534,6 +568,7 @@ export function ProvidersTab({
             provider={provider}
             setProvider={setProvider}
             openaiCompatibleInstances={openaiCompatibleInstances}
+            handleRemoveInstance={handleRemoveInstance}
           />
 
           {/* Provider-specific Settings */}

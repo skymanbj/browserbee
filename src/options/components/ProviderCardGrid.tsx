@@ -5,12 +5,14 @@ interface ProviderCardGridProps {
   provider: string;
   setProvider: (provider: string) => void;
   openaiCompatibleInstances: OpenAICompatibleInstance[];
+  handleRemoveInstance?: (id: string) => void;
 }
 
 export function ProviderCardGrid({
   provider,
   setProvider,
   openaiCompatibleInstances,
+  handleRemoveInstance,
 }: ProviderCardGridProps) {
   const language = useAppSelector((state) => state.settings.language);
 
@@ -121,6 +123,23 @@ export function ProviderCardGrid({
                 <p className="text-xs text-base-content/60 leading-normal truncate">
                   {inst.modelId ? `${language === 'zh' ? '模型' : 'Model'}: ${inst.modelId}` : (inst.baseUrl || 'OpenAI Compatible API')}
                 </p>
+                {handleRemoveInstance && (
+                  <button
+                    type="button"
+                    className="absolute bottom-2 right-2 btn btn-xs btn-ghost text-error opacity-60 hover:opacity-100 p-0.5 min-h-0 h-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const msg = language === 'zh' ? `确定要删除提供商「${inst.name}」吗？` : `Are you sure you want to delete "${inst.name}"?`;
+                      if (confirm(msg)) {
+                        handleRemoveInstance(inst.id);
+                        window.dispatchEvent(new CustomEvent('browserbee:deletedInstance', { detail: { id: inst.id } }));
+                      }
+                    }}
+                    title={language === 'zh' ? '删除此提供商' : 'Delete provider'}
+                  >
+                    🗑️
+                  </button>
+                )}
               </div>
             </div>
           );

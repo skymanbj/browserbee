@@ -84,6 +84,7 @@ export function OpenAICompatibleSettings({
         inst.id === instanceId ? { ...inst, enabledModelIds: updatedIds } : inst
       );
       await chrome.storage.local.set({ openaiCompatibleInstances: updatedInsts });
+      try { await chrome.storage.sync.set({ openaiCompatibleInstances: updatedInsts }); } catch (_) { }
       chrome.runtime.sendMessage({ action: 'providerConfigChanged' });
     } catch (err) {
       console.error('Failed to auto save model pool configuration:', err);
@@ -101,6 +102,24 @@ export function OpenAICompatibleSettings({
       const url = baseUrl.trim();
       const formattedUrl = url.endsWith('/') ? url.slice(0, -1) : url;
 
+      // 动态请求主机权限（扩展 options 页面需要 host_permission 才能 fetch 外部 API）
+      try {
+        const origin = new URL(formattedUrl).origin + '/*';
+        const hasPermission = await chrome.permissions.contains({ origins: [origin] });
+        if (!hasPermission) {
+          const granted = await chrome.permissions.request({ origins: [origin] });
+          if (!granted) {
+            throw new Error(`需要授权访问 ${new URL(formattedUrl).hostname} 才能拉取模型列表`);
+          }
+        }
+      } catch (permErr: any) {
+        // 如果 chrome.permissions API 不可用（如非扩展环境），忽略权限检查
+        if (permErr.message?.includes('需要授权')) {
+          throw permErr;
+        }
+        console.warn('Permission check skipped:', permErr);
+      }
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       };
@@ -108,11 +127,38 @@ export function OpenAICompatibleSettings({
         headers['Authorization'] = `Bearer ${apiKey.trim()}`;
       }
 
-      const response = await fetch(`${formattedUrl}/models`, {
-        headers
-      });
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
+      // 智能构造多个候选模型列表 URL
+      // 部分提供商（如商汤）的 baseUrl 已包含 /v1，需要避免重复拼接
+      const hasV1 = /\/v1\/?$/.test(formattedUrl);
+      const baseWithoutV1 = formattedUrl.replace(/\/v1\/?$/, '');
+      const candidateUrls: string[] = [
+        `${formattedUrl}/models`,          // ${baseUrl}/models
+        `${formattedUrl}/v1/models`,       // ${baseUrl}/v1/models
+      ];
+      // 如果 baseUrl 已含 /v1，额外尝试去掉 /v1 后的路径
+      if (hasV1) {
+        candidateUrls.push(`${baseWithoutV1}/models`);
+        candidateUrls.push(`${baseWithoutV1}/v1/models`);
+      }
+
+      let response: Response | null = null;
+      let lastError: string | null = null;
+
+      for (const candidateUrl of candidateUrls) {
+        try {
+          const res = await fetch(candidateUrl, { headers });
+          if (res.ok) {
+            response = res;
+            break;
+          }
+          lastError = `Server returned ${res.status} for ${candidateUrl}`;
+        } catch {
+          lastError = `Failed to fetch ${candidateUrl}`;
+        }
+      }
+
+      if (!response) {
+        throw new Error(lastError || 'All endpoints failed');
       }
       const data = await response.json();
       const modelList = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : null);
@@ -160,6 +206,7 @@ export function OpenAICompatibleSettings({
               inst.id === instanceId ? { ...inst, models: merged, modelId: activeModelId } : inst
             );
             await chrome.storage.local.set({ openaiCompatibleInstances: updatedInsts });
+            try { await chrome.storage.sync.set({ openaiCompatibleInstances: updatedInsts }); } catch (_) { }
             chrome.runtime.sendMessage({ action: 'providerConfigChanged' });
           } catch (storageErr) {
             console.error('Auto saving models failed:', storageErr);

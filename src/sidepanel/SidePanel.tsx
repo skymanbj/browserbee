@@ -10,7 +10,7 @@ import { OutputHeader } from './components/OutputHeader';
 import { PromptForm } from './components/PromptForm';
 import { ProviderSelector } from './components/ProviderSelector';
 import { TabStatusBar } from './components/TabStatusBar';
-import { TokenUsageDisplay } from './components/TokenUsageDisplay';
+
 import { useChromeMessaging } from './hooks/useChromeMessaging';
 import { useMessageManagement } from './hooks/useMessageManagement';
 import { useTabManagement } from './hooks/useTabManagement';
@@ -484,9 +484,6 @@ export function SidePanel() {
               </div>
             </div>
           </div>
-
-          {/* Add Token Usage Display */}
-          <TokenUsageDisplay windowId={windowId} />
 
           {/* Display approval requests */}
           {approvalRequests.map(req => (

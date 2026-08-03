@@ -1,15 +1,15 @@
-fix: resolve race condition in ScheduledTaskService initialization
+feat: improve OpenAI-compatible provider configuration and storage fallback
 
-The ScheduledTaskService was not properly handling concurrent access during
-initialization. When the UI sent a 'scheduledTaskGetAll' message before the
-service finished initializing, it would return an empty task list.
+Enhanced OpenAI-compatible provider management with dual-storage strategy
+(local + sync), dynamic host permission requests, and smart model list
+URL discovery.
 
 Changes:
-- Added initPromise to track ongoing initialization
-- Added ensureInitialized() helper to wait for init completion
-- Made getAll(), getById(), getEnabled(), and getStats() async methods
-- Updated message handlers to properly await async operations
-- Added proper error handling for async message handlers
-
-This ensures that all task data is loaded from storage before being returned
-to the UI, preventing the "tasks disappeared" issue.
+- Added chrome.storage.local fallback for OpenAI compatible instances in factory.ts
+- Dual-storage save (local + sync) for instance configuration reliability
+- Dynamic chrome.permissions.request() for custom API host origins
+- Smart model list URL construction supporting /v1 prefix variations
+- Provider removal now syncs to both storage layers and notifies runtime
+- Removed TokenUsageDisplay from sidepanel (cleanup)
+- ProviderSelector uses configManager.getOpenAICompatibleInstances()
+- Updated .gitignore to exclude .mimocode/ and upload_* artifacts

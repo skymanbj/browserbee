@@ -86,8 +86,7 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
     const providers = await configManager.getConfiguredProviders();
 
     // Get instance names for display
-    const storageResult = await chrome.storage.sync.get({ openaiCompatibleInstances: [] });
-    const instances: Array<{ id: string; name: string }> = storageResult.openaiCompatibleInstances || [];
+    const instances = await configManager.getOpenAICompatibleInstances();
 
     // Build options
     const providerOptions: ProviderOption[] = [];

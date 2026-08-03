@@ -22,7 +22,12 @@ export async function createProvider(
 ): Promise<LLMProvider> {
   if (isOpenAICompatibleProvider(provider)) {
     const instanceId = extractInstanceId(provider);
-    const instances: OpenAICompatibleInstance[] = (await chrome.storage.sync.get({ openaiCompatibleInstances: [] })).openaiCompatibleInstances || [];
+    const localRes = typeof chrome !== 'undefined' && chrome.storage?.local ? await chrome.storage.local.get({ openaiCompatibleInstances: null }) : { openaiCompatibleInstances: null };
+    let instances: OpenAICompatibleInstance[] = localRes.openaiCompatibleInstances;
+    if (!instances || !Array.isArray(instances)) {
+      const syncRes = typeof chrome !== 'undefined' && chrome.storage?.sync ? await chrome.storage.sync.get({ openaiCompatibleInstances: [] }) : { openaiCompatibleInstances: [] };
+      instances = syncRes.openaiCompatibleInstances || [];
+    }
     const instance = instances.find((inst: OpenAICompatibleInstance) => inst.id === instanceId);
     if (!instance) {
       // Fallback for tests or when no instance is configured yet but options are provided
