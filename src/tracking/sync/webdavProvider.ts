@@ -5,8 +5,8 @@ export class WebDAVSyncProvider implements CloudSyncProvider {
   private authHeader: string;
 
   constructor(url: string, username: string, password: string) {
-    this.url = url.endsWith('/') ? url : `${url}/`;
-    // Encodes username:password in basic authorization scheme
+    const normalized = url.endsWith('/') ? url : `${url}/`;
+    this.url = normalized.endsWith('broswerbee/') ? normalized : `${normalized}broswerbee/`;
     this.authHeader = `Basic ${btoa(`${username}:${password}`)}`;
   }
 
@@ -14,8 +14,30 @@ export class WebDAVSyncProvider implements CloudSyncProvider {
     return `${this.url}browserbee-all-data.json`;
   }
 
+  private async ensureDirectory(): Promise<void> {
+    try {
+      const res = await fetch(this.url, {
+        method: 'MKCOL',
+        headers: {
+          'Authorization': this.authHeader,
+        },
+      });
+      if (res.status >= 200 && res.status < 300) {
+        return;
+      }
+      if (res.status === 405) {
+        return;
+      }
+      console.warn('[WebDAV] ensureDirectory non-OK status:', res.status, await res.text().catch(() => ''));
+    } catch (e) {
+      console.warn('[WebDAV] ensureDirectory fetch error:', e);
+    }
+  }
+
   public async upload(data: string): Promise<{ success: boolean; error?: string }> {
     try {
+      await this.ensureDirectory();
+
       const fileUrl = this.getFileUrl();
       const res = await fetch(fileUrl, {
         method: 'PUT',
@@ -29,6 +51,7 @@ export class WebDAVSyncProvider implements CloudSyncProvider {
       if (res.status >= 200 && res.status < 300) {
         return { success: true };
       } else {
+        const body = await res.text().catch(() => '');
         return { success: false, error: `HTTP ${res.status}: ${res.statusText}` };
       }
     } catch (e: any) {
@@ -46,12 +69,13 @@ export class WebDAVSyncProvider implements CloudSyncProvider {
         },
       });
 
-      if (res.status === 200) {
+      if (res.status >= 200 && res.status < 300) {
         const text = await res.text();
         return { success: true, data: text };
-      } else if (res.status === 404) {
-        return { success: false, data: '', error: '404: File not found on WebDAV server' };
+      } else if (res.status >= 400 && res.status < 500) {
+        return { success: false, data: '', error: `404: File not found (HTTP ${res.status})` };
       } else {
+        const body = await res.text().catch(() => '');
         return { success: false, data: '', error: `HTTP ${res.status}: ${res.statusText}` };
       }
     } catch (e: any) {
@@ -59,9 +83,6 @@ export class WebDAVSyncProvider implements CloudSyncProvider {
     }
   }
 
-  /**
-   * Static helper to test WebDAV connectivity using Depth 0 PROPFIND request.
-   */
   public static async testConnection(url: string, username: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
       const targetUrl = url.endsWith('/') ? url : `${url}/`;

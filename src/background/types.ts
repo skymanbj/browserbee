@@ -428,6 +428,15 @@ export interface UpdateHistoryMessage {
   conversationHistory: any[];
 }
 
+export interface GDriveUploadMessage {
+  action: 'gdriveUpload';
+  data: string;
+}
+
+export interface GDriveDownMessage {
+  action: 'gdriveDownload';
+}
+
 export type BackgroundMessage =
   | ExecutePromptMessage
   | CancelExecutionMessage

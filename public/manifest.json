@@ -21,11 +21,17 @@
       }
     }
   },
-  "host_permissions": [],
-  "optional_host_permissions": [
+  "host_permissions": [
     "https://*/*",
-    "http://*/*"
+    "http://*/*",
+    "https://www.googleapis.com/*",
+    "https://oauth2.googleapis.com/*"
   ],
+  "optional_host_permissions": [],
+  "oauth2": {
+    "client_id": "916519454233-0e0a60gghk8odlgo6shnk80iefhbh7o5.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/drive.file"]
+  },
   "icons": {
     "128": "icons/icon128.png",
     "16": "icons/icon16.png",

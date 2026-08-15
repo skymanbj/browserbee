@@ -61,18 +61,22 @@ export class SyncManager {
    * excluding cloud sync credentials.
    */
   public async exportAllData(): Promise<BackupData> {
+    console.log('[SyncManager] exportAllData: starting...');
     const memoryService = MemoryService.getInstance();
     await memoryService.init();
     const memories = await memoryService.getAllMemories();
+    console.log('[SyncManager] exportAllData: got', memories.length, 'memories');
 
     const promptService = PromptTemplateService.getInstance();
     const prompts = (await promptService.getAll()).filter(p => !p.isBuiltIn);
+    console.log('[SyncManager] exportAllData: got', prompts.length, 'prompts');
 
     const localData = await chrome.storage.local.get(null);
     const syncData = await chrome.storage.sync.get(null);
 
     const tasks = (localData['browserbee_scheduled_tasks'] as ScheduledTask[] || []).filter(t => !t.isBuiltIn);
     const sessions = localData['browserbee_sessions'] as Session[] || [];
+    console.log('[SyncManager] exportAllData: got', tasks.length, 'tasks,', sessions.length, 'sessions');
 
     // Filter settings - exclude sync keys
     const filteredSyncSettings: Record<string, any> = {};
@@ -89,7 +93,7 @@ export class SyncManager {
       }
     }
 
-    return {
+    const result = {
       version: '0.2.0',
       backupTime: Date.now(),
       memories,
@@ -101,6 +105,8 @@ export class SyncManager {
         local: filteredLocalSettings
       }
     };
+    console.log('[SyncManager] exportAllData: done, total JSON size ~', JSON.stringify(result).length, 'chars');
+    return result;
   }
 
   /**
@@ -158,10 +164,13 @@ export class SyncManager {
    * Smart merge local user data with cloud backup data, then upload the merged data back.
    */
   public async mergeAllData(provider: CloudSyncProvider): Promise<{ uploaded: boolean; details: string }> {
+    console.log('[SyncManager] mergeAllData: starting download...');
     const downloadRes = await provider.download();
     if (!downloadRes.success) {
+      console.log('[SyncManager] mergeAllData: download failed:', downloadRes.error);
       // If file does not exist, consider it an upload-only or first sync scenario
       if (downloadRes.error?.includes('404') || downloadRes.error?.includes('not found') || downloadRes.error?.includes('does not exist')) {
+        console.log('[SyncManager] mergeAllData: first sync detected, uploading local data...');
         const localData = await this.exportAllData();
         const uploadRes = await provider.upload(JSON.stringify(localData, null, 2));
         if (!uploadRes.success) {

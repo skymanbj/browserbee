@@ -33,8 +33,6 @@ export function SyncTab() {
       'Google Drive Settings': { zh: 'Google Drive 设置', en: 'Google Drive Settings' },
       'Linked to Google Drive': { zh: '已连接 Google Drive', en: 'Linked to Google Drive' },
       'Disconnect': { zh: '断开连接', en: 'Disconnect' },
-      'Google Drive Client ID': { zh: 'Google Drive 客户端 ID', en: 'Google Drive Client ID' },
-      'Google Drive Client Secret': { zh: 'Google Drive 客户端密钥', en: 'Google Drive Client Secret' },
       'Connect & Authorize': { zh: '连接并授权', en: 'Connect & Authorize' },
       'Sync Operations': { zh: '同步操作', en: 'Sync Operations' },
       'Smart Merge Sync 🔄': { zh: '智能合并同步 🔄', en: 'Smart Merge Sync 🔄' },
@@ -61,9 +59,9 @@ export function SyncTab() {
       'WebDAV Settings': { zh: 'WebDAV 设置', en: 'WebDAV Settings' },
       'Cloud sync is currently disabled.': { zh: '云同步当前已禁用。', en: 'Cloud sync is currently disabled.' },
       'Choose WebDAV or Google Drive to configure.': { zh: '选择 WebDAV 或 Google Drive 进行配置。', en: 'Choose WebDAV or Google Drive to configure.' },
-      '⚠️ Connection required. Enter your Google API OAuth credentials below to bind.': {
-        zh: '⚠️ 需要先连接。请在下方输入 Google API OAuth 凭据进行绑定。',
-        en: '⚠️ Connection required. Enter your Google API OAuth credentials below to bind.'
+      '⚠️ Client ID is configured in manifest.json. Just click Connect.': {
+        zh: '⚠️ Client ID 已在 manifest.json 中配置，直接点击连接即可。',
+        en: '⚠️ Client ID is configured in manifest.json. Just click Connect.'
       },
     };
     const translated = translationDict[cleanKey]?.[language];
@@ -79,8 +77,6 @@ export function SyncTab() {
   const [webdavPassword, setWebdavPassword] = useState('');
 
   // Google Drive fields
-  const [gdriveClientId, setGdriveClientId] = useState('');
-  const [gdriveClientSecret, setGdriveClientSecret] = useState('');
   const [isGdriveAuthorized, setIsGdriveAuthorized] = useState(false);
 
   // ── Sync Info & Stats State ───────────────────────────────
@@ -98,13 +94,14 @@ export function SyncTab() {
 
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMsg({ type, text });
-    setTimeout(() => setStatusMsg(null), 5000);
+    if (type === 'success') {
+      setTimeout(() => setStatusMsg(null), 5000);
+    }
   };
 
   // Load configs and stats on mount
   const loadStatsAndConfigs = useCallback(async () => {
     try {
-      // 1. Load Stats
       const memoryService = MemoryService.getInstance();
       await memoryService.init();
       const memoriesCount = await memoryService.countMemories();
@@ -123,15 +120,11 @@ export function SyncTab() {
         sessions: sessions.length,
       });
 
-      // 2. Load Sync configuration
       const config = await chrome.storage.local.get({
         syncType: 'none',
         webdavUrl: '',
         webdavUsername: '',
         webdavPassword: '',
-        gdriveClientId: '',
-        gdriveClientSecret: '',
-        gdriveRefreshToken: '',
         lastSynced: 0,
       });
 
@@ -139,10 +132,10 @@ export function SyncTab() {
       setWebdavUrl(config.webdavUrl);
       setWebdavUsername(config.webdavUsername);
       setWebdavPassword(config.webdavPassword);
-      setGdriveClientId(config.gdriveClientId);
-      setGdriveClientSecret(config.gdriveClientSecret);
-      setIsGdriveAuthorized(!!config.gdriveRefreshToken);
       setLastSynced(config.lastSynced || 0);
+
+      const gdriveAuthorized = await GoogleDriveSyncProvider.isAuthorized();
+      setIsGdriveAuthorized(gdriveAuthorized);
 
     } catch (err: any) {
       console.error('Failed to load sync configurations', err);
@@ -153,7 +146,6 @@ export function SyncTab() {
     loadStatsAndConfigs();
   }, [loadStatsAndConfigs]);
 
-  // Save changes to chrome.storage
   const handleSaveConfig = async (type: typeof syncType) => {
     setSyncType(type);
     await chrome.storage.local.set({
@@ -161,8 +153,6 @@ export function SyncTab() {
       webdavUrl,
       webdavUsername,
       webdavPassword,
-      gdriveClientId,
-      gdriveClientSecret,
     });
   };
 
@@ -172,7 +162,6 @@ export function SyncTab() {
       if (!webdavUrl || !webdavUsername || !webdavPassword) {
         throw new Error('Please fill in all WebDAV fields first.');
       }
-      // Request host permission for the WebDAV URL if not already granted
       const hostGranted = await hasHostPermission(webdavUrl);
       if (!hostGranted) {
         const requested = await requestHostPermission(webdavUrl);
@@ -184,25 +173,11 @@ export function SyncTab() {
     }
 
     if (syncType === 'googledrive') {
-      const config = await chrome.storage.local.get({
-        gdriveClientId: '',
-        gdriveClientSecret: '',
-        gdriveAccessToken: '',
-        gdriveRefreshToken: '',
-        gdriveTokenExpiry: 0,
-      });
-
-      if (!config.gdriveRefreshToken) {
+      const authorized = await GoogleDriveSyncProvider.isAuthorized();
+      if (!authorized) {
         throw new Error('Please authorize Google Drive access first.');
       }
-
-      return new GoogleDriveSyncProvider(
-        config.gdriveClientId,
-        config.gdriveClientSecret,
-        config.gdriveAccessToken,
-        config.gdriveRefreshToken,
-        config.gdriveTokenExpiry
-      );
+      return new GoogleDriveSyncProvider();
     }
 
     return null;
@@ -210,7 +185,6 @@ export function SyncTab() {
 
   // ── Operations Handlers ─────────────────────────────────────
 
-  // Test WebDAV
   const handleTestWebDAV = async () => {
     if (!webdavUrl || !webdavUsername || !webdavPassword) {
       showStatus('error', 'Please fill in all WebDAV configuration fields.');
@@ -218,7 +192,6 @@ export function SyncTab() {
     }
     setLoading(true);
     try {
-      // Request host permission for the WebDAV URL if not already granted
       const hostGranted = await hasHostPermission(webdavUrl);
       if (!hostGranted) {
         const requested = await requestHostPermission(webdavUrl);
@@ -243,15 +216,10 @@ export function SyncTab() {
     }
   };
 
-  // Google Drive Authorization
   const handleGoogleAuthorize = async () => {
-    if (!gdriveClientId || !gdriveClientSecret) {
-      showStatus('error', 'Please fill in both Client ID and Client Secret.');
-      return;
-    }
     setLoading(true);
     try {
-      const res = await GoogleDriveSyncProvider.authorize(gdriveClientId, gdriveClientSecret);
+      const res = await GoogleDriveSyncProvider.authorize();
       if (res.success) {
         showStatus('success', 'Google Drive authorized successfully!');
         setIsGdriveAuthorized(true);
@@ -266,19 +234,10 @@ export function SyncTab() {
     }
   };
 
-  // Google Drive Disconnect
   const handleDisconnectGdrive = async () => {
     setLoading(true);
     try {
-      await chrome.storage.local.remove([
-        'gdriveClientId',
-        'gdriveClientSecret',
-        'gdriveAccessToken',
-        'gdriveRefreshToken',
-        'gdriveTokenExpiry',
-      ]);
-      setGdriveClientId('');
-      setGdriveClientSecret('');
+      await GoogleDriveSyncProvider.disconnect();
       setIsGdriveAuthorized(false);
       await handleSaveConfig('none');
       showStatus('success', 'Google Drive disconnected successfully.');
@@ -295,7 +254,6 @@ export function SyncTab() {
     await chrome.storage.local.set({ lastSynced: now });
   };
 
-  // Smart Sync (Merge)
   const triggerMergeSync = async () => {
     setLoading(true);
     try {
@@ -311,13 +269,13 @@ export function SyncTab() {
         await loadStatsAndConfigs();
       }
     } catch (e: any) {
+      console.error('[CloudSync] Merge sync failed:', e);
       showStatus('error', `Sync failed: ${e.message || String(e)}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Backup to Cloud
   const triggerBackupToCloud = async () => {
     setLoading(true);
     try {
@@ -335,13 +293,13 @@ export function SyncTab() {
         showStatus('error', res.error || 'Failed to upload backup.');
       }
     } catch (e: any) {
+      console.error('[CloudSync] Backup failed:', e);
       showStatus('error', `Backup failed: ${e.message || String(e)}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Restore from Cloud
   const triggerRestoreFromCloud = async () => {
     const confirmRestore = window.confirm(
       'WARNING: Restoring will overwrite all local settings, memories, templates, sessions, and tasks. This action CANNOT be undone. Are you sure you want to proceed?'
@@ -366,6 +324,7 @@ export function SyncTab() {
         showStatus('error', res.error || 'Failed to download cloud data.');
       }
     } catch (e: any) {
+      console.error('[CloudSync] Restore failed:', e);
       showStatus('error', `Restore failed: ${e.message || String(e)}`);
     } finally {
       setLoading(false);
@@ -379,7 +338,6 @@ export function SyncTab() {
 
   return (
     <div className="space-y-6">
-      {/* ── Header Card ── */}
       <div className="card bg-base-100 shadow-md">
         <div className="card-body">
           <h2 className="card-title text-xl flex items-center gap-2">
@@ -390,7 +348,6 @@ export function SyncTab() {
             {t('Configure cloud providers (Google Drive or WebDAV) to backup, restore, or merge all your extension data.')}
           </p>
 
-          {/* Stats Summary */}
           <div className="stats stats-vertical md:stats-horizontal shadow-sm bg-base-200/50 mt-4">
             <div className="stat">
               <div className="stat-title text-xs">{t('🧠 Interaction Memories')}</div>
@@ -412,17 +369,13 @@ export function SyncTab() {
         </div>
       </div>
 
-      {/* ── Status Message Alerts ── */}
       {statusMsg && (
         <div className={`alert text-sm shadow-md ${statusMsg.type === 'success' ? 'alert-success' : 'alert-error'}`}>
           <span>{statusMsg.type === 'success' ? '✅' : '❌'} {statusMsg.text}</span>
         </div>
       )}
 
-      {/* ── Sync Provider Configuration ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Selector Card */}
         <div className="card bg-base-100 shadow-md lg:col-span-1">
           <div className="card-body">
             <h3 className="font-bold text-md mb-2">{t('Sync Provider')}</h3>
@@ -463,7 +416,6 @@ export function SyncTab() {
           </div>
         </div>
 
-        {/* Configuration Details Card */}
         <div className="card bg-base-100 shadow-md lg:col-span-2">
           <div className="card-body">
             {syncType === 'none' && (
@@ -552,37 +504,9 @@ export function SyncTab() {
                   </div>
                 ) : (
                   <div className="alert alert-warning py-3 text-sm shadow-sm">
-                    {t('⚠️ Connection required. Enter your Google API OAuth credentials below to bind.')}
+                    {t('⚠️ Client ID is configured in manifest.json. Just click Connect.')}
                   </div>
                 )}
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium">{t('Google Drive Client ID')}</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="OAuth2 Client ID"
-                    className="input input-bordered w-full input-sm"
-                    value={gdriveClientId}
-                    onChange={(e) => setGdriveClientId(e.target.value)}
-                    disabled={isGdriveAuthorized}
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium">{t('Google Drive Client Secret')}</span>
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="OAuth2 Client Secret"
-                    className="input input-bordered w-full input-sm"
-                    value={gdriveClientSecret}
-                    onChange={(e) => setGdriveClientSecret(e.target.value)}
-                    disabled={isGdriveAuthorized}
-                  />
-                </div>
 
                 {!isGdriveAuthorized && (
                   <div className="flex justify-end pt-2">
@@ -602,14 +526,12 @@ export function SyncTab() {
         </div>
       </div>
 
-      {/* ── Sync Actions Card ── */}
       {syncType !== 'none' && (
         <div className="card bg-base-100 shadow-md">
           <div className="card-body">
             <h3 className="font-bold text-md mb-4">{t('Sync Operations')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Merge Sync */}
               <div className="bg-base-200/50 rounded-lg p-4 flex flex-col justify-between">
                 <div>
                   <h4 className="font-semibold text-sm mb-1">{t('Smart Merge Sync 🔄')}</h4>
@@ -627,7 +549,6 @@ export function SyncTab() {
                 </button>
               </div>
 
-              {/* Backup */}
               <div className="bg-base-200/50 rounded-lg p-4 flex flex-col justify-between">
                 <div>
                   <h4 className="font-semibold text-sm mb-1">{t('Backup to Cloud 📤')}</h4>
@@ -644,7 +565,6 @@ export function SyncTab() {
                 </button>
               </div>
 
-              {/* Restore */}
               <div className="bg-base-200/50 rounded-lg p-4 flex flex-col justify-between">
                 <div>
                   <h4 className="font-semibold text-sm mb-1 text-error">{t('Restore from Cloud 📥')}</h4>
@@ -662,7 +582,6 @@ export function SyncTab() {
               </div>
             </div>
 
-            {/* Sync Status Display */}
             <div className="divider my-4" />
             <div className="flex items-center justify-between text-xs text-base-content/50 px-2">
               <span>{t('Sync Status')}</span>
