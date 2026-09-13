@@ -1,5 +1,5 @@
 import { ConfigManager } from "../background/configManager";
-import { anthropicModels, openaiModels, geminiModels, ollamaModels } from "../models/models";
+import { geminiModels } from "../models/models";
 
 export interface TokenUsage {
   inputTokens: number;
@@ -35,7 +35,7 @@ export class TokenTrackingService {
       inputTokens: 0,
       outputTokens: 0,
       cost: 0,
-      currentProvider: 'anthropic',
+      currentProvider: 'gemini',
       currentModelId: '',
     };
     this.initializeProviderConfig();
@@ -135,30 +135,9 @@ export class TokenTrackingService {
 
     // Get pricing based on current provider and model
     switch (usage.currentProvider) {
-      case 'anthropic':
-        if (usage.currentModelId && usage.currentModelId in anthropicModels) {
-          const model = anthropicModels[usage.currentModelId as keyof typeof anthropicModels];
-          inputPrice = model.inputPrice;
-          outputPrice = model.outputPrice;
-        }
-        break;
-      case 'openai':
-        if (usage.currentModelId && usage.currentModelId in openaiModels) {
-          const model = openaiModels[usage.currentModelId as keyof typeof openaiModels];
-          inputPrice = model.inputPrice;
-          outputPrice = model.outputPrice;
-        }
-        break;
       case 'gemini':
         if (usage.currentModelId && usage.currentModelId in geminiModels) {
           const model = geminiModels[usage.currentModelId as keyof typeof geminiModels];
-          inputPrice = model.inputPrice;
-          outputPrice = model.outputPrice;
-        }
-        break;
-      case 'ollama':
-        if (usage.currentModelId && usage.currentModelId in ollamaModels) {
-          const model = ollamaModels[usage.currentModelId as keyof typeof ollamaModels];
           inputPrice = model.inputPrice;
           outputPrice = model.outputPrice;
         }

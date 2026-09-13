@@ -46,7 +46,12 @@ const CodeBlock: React.FC<{ children: React.ReactNode; className?: string }> = (
           margin: 0,
         }}
       >
-        <code className={className}>{children}</code>
+        <code
+          className={className}
+          style={{ color: '#1e293b', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' }}
+        >
+          {children}
+        </code>
       </pre>
       {/* 复制按钮 - 常驻显示，无中文，双重叠方块图标 */}
       <button

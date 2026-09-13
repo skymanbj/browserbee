@@ -20,6 +20,7 @@ build/
 *.swo
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 logs
@@ -39,3 +40,14 @@ api_keys.txt
 .mimocode/
 upload_*.jpg
 upload_*.png
+
+# AI Tools local config
+.claude/
+.codex/
+
+# Project rules
+AGENTS.md
+.no-robocopy-backup
+
+# Backup
+备份/

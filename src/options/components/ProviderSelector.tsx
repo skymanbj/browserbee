@@ -42,10 +42,7 @@ export function ProviderSelector({ provider, setProvider, openaiCompatibleInstan
         value={displayValue} 
         onChange={handleChange}
       >
-        <option value="anthropic">Anthropic (Claude)</option>
-        <option value="openai">OpenAI (GPT)</option>
         <option value="gemini">Google (Gemini)</option>
-        <option value="ollama">Ollama</option>
         <option disabled>── OpenAI Compatible ──</option>
         {openaiCompatibleInstances.map(inst => (
           <option key={inst.id} value={`openai-compatible:${inst.id}`}>

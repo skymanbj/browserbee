@@ -1,5 +1,4 @@
 // Import provider-specific types
-import Anthropic from "@anthropic-ai/sdk";
 import { createBrowserAgent, executePromptWithFallback, needsReinitialization } from "../agent/AgentCore";
 import { ExecutionCallbacks } from "../agent/ExecutionEngine";
 import { setCurrentPage } from '../agent/PageContextManager';
@@ -156,7 +155,7 @@ export async function clearMessageHistory(tabId?: number, windowId?: number): Pr
  * @param tabId The tab ID to identify the window
  * @returns The combined message history for the window (original request + conversation)
  */
-export async function getMessageHistory(tabId: number): Promise<Anthropic.MessageParam[]> {
+export async function getMessageHistory(tabId: number): Promise<GenericMessage[]> {
   // Get the window ID for this tab
   const windowId = getWindowForTab(tabId);
   if (!windowId) {
@@ -216,36 +215,10 @@ export async function getMessageHistory(tabId: number): Promise<Anthropic.Messag
  * @param provider The provider to convert to
  * @returns The provider-specific messages
  */
-function convertMessagesToProviderFormat(messages: GenericMessage[], provider: ProviderType): Anthropic.MessageParam[] {
+function convertMessagesToProviderFormat(messages: GenericMessage[], provider: ProviderType): GenericMessage[] {
   switch (provider) {
-    case 'anthropic':
-      // Convert to Anthropic format
-      return messages.map(msg => {
-        // Ensure role is either "user" or "assistant" for Anthropic
-        const role = msg.role === "user" || msg.role === "assistant" 
-          ? msg.role as "user" | "assistant"
-          : "user"; // Default to user for any other role
-        
-        return {
-          role,
-          content: msg.content
-        };
-      });
-      
-    case 'openai':
-      // Convert to OpenAI format (which is compatible with Anthropic's format for our purposes)
-      return messages.map(msg => {
-        // Map roles: system -> user, user -> user, assistant -> assistant
-        const role = msg.role === "assistant" ? "assistant" : "user";
-        
-        return {
-          role,
-          content: msg.content
-        };
-      });
-      
     case 'gemini':
-      // Convert to Gemini format (which is compatible with Anthropic's format for our purposes)
+      // Convert to Gemini format (which is compatible with the generic message format)
       return messages.map(msg => {
         // Map roles: system -> user, user -> user, assistant -> assistant
         const role = msg.role === "assistant" ? "assistant" : "user";
@@ -254,12 +227,6 @@ function convertMessagesToProviderFormat(messages: GenericMessage[], provider: P
           role,
           content: msg.content
         };
-      });
-      
-    case 'ollama':
-      return messages.map(msg => {
-        const role = msg.role === "assistant" ? "assistant" : "user";
-        return { role, content: msg.content };
       });
       
     default:
@@ -316,7 +283,7 @@ export async function getStructuredMessageHistory(tabId: number): Promise<Messag
  * @param tabId The tab ID to identify the window
  * @param request The original request message
  */
-export async function setOriginalRequest(tabId: number, request: Anthropic.MessageParam): Promise<void> {
+export async function setOriginalRequest(tabId: number, request: GenericMessage): Promise<void> {
   // Get the window ID for this tab
   const windowId = getWindowForTab(tabId);
   if (!windowId) {
@@ -334,7 +301,7 @@ export async function setOriginalRequest(tabId: number, request: Anthropic.Messa
  * @param tabId The tab ID to identify the window
  * @param message The message to add
  */
-export async function addToConversationHistory(tabId: number, message: Anthropic.MessageParam): Promise<void> {
+export async function addToConversationHistory(tabId: number, message: GenericMessage): Promise<void> {
   // Get the window ID for this tab
   const windowId = getWindowForTab(tabId);
   if (!windowId) {
@@ -357,7 +324,7 @@ export async function addToConversationHistory(tabId: number, message: Anthropic
         tabId,
         tabTitle: tab?.title || `Tab ${tabId}`,
         url: tab?.url || '',
-        provider: history.provider || 'anthropic',
+        provider: history.provider || 'gemini',
       });
     }
 
@@ -412,10 +379,10 @@ export async function initializeAgent(tabId: number, forceReinit: boolean = fals
   
   if (needsInit || needsReinit) {
     try {
-      // Make API key optional for Ollama and openai-compatible
-      if (providerConfig.apiKey || providerConfig.provider === 'ollama' || providerConfig.provider.startsWith('openai-compatible')) {
+      // Make API key optional for openai-compatible
+      if (providerConfig.apiKey || providerConfig.provider.startsWith('openai-compatible')) {
         logWithTimestamp(`Creating LLM agent for window ${windowId} with ${providerConfig.provider} provider...`);
-        const agent = await createBrowserAgent(tabState.page, providerConfig.apiKey || 'dummy-key-for-ollama');
+        const agent = await createBrowserAgent(tabState.page, providerConfig.apiKey || 'dummy-key');
         
         // Store the agent by window ID
         setAgentForWindow(windowId, agent);
@@ -491,8 +458,8 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
     const configManager = ConfigManager.getInstance();
     const providerConfig = await configManager.getProviderConfig();
     
-    // Make API key optional for Ollama and openai-compatible
-    if (!providerConfig.apiKey && providerConfig.provider !== 'ollama' && !providerConfig.provider.startsWith('openai-compatible')) {
+    // Make API key optional for openai-compatible
+    if (!providerConfig.apiKey && !providerConfig.provider.startsWith('openai-compatible')) {
       sendUIMessage('updateOutput', {
         type: 'system',
         content: `Error: API key not found for ${providerConfig.provider}. Please set your API key in the extension options.`
@@ -939,8 +906,8 @@ export async function executePrompt(prompt: string, tabId?: number, isReflection
  */
 export async function updateMessageHistory(
   tabId: number,
-  originalRequest: Anthropic.MessageParam | null,
-  conversationHistory: Anthropic.MessageParam[]
+  originalRequest: GenericMessage | null,
+  conversationHistory: GenericMessage[]
 ): Promise<void> {
   const windowId = getWindowForTab(tabId);
   if (!windowId) {

@@ -189,14 +189,14 @@ export async function createBrowserAgent(
   } catch (error) {
     console.warn('Failed to get provider configuration, using default:', error);
     providerConfig = {
-      provider: 'anthropic',
+      provider: 'gemini',
       apiKey,
-      apiModelId: 'claude-3-7-sonnet-20250219',
+      apiModelId: 'gemini-2.5-flash-preview-05-20',
     };
   }
 
-  // Special case for Ollama and openai-compatible: they don't require an API key
-  if (providerConfig.provider === 'ollama' || providerConfig.provider.startsWith('openai-compatible')) {
+  // Special case for openai-compatible: it doesn't require an API key
+  if (providerConfig.provider.startsWith('openai-compatible')) {
     if (!providerConfig.apiKey) {
       providerConfig.apiKey = 'dummy-key';
     }

@@ -1,7 +1,7 @@
 import { BrowserAgent } from "../agent/AgentCore";
 
 // Provider types
-export type ProviderType = 'anthropic' | 'openai' | 'gemini' | 'ollama' | `openai-compatible:${string}`;
+export type ProviderType = 'gemini' | `openai-compatible:${string}`;
 
 // Content block types for multimodal messages
 export interface TextContentBlock {

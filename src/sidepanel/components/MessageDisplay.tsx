@@ -125,8 +125,16 @@ const CollapsibleWrapper: React.FC<{
   content: string;
   bgClass: string;
   limit?: number;
-}> = ({ children, content, bgClass, limit = 500 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  defaultExpanded?: boolean;
+}> = ({ children, content, bgClass, limit = 500, defaultExpanded = false }) => {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+  // 当任务完成（defaultExpanded 由 false 变为 true）时自动展开结果
+  useEffect(() => {
+    if (defaultExpanded) {
+      setIsExpanded(true);
+    }
+  }, [defaultExpanded]);
 
   if (content.length <= limit) {
     return <>{children}</>;
@@ -231,7 +239,8 @@ const ConversationTurnComponent: React.FC<{
 
   useEffect(() => {
     if (isLast) {
-      setIsOpen(isProcessing);
+      // 处理中保持展开；任务完成时也保持展开，让最终结果直接可见，避免误以为失败
+      setIsOpen(true);
     }
   }, [isProcessing, isLast]);
 
@@ -407,7 +416,7 @@ const ConversationTurnComponent: React.FC<{
                   ) : msg.type === 'screenshot' && msg.imageData ? (
                     <ScreenshotMessage imageData={msg.imageData} mediaType={msg.mediaType} />
                   ) : (
-                    <CollapsibleWrapper content={msg.content} bgClass="from-base-100">
+                    <CollapsibleWrapper content={msg.content} bgClass="from-base-100" defaultExpanded={!isProcessing || !isLast}>
                       <LlmContent content={msg.content} />
                     </CollapsibleWrapper>
                   )}

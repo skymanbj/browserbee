@@ -1,8 +1,7 @@
-import { OllamaProviderOptions } from '../models/providers/ollama';
 import { OpenAICompatibleInstance } from '../models/providers/openai-compatible';
 
 export interface ProviderConfig {
-  provider: 'anthropic' | 'openai' | 'gemini' | 'ollama' | `openai-compatible:${string}`;
+  provider: 'gemini' | `openai-compatible:${string}`;
   apiKey: string;
   apiModelId?: string;
   baseUrl?: string;
@@ -48,7 +47,7 @@ export class ConfigManager {
       openaiCompatibleBaseUrl: '',
       openaiCompatibleModelId: '',
       openaiCompatibleModels: [] as any[],
-      provider: 'anthropic',
+      provider: 'gemini',
     });
 
     if (result.openaiCompatibleInstances !== null && Array.isArray(result.openaiCompatibleInstances)) {
@@ -90,23 +89,53 @@ export class ConfigManager {
     }
   }
   
+  /**
+   * Remove leftover storage keys from removed providers (Anthropic / OpenAI / Ollama)
+   * and reset legacy provider values to the new default ('gemini').
+   */
+  async cleanupRemovedProviders(): Promise<void> {
+    try {
+      const removedKeys = [
+        'anthropicApiKey',
+        'anthropicBaseUrl',
+        'anthropicModelId',
+        'openaiApiKey',
+        'openaiBaseUrl',
+        'openaiModelId',
+        'ollamaApiKey',
+        'ollamaBaseUrl',
+        'ollamaModelId',
+        'ollamaCustomModels',
+        'thinkingBudgetTokens',
+      ];
+      await chrome.storage.sync.remove(removedKeys);
+      await chrome.storage.local.remove(removedKeys);
+
+      // Reset legacy provider values to the new default
+      const { provider } = await chrome.storage.sync.get({ provider: 'gemini' });
+      if (
+        provider === 'anthropic' ||
+        provider === 'openai' ||
+        provider === 'ollama' ||
+        provider === 'openai-compatible'
+      ) {
+        await chrome.storage.sync.set({ provider: 'gemini' });
+      }
+
+      console.log('Removed provider config cleaned up');
+    } catch (error) {
+      console.error('Failed to clean up removed provider config:', error);
+    }
+  }
+
   async getProviderConfig(): Promise<ProviderConfig> {
     await this.migrateOpenAICompatibleData();
 
     const result = await chrome.storage.sync.get({
-      provider: 'anthropic',
-      anthropicApiKey: '',
-      anthropicModelId: 'claude-3-7-sonnet-20250219',
-      anthropicBaseUrl: '',
-      openaiApiKey: '',
-      openaiModelId: 'gpt-4o',
-      openaiBaseUrl: '',
+      provider: 'gemini',
       geminiApiKey: '',
       geminiModelId: 'gemini-1.5-pro',
       geminiBaseUrl: '',
-      ollamaApiKey: '',
-      ollamaModelId: '',
-      ollamaBaseUrl: '',
       thinkingBudgetTokens: 0,
     });
     
@@ -127,30 +156,15 @@ export class ConfigManager {
         };
       }
       return {
-        provider: 'anthropic',
-        apiKey: result.anthropicApiKey,
-        apiModelId: result.anthropicModelId,
-        baseUrl: result.anthropicBaseUrl,
+        provider: 'gemini',
+        apiKey: result.geminiApiKey,
+        apiModelId: result.geminiModelId,
+        baseUrl: result.geminiBaseUrl,
         thinkingBudgetTokens: result.thinkingBudgetTokens,
       };
     }
 
     switch (provider) {
-      case 'anthropic':
-        return {
-          provider: 'anthropic',
-          apiKey: result.anthropicApiKey,
-          apiModelId: result.anthropicModelId,
-          baseUrl: result.anthropicBaseUrl,
-          thinkingBudgetTokens: result.thinkingBudgetTokens,
-        };
-      case 'openai':
-        return {
-          provider: 'openai',
-          apiKey: result.openaiApiKey,
-          apiModelId: result.openaiModelId,
-          baseUrl: result.openaiBaseUrl,
-        };
       case 'gemini':
         return {
           provider: 'gemini',
@@ -158,19 +172,12 @@ export class ConfigManager {
           apiModelId: result.geminiModelId,
           baseUrl: result.geminiBaseUrl,
         };
-      case 'ollama':
-        return {
-          provider: 'ollama',
-          apiKey: result.ollamaApiKey,
-          apiModelId: result.ollamaModelId,
-          baseUrl: result.ollamaBaseUrl,
-        };
       default:
         return {
-          provider: 'anthropic',
-          apiKey: result.anthropicApiKey,
-          apiModelId: result.anthropicModelId,
-          baseUrl: result.anthropicBaseUrl,
+          provider: 'gemini',
+          apiKey: result.geminiApiKey,
+          apiModelId: result.geminiModelId,
+          baseUrl: result.geminiBaseUrl,
           thinkingBudgetTokens: result.thinkingBudgetTokens,
         };
     }
@@ -184,22 +191,11 @@ export class ConfigManager {
     await this.migrateOpenAICompatibleData();
 
     const result = await chrome.storage.sync.get({
-      anthropicApiKey: '',
-      openaiApiKey: '',
       geminiApiKey: '',
-      ollamaApiKey: '',
     });
     
     const providers: string[] = [];
-    if (result.anthropicApiKey) providers.push('anthropic');
-    if (result.openaiApiKey) providers.push('openai');
     if (result.geminiApiKey) providers.push('gemini');
-    
-    const ollamaBaseUrl = await this.getOllamaBaseUrl();
-    const ollamaResult = await chrome.storage.sync.get({ ollamaCustomModels: [] });
-    if (ollamaBaseUrl && ollamaResult.ollamaCustomModels.length > 0) {
-      providers.push('ollama');
-    }
     
     const instances = await this.getOpenAICompatibleInstances();
     for (const instance of instances) {
@@ -237,34 +233,13 @@ export class ConfigManager {
     }
 
     switch (provider) {
-      case 'anthropic': {
-        const { AnthropicProvider } = await import('../models/providers/anthropic');
-        return AnthropicProvider.getAvailableModels();
-      }
-      case 'openai': {
-        const { OpenAIProvider } = await import('../models/providers/openai');
-        return OpenAIProvider.getAvailableModels();
-      }
       case 'gemini': {
         const { GeminiProvider } = await import('../models/providers/gemini');
         return GeminiProvider.getAvailableModels();
       }
-      case 'ollama': {
-        const result = await chrome.storage.sync.get({ ollamaCustomModels: [] });
-        const { OllamaProvider } = await import('../models/providers/ollama');
-        const models = OllamaProvider.getAvailableModels({ ollamaCustomModels: result.ollamaCustomModels } as OllamaProviderOptions);
-        return models;
-      }
       default:
         return [];
     }
-  }
-  
-  async getOllamaBaseUrl(): Promise<string> {
-    const result = await chrome.storage.sync.get({
-      ollamaBaseUrl: '',
-    });
-    return result.ollamaBaseUrl;
   }
   
   async updateProviderAndModel(provider: string, modelId: string): Promise<void> {
@@ -281,17 +256,8 @@ export class ConfigManager {
     }
 
     switch (provider) {
-      case 'anthropic':
-        await chrome.storage.sync.set({ anthropicModelId: modelId });
-        break;
-      case 'openai':
-        await chrome.storage.sync.set({ openaiModelId: modelId });
-        break;
       case 'gemini':
         await chrome.storage.sync.set({ geminiModelId: modelId });
-        break;
-      case 'ollama':
-        await chrome.storage.sync.set({ ollamaModelId: modelId });
         break;
     }
   }

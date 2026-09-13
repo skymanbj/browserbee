@@ -139,10 +139,7 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
 
   const formatProviderName = (provider: string) => {
     switch (provider) {
-      case 'anthropic': return 'Anthropic';
-      case 'openai': return 'OpenAI';
-      case 'gemini': return 'Google';
-      case 'ollama': return 'Ollama';
+      case 'gemini': return 'Google Gemini';
       default: {
         if (provider.startsWith('openai-compatible:')) {
           return 'OpenAI Compatible';

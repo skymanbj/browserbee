@@ -37,28 +37,10 @@ export function ProviderCardGrid({
   // 内置提供商
   const builtInProviders = [
     {
-      id: 'anthropic',
-      name: 'Anthropic (Claude)',
-      desc: language === 'zh' ? '性能优秀，推荐用于复杂任务' : 'Excellent performance, recommended for complex tasks',
-      icon: '🔮',
-    },
-    {
-      id: 'openai',
-      name: 'OpenAI (GPT)',
-      desc: language === 'zh' ? '主流之选，稳定可靠' : 'Popular choice, stable and reliable',
-      icon: '🤖',
-    },
-    {
       id: 'gemini',
       name: 'Google (Gemini)',
       desc: language === 'zh' ? '性价比卓越，速度快' : 'Outstanding value, fast speed',
       icon: '✨',
-    },
-    {
-      id: 'ollama',
-      name: 'Ollama',
-      desc: language === 'zh' ? '本地运行，完全免费与隐私保护' : 'Runs locally, completely free & private',
-      icon: '🦙',
     },
   ];
 

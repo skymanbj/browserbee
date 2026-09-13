@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ConfigManager } from '../background/configManager';
 import { FileAttachment } from '../background/types';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -114,6 +114,27 @@ export function SidePanel() {
     tabTitle,
     setTabTitle
   } = useTabManagement(isProcessing);
+
+  // ── 提示词历史（供输入框 ↑/↓ 键回溯） ──
+  // 从消息流中提取每条 "New prompt" 系统消息的文本，去除连续重复，最新在末尾
+  const promptHistory = useMemo(() => {
+    const history: string[] = [];
+    messages.forEach(msg => {
+      if (msg.type === 'system' && msg.content.startsWith('New prompt: "')) {
+        let promptText: string;
+        if (msg.content.endsWith('"')) {
+          promptText = msg.content.substring('New prompt: "'.length, msg.content.length - 1);
+        } else {
+          const match = msg.content.match(/New prompt: "(.*?)"(?:\s*\(\d+ attachment)/);
+          promptText = match ? match[1] : msg.content.substring('New prompt: "'.length);
+        }
+        if (promptText && history[history.length - 1] !== promptText) {
+          history.push(promptText);
+        }
+      }
+    });
+    return history.slice(-100);
+  }, [messages]);
 
   // Initialize sessions when tabId and windowId are available
   useEffect(() => {
@@ -503,6 +524,7 @@ export function SidePanel() {
             onCancel={handleCancel}
             isProcessing={isProcessing}
             tabStatus={tabStatus}
+            promptHistory={promptHistory}
           />
           <ProviderSelector isProcessing={isProcessing} />
         </>

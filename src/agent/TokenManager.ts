@@ -1,5 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
-
 // Generic message interface for token counting
 interface GenericMessage {
   role: string;
@@ -20,7 +18,7 @@ export const approxTokens = (text: string) => Math.ceil(text.length / 4);
 /**
  * Calculate the total token count for a list of messages
  */
-export const contextTokenCount = (msgs: Anthropic.MessageParam[] | GenericMessage[]) =>
+export const contextTokenCount = (msgs: GenericMessage[]) =>
   msgs.reduce((sum, m) => {
     const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
     return sum + approxTokens(content);
@@ -33,7 +31,7 @@ export const contextTokenCount = (msgs: Anthropic.MessageParam[] | GenericMessag
  * while trimming assistant responses when needed to stay under the token limit.
  */
 export function trimHistory(
-  msgs: Anthropic.MessageParam[],
+  msgs: GenericMessage[],
   maxTokens = MAX_CONTEXT_TOKENS
 ) {
   // If we're under the limit or have very few messages, no need to trim
@@ -81,7 +79,7 @@ export function trimHistory(
   }
   
   // Build the final trimmed array in the original order
-  const trimmedMsgs: Anthropic.MessageParam[] = [];
+  const trimmedMsgs: GenericMessage[] = [];
   for (let i = 0; i < msgs.length; i++) {
     if (indicesToKeep.has(i)) {
       trimmedMsgs.push(msgs[i]);

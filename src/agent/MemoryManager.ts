@@ -1,5 +1,10 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { BrowserTool } from "./tools/types";
+
+// Generic message type (provider-agnostic)
+interface GenericMessage {
+  role: string;
+  content: string | any;
+}
 
 /**
  * MemoryManager handles memory lookup and integration.
@@ -17,7 +22,7 @@ export class MemoryManager {
    * @param domain The domain to look up memories for
    * @param messages The messages array to add memories to
    */
-  async lookupMemories(domain: string, messages: Anthropic.MessageParam[]): Promise<void> {
+  async lookupMemories(domain: string, messages: GenericMessage[]): Promise<void> {
     try {
       // Look up memories for this domain
       if (this.memoryTool) {

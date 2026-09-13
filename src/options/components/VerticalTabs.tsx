@@ -1,28 +1,16 @@
 import { useState } from 'react';
 import { useAppDispatch, useAppSelector, type RootState } from '../../store/hooks';
 import {
-  setAnthropicApiKey,
-  setAnthropicBaseUrl,
-  setAnthropicModelId,
   setGeminiApiKey,
   setGeminiBaseUrl,
   setGeminiModelId,
   setIsSaving,
   setNewInstance,
   setNewModel,
-  setNewOllamaModel,
-  setOllamaApiKey,
-  setOllamaBaseUrl,
-  setOllamaCustomModels,
-  setOllamaModelId,
-  setOpenaiApiKey,
-  setOpenaiBaseUrl,
   setOpenaiCompatibleInstances,
-  setOpenaiModelId,
   setProvider,
   setSaveStatus,
   setSelectedInstanceId,
-  setThinkingBudgetTokens,
 } from '../../store/slices/configSlice';
 import { setLanguage } from '../../store/slices/settingsSlice';
 import { ThemeToggle } from './ThemeToggle';
@@ -41,25 +29,13 @@ export function VerticalTabs() {
   const dispatch = useAppDispatch();
 
   const provider = useAppSelector((state: RootState) => state.config.provider);
-  const anthropicApiKey = useAppSelector((state: RootState) => state.config.anthropicApiKey);
-  const anthropicBaseUrl = useAppSelector((state: RootState) => state.config.anthropicBaseUrl);
-  const anthropicModelId = useAppSelector((state: RootState) => state.config.anthropicModelId);
-  const openaiApiKey = useAppSelector((state: RootState) => state.config.openaiApiKey);
-  const openaiBaseUrl = useAppSelector((state: RootState) => state.config.openaiBaseUrl);
-  const openaiModelId = useAppSelector((state: RootState) => state.config.openaiModelId);
   const geminiApiKey = useAppSelector((state: RootState) => state.config.geminiApiKey);
   const geminiBaseUrl = useAppSelector((state: RootState) => state.config.geminiBaseUrl);
   const geminiModelId = useAppSelector((state: RootState) => state.config.geminiModelId);
-  const ollamaApiKey = useAppSelector((state: RootState) => state.config.ollamaApiKey);
-  const ollamaBaseUrl = useAppSelector((state: RootState) => state.config.ollamaBaseUrl);
-  const ollamaModelId = useAppSelector((state: RootState) => state.config.ollamaModelId);
-  const ollamaCustomModels = useAppSelector((state: RootState) => state.config.ollamaCustomModels);
-  const thinkingBudgetTokens = useAppSelector((state: RootState) => state.config.thinkingBudgetTokens);
   const openaiCompatibleInstances = useAppSelector((state: RootState) => state.config.openaiCompatibleInstances);
   const selectedInstanceId = useAppSelector((state: RootState) => state.config.selectedInstanceId);
   const newInstance = useAppSelector((state: RootState) => state.config.newInstance);
   const newModel = useAppSelector((state: RootState) => state.config.newModel);
-  const newOllamaModel = useAppSelector((state: RootState) => state.config.newOllamaModel);
   const isSaving = useAppSelector((state: RootState) => state.config.isSaving);
   const saveStatus = useAppSelector((state: RootState) => state.config.saveStatus);
 
@@ -100,20 +76,9 @@ export function VerticalTabs() {
       {
         openaiCompatibleInstances,
         provider,
-        anthropicApiKey,
-        anthropicModelId,
-        anthropicBaseUrl,
-        openaiApiKey,
-        openaiModelId,
-        openaiBaseUrl,
         geminiApiKey,
         geminiModelId,
         geminiBaseUrl,
-        ollamaApiKey,
-        ollamaModelId,
-        ollamaBaseUrl,
-        ollamaCustomModels,
-        thinkingBudgetTokens,
       },
       () => {
         dispatch(setIsSaving(false));
@@ -136,33 +101,6 @@ export function VerticalTabs() {
         }, 3000);
       },
     );
-  };
-
-  const handleAddOllamaModel = () => {
-    if (!newOllamaModel.id.trim() || !newOllamaModel.name.trim()) return;
-
-    const updatedModels = [...ollamaCustomModels, { ...newOllamaModel }];
-    dispatch(setOllamaCustomModels(updatedModels));
-    dispatch(setNewOllamaModel({ id: '', name: '', contextWindow: 32768 } as any));
-
-    chrome.storage.sync.set({ ollamaCustomModels: updatedModels });
-  };
-
-  const handleRemoveOllamaModel = (id: string) => {
-    const updatedModels = ollamaCustomModels.filter((m: any) => m.id !== id);
-    dispatch(setOllamaCustomModels(updatedModels));
-    if (ollamaModelId === id) dispatch(setOllamaModelId(''));
-
-    chrome.storage.sync.set({ ollamaCustomModels: updatedModels });
-  };
-
-  const handleEditOllamaModel = (idx: number, field: string, value: any) => {
-    const updatedModels = ollamaCustomModels.map((m: any, i: number) => (i === idx ? { ...m, [field]: value } : m));
-    dispatch(setOllamaCustomModels(updatedModels));
-
-    setTimeout(() => {
-      chrome.storage.sync.set({ ollamaCustomModels: updatedModels });
-    }, 0);
   };
 
   const handleAddInstance = () => {
@@ -190,8 +128,8 @@ export function VerticalTabs() {
     dispatch(setOpenaiCompatibleInstances(updated));
     let newProvider = provider;
     if (provider === `openai-compatible:${id}`) {
-      newProvider = 'anthropic';
-      dispatch(setProvider('anthropic'));
+      newProvider = 'gemini';
+      dispatch(setProvider('gemini'));
     }
     if (selectedInstanceId === id) {
       dispatch(setSelectedInstanceId(null));
@@ -273,39 +211,12 @@ export function VerticalTabs() {
           <ProvidersTab
             provider={provider}
             setProvider={(value) => dispatch(setProvider(value as any))}
-            anthropicApiKey={anthropicApiKey}
-            setAnthropicApiKey={(value) => dispatch(setAnthropicApiKey(value as any))}
-            anthropicBaseUrl={anthropicBaseUrl}
-            setAnthropicBaseUrl={(value) => dispatch(setAnthropicBaseUrl(value as any))}
-            anthropicModelId={anthropicModelId}
-            setAnthropicModelId={(value) => dispatch(setAnthropicModelId(value as any))}
-            thinkingBudgetTokens={thinkingBudgetTokens}
-            setThinkingBudgetTokens={(value) => dispatch(setThinkingBudgetTokens(value as any))}
-            openaiApiKey={openaiApiKey}
-            setOpenaiApiKey={(value) => dispatch(setOpenaiApiKey(value as any))}
-            openaiBaseUrl={openaiBaseUrl}
-            setOpenaiBaseUrl={(value) => dispatch(setOpenaiBaseUrl(value as any))}
-            openaiModelId={openaiModelId}
-            setOpenaiModelId={(value) => dispatch(setOpenaiModelId(value as any))}
             geminiApiKey={geminiApiKey}
             setGeminiApiKey={(value) => dispatch(setGeminiApiKey(value as any))}
             geminiBaseUrl={geminiBaseUrl}
             setGeminiBaseUrl={(value) => dispatch(setGeminiBaseUrl(value as any))}
             geminiModelId={geminiModelId}
             setGeminiModelId={(value) => dispatch(setGeminiModelId(value as any))}
-            ollamaApiKey={ollamaApiKey}
-            setOllamaApiKey={(value) => dispatch(setOllamaApiKey(value as any))}
-            ollamaBaseUrl={ollamaBaseUrl}
-            setOllamaBaseUrl={(value) => dispatch(setOllamaBaseUrl(value as any))}
-            ollamaModelId={ollamaModelId}
-            setOllamaModelId={(value) => dispatch(setOllamaModelId(value as any))}
-            ollamaCustomModels={ollamaCustomModels}
-            setOllamaCustomModels={(value) => dispatch(setOllamaCustomModels(value as any))}
-            newOllamaModel={newOllamaModel}
-            setNewOllamaModel={(value) => dispatch(setNewOllamaModel(value as any))}
-            handleAddOllamaModel={handleAddOllamaModel}
-            handleRemoveOllamaModel={handleRemoveOllamaModel}
-            handleEditOllamaModel={handleEditOllamaModel}
             openaiCompatibleInstances={openaiCompatibleInstances}
             setOpenaiCompatibleInstances={(value) => dispatch(setOpenaiCompatibleInstances(value as any))}
             newInstance={newInstance}

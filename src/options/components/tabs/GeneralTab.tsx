@@ -18,21 +18,9 @@ export function GeneralTab() {
         zh: '从以下大模型提供商获取 API 密钥：',
         en: 'Obtain an API key from one of these LLM providers:'
       },
-      'Anthropic - Recommended for best performance': {
-        zh: 'Anthropic - 推荐（性能最佳）',
-        en: 'Anthropic - Recommended for best performance'
-      },
-      'OpenAI - Popular and reliable': {
-        zh: 'OpenAI - 流行且可靠',
-        en: 'OpenAI - Popular and reliable'
-      },
       'Google Gemini - Good value for money': {
         zh: 'Google Gemini - 性价比高',
         en: 'Google Gemini - Good value for money'
-      },
-      'Ollama - Free local models': {
-        zh: 'Ollama - 免费本地模型',
-        en: 'Ollama - Free local models'
       },
       '2. Configure BrowserBee': { zh: '2. 配置 BrowserBee', en: '2. Configure BrowserBee' },
       'Go to the LLM Configuration tab and:': {
@@ -154,10 +142,7 @@ export function GeneralTab() {
                   {t('Obtain an API key from one of these LLM providers:')}
                 </p>
                 <ul className="text-sm list-disc list-inside space-y-1 ml-4">
-                  <li><strong>Anthropic</strong> - {t('Anthropic - Recommended for best performance')}</li>
-                  <li><strong>OpenAI</strong> - {t('OpenAI - Popular and reliable')}</li>
                   <li><strong>Google Gemini</strong> - {t('Google Gemini - Good value for money')}</li>
-                  <li><strong>Ollama</strong> - {t('Ollama - Free local models')}</li>
                 </ul>
               </div>
             </div>

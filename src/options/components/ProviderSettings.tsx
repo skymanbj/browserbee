@@ -1,32 +1,11 @@
 import React from 'react';
 import { OpenAICompatibleInstance } from '../../models/providers/openai-compatible';
-import { AnthropicSettings } from './AnthropicSettings';
 import { GeminiSettings } from './GeminiSettings';
 import { Model } from './ModelList';
-import { OllamaModel } from './OllamaModelList';
-import { OllamaSettings } from './OllamaSettings';
 import { OpenAICompatibleSettings } from './OpenAICompatibleSettings';
-import { OpenAISettings } from './OpenAISettings';
 
 interface ProviderSettingsProps {
   provider: string;
-  // Anthropic settings
-  anthropicApiKey: string;
-  setAnthropicApiKey: (key: string) => void;
-  anthropicBaseUrl: string;
-  setAnthropicBaseUrl: (url: string) => void;
-  anthropicModelId: string;
-  setAnthropicModelId: (id: string) => void;
-  thinkingBudgetTokens: number;
-  setThinkingBudgetTokens: (tokens: number) => void;
-
-  // OpenAI settings
-  openaiApiKey: string;
-  setOpenaiApiKey: (key: string) => void;
-  openaiBaseUrl: string;
-  setOpenaiBaseUrl: (url: string) => void;
-  openaiModelId: string;
-  setOpenaiModelId: (id: string) => void;
 
   // Gemini settings
   geminiApiKey: string;
@@ -35,21 +14,6 @@ interface ProviderSettingsProps {
   setGeminiBaseUrl: (url: string) => void;
   geminiModelId: string;
   setGeminiModelId: (id: string) => void;
-
-  // Ollama settings
-  ollamaApiKey: string;
-  setOllamaApiKey: (key: string) => void;
-  ollamaBaseUrl: string;
-  setOllamaBaseUrl: (url: string) => void;
-  ollamaModelId: string;
-  setOllamaModelId: (id: string) => void;
-  ollamaCustomModels: OllamaModel[];
-  setOllamaCustomModels: (models: OllamaModel[]) => void;
-  newOllamaModel: { id: string; name: string; contextWindow: number };
-  setNewOllamaModel: React.Dispatch<React.SetStateAction<{ id: string; name: string; contextWindow: number }>>;
-  handleAddOllamaModel: () => void;
-  handleRemoveOllamaModel: (id: string) => void;
-  handleEditOllamaModel: (idx: number, field: string, value: any) => void;
 
   // OpenAI-compatible instance settings
   openaiCompatibleInstances: OpenAICompatibleInstance[];
@@ -70,99 +34,31 @@ interface ProviderSettingsProps {
 
 export function ProviderSettings({
   provider,
-  // Anthropic
-  anthropicApiKey,
-  setAnthropicApiKey,
-  anthropicBaseUrl,
-  setAnthropicBaseUrl,
-  thinkingBudgetTokens,
-  setThinkingBudgetTokens,
-  // OpenAI
-  openaiApiKey,
-  setOpenaiApiKey,
-  openaiBaseUrl,
-  setOpenaiBaseUrl,
   // Gemini
   geminiApiKey,
   setGeminiApiKey,
   geminiBaseUrl,
   setGeminiBaseUrl,
-  // Ollama
-  ollamaApiKey,
-  setOllamaApiKey,
-  ollamaBaseUrl,
-  setOllamaBaseUrl,
-  ollamaModelId,
-  setOllamaModelId,
-  ollamaCustomModels,
-  setOllamaCustomModels,
-  newOllamaModel,
-  setNewOllamaModel,
-  handleAddOllamaModel,
-  handleRemoveOllamaModel,
-  handleEditOllamaModel,
-  // OpenAI-compatible instances
+  // OpenAI-compatible
   openaiCompatibleInstances,
-  setOpenaiCompatibleInstances,
   newInstance,
   setNewInstance,
-  handleAddInstance,
-  handleRemoveInstance,
   handleUpdateInstance,
   handleUpdateInstanceModel,
   handleAddInstanceModel,
   handleRemoveInstanceModel,
-  selectedInstanceId,
-  setSelectedInstanceId,
+  handleRemoveInstance,
   newModel,
   setNewModel,
 }: ProviderSettingsProps) {
   return (
     <>
-      {provider === 'anthropic' && (
-        <AnthropicSettings
-          anthropicApiKey={anthropicApiKey}
-          setAnthropicApiKey={setAnthropicApiKey}
-          anthropicBaseUrl={anthropicBaseUrl}
-          setAnthropicBaseUrl={setAnthropicBaseUrl}
-          thinkingBudgetTokens={thinkingBudgetTokens}
-          setThinkingBudgetTokens={setThinkingBudgetTokens}
-        />
-      )}
-
-      {provider === 'openai' && (
-        <OpenAISettings
-          openaiApiKey={openaiApiKey}
-          setOpenaiApiKey={setOpenaiApiKey}
-          openaiBaseUrl={openaiBaseUrl}
-          setOpenaiBaseUrl={setOpenaiBaseUrl}
-        />
-      )}
-
       {provider === 'gemini' && (
         <GeminiSettings
           geminiApiKey={geminiApiKey}
           setGeminiApiKey={setGeminiApiKey}
           geminiBaseUrl={geminiBaseUrl}
           setGeminiBaseUrl={setGeminiBaseUrl}
-        />
-      )}
-
-      {provider === 'ollama' && (
-        <OllamaSettings
-          ollamaApiKey={ollamaApiKey}
-          setOllamaApiKey={setOllamaApiKey}
-          ollamaBaseUrl={ollamaBaseUrl}
-          setOllamaBaseUrl={setOllamaBaseUrl}
-          ollamaModelId={ollamaModelId}
-          setOllamaModelId={setOllamaModelId}
-          ollamaCustomModels={ollamaCustomModels}
-          setOllamaCustomModels={setOllamaCustomModels}
-          newOllamaModel={newOllamaModel}
-          setNewOllamaModel={setNewOllamaModel}
-          handleAddOllamaModel={handleAddOllamaModel}
-          handleRemoveOllamaModel={handleRemoveOllamaModel}
-          handleEditOllamaModel={handleEditOllamaModel}
         />
       )}
 

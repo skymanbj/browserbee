@@ -1,4 +1,5 @@
 import { MemoryService } from '../tracking/memoryService';
+import { ConfigManager } from './configManager';
 import { setupMessageListeners } from './messageHandler';
 import { ScheduledTaskService } from './scheduledTaskService';
 import { SessionService } from './sessionService';
@@ -11,6 +12,11 @@ import { logWithTimestamp } from './utils';
  */
 function initializeExtension(): void {
   logWithTimestamp('BrowserBee 🐝 extension initialized');
+
+  // Clean up leftover storage keys from removed providers (Anthropic / OpenAI / Ollama)
+  ConfigManager.getInstance().cleanupRemovedProviders().catch(error => {
+    logWithTimestamp(`Failed to clean up removed provider config: ${error}`, 'error');
+  });
 
   // Initialize SessionService (lazy loads from storage on first access)
   const sessionService = SessionService.getInstance();
@@ -44,14 +50,8 @@ function setupEventListeners(): void {
       // Check if any provider configuration has changed
       const providerConfigChanged = Object.keys(changes).some(key =>
         key === 'provider' ||
-        key === 'anthropicApiKey' ||
-        key === 'openaiApiKey' ||
         key === 'geminiApiKey' ||
-        key === 'ollamaApiKey' ||
-        key === 'anthropicBaseUrl' ||
-        key === 'openaiBaseUrl' ||
-        key === 'geminiBaseUrl' ||
-        key === 'ollamaBaseUrl'
+        key === 'geminiBaseUrl'
       );
 
       if (providerConfigChanged) {

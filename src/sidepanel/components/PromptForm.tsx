@@ -24,6 +24,8 @@ interface PromptFormProps {
   isProcessing: boolean;
   tabStatus: 'attached' | 'detached' | 'unknown' | 'running' | 'idle' | 'error';
   theme?: 'dark' | 'light';
+  /** 历史提示词（按时间从旧到新排列），供 ↑/↓ 键回溯 */
+  promptHistory?: string[];
 }
 
 const DEFAULT_SKILLS: UserSkill[] = [
@@ -62,7 +64,8 @@ export const PromptForm: React.FC<PromptFormProps> = ({
   onCancel,
   isProcessing,
   tabStatus,
-  theme = 'dark'
+  theme = 'dark',
+  promptHistory = []
 }) => {
   const [prompt, setPrompt] = useState('');
   const [skills, setSkills] = useState<UserSkill[]>(DEFAULT_SKILLS);
@@ -72,6 +75,9 @@ export const PromptForm: React.FC<PromptFormProps> = ({
   const [createSkillName, setCreateSkillName] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // ── 提示词历史导航状态 ──
+  const [historyIndex, setHistoryIndex] = useState(-1); // -1 表示未在浏览历史
+  const draftRef = useRef(''); // 浏览历史前保存正在编辑的草稿
   // ── Prompt templates state ──
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
@@ -137,12 +143,46 @@ export const PromptForm: React.FC<PromptFormProps> = ({
     );
   }, [templates, templateSearch]);
 
+  // ── 提示词历史导航 ──
+  // ↑ 回溯上一条历史提示词（首次按下时保存当前草稿）
+  // ↓ 向较新的历史移动，到达末尾后恢复浏览历史前正在编辑的草稿
+  // 返回 true 表示本次按键已被历史导航消费（调用方应 preventDefault）
+  const navigateHistory = (direction: 'up' | 'down'): boolean => {
+    if (promptHistory.length === 0) return false;
+    if (direction === 'up') {
+      if (historyIndex === -1) {
+        draftRef.current = prompt;
+        setHistoryIndex(promptHistory.length - 1);
+        setPrompt(promptHistory[promptHistory.length - 1]);
+        return true;
+      }
+      if (historyIndex > 0) {
+        setHistoryIndex(historyIndex - 1);
+        setPrompt(promptHistory[historyIndex - 1]);
+        return true;
+      }
+      return false; // 已经是最早的一条
+    }
+    if (historyIndex === -1) return false;
+    if (historyIndex < promptHistory.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      setPrompt(promptHistory[historyIndex + 1]);
+    } else {
+      setHistoryIndex(-1);
+      setPrompt(draftRef.current);
+    }
+    return true;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || isProcessing || tabStatus === 'detached') return;
     onSubmit(prompt, attachments.length > 0 ? attachments : undefined);
     setPrompt('');
     setAttachments([]);
+    // 提交后退出历史浏览状态
+    setHistoryIndex(-1);
+    draftRef.current = '';
   };
 
   const handleApplySkill = (skillPrompt: string) => {
@@ -591,8 +631,28 @@ export const PromptForm: React.FC<PromptFormProps> = ({
           <TextareaAutosize
             className={`${theme === 'dark' ? 'glass-input' : 'glass-input-light'} textarea w-full pr-12`}
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e) => {
+              setPrompt(e.target.value);
+              // 用户手动输入时退出历史浏览状态（程序化 setPrompt 不会触发 onChange）
+              if (historyIndex !== -1) {
+                setHistoryIndex(-1);
+              }
+            }}
             onKeyDown={(e) => {
+              // ↑ / ↓ 历史导航：仅在输入框为空或已在浏览历史时拦截，
+              // 避免影响多行文本编辑时的光标移动
+              const isPlainArrow = !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey;
+              if (e.key === 'ArrowUp' && isPlainArrow && (prompt === '' || historyIndex !== -1)) {
+                if (navigateHistory('up')) {
+                  e.preventDefault();
+                }
+                return;
+              }
+              if (e.key === 'ArrowDown' && isPlainArrow && historyIndex !== -1) {
+                e.preventDefault();
+                navigateHistory('down');
+                return;
+              }
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleSubmit(e);

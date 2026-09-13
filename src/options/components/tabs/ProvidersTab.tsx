@@ -9,39 +9,12 @@ import { SaveButton } from '../SaveButton';
 export interface ProvidersTabProps {
   provider: string;
   setProvider: (value: string) => void;
-  anthropicApiKey: string;
-  setAnthropicApiKey: (value: string) => void;
-  anthropicBaseUrl: string;
-  setAnthropicBaseUrl: (value: string) => void;
-  anthropicModelId: string;
-  setAnthropicModelId: (value: string) => void;
-  thinkingBudgetTokens: number;
-  setThinkingBudgetTokens: (value: number) => void;
-  openaiApiKey: string;
-  setOpenaiApiKey: (value: string) => void;
-  openaiBaseUrl: string;
-  setOpenaiBaseUrl: (value: string) => void;
-  openaiModelId: string;
-  setOpenaiModelId: (value: string) => void;
   geminiApiKey: string;
   setGeminiApiKey: (value: string) => void;
   geminiBaseUrl: string;
   setGeminiBaseUrl: (value: string) => void;
   geminiModelId: string;
   setGeminiModelId: (value: string) => void;
-  ollamaApiKey: string;
-  setOllamaApiKey: (value: string) => void;
-  ollamaBaseUrl: string;
-  setOllamaBaseUrl: (value: string) => void;
-  ollamaModelId: string;
-  setOllamaModelId: (value: string) => void;
-  ollamaCustomModels: any[];
-  setOllamaCustomModels: (value: any[]) => void;
-  newOllamaModel: { id: string; name: string; contextWindow: number };
-  setNewOllamaModel: React.Dispatch<React.SetStateAction<{ id: string; name: string; contextWindow: number }>>;
-  handleAddOllamaModel: () => void;
-  handleRemoveOllamaModel: (id: string) => void;
-  handleEditOllamaModel: (idx: number, field: string, value: any) => void;
   openaiCompatibleInstances: any[];
   setOpenaiCompatibleInstances: (value: any[]) => void;
   newInstance: { id: string; name: string };
@@ -65,39 +38,12 @@ export interface ProvidersTabProps {
 export function ProvidersTab({
   provider,
   setProvider,
-  anthropicApiKey,
-  setAnthropicApiKey,
-  anthropicBaseUrl,
-  setAnthropicBaseUrl,
-  anthropicModelId,
-  setAnthropicModelId,
-  thinkingBudgetTokens,
-  setThinkingBudgetTokens,
-  openaiApiKey,
-  setOpenaiApiKey,
-  openaiBaseUrl,
-  setOpenaiBaseUrl,
-  openaiModelId,
-  setOpenaiModelId,
   geminiApiKey,
   setGeminiApiKey,
   geminiBaseUrl,
   setGeminiBaseUrl,
   geminiModelId,
   setGeminiModelId,
-  ollamaApiKey,
-  setOllamaApiKey,
-  ollamaBaseUrl,
-  setOllamaBaseUrl,
-  ollamaModelId,
-  setOllamaModelId,
-  ollamaCustomModels,
-  setOllamaCustomModels,
-  newOllamaModel,
-  setNewOllamaModel,
-  handleAddOllamaModel,
-  handleRemoveOllamaModel,
-  handleEditOllamaModel,
   openaiCompatibleInstances,
   setOpenaiCompatibleInstances,
   newInstance,
@@ -183,7 +129,7 @@ export function ProvidersTab({
     const handler = (e: any) => {
       const deletedId = e.detail?.id;
       if (provider === `openai-compatible:${deletedId}`) {
-        setProvider('anthropic');
+        setProvider('gemini');
       }
     };
     window.addEventListener('browserbee:deletedInstance', handler);
@@ -301,17 +247,8 @@ export function ProvidersTab({
       setConfigExportStatus("Exporting...");
       const configData = {
         provider,
-        anthropicApiKey,
-        anthropicBaseUrl,
-        thinkingBudgetTokens,
-        openaiApiKey,
-        openaiBaseUrl,
         geminiApiKey,
         geminiBaseUrl,
-        ollamaApiKey,
-        ollamaBaseUrl,
-        ollamaModelId,
-        ollamaCustomModels,
         openaiCompatibleInstances,
       };
       const jsonData = JSON.stringify(configData, null, 2);
@@ -349,17 +286,8 @@ export function ProvidersTab({
           }
 
           if (config.provider !== undefined) setProvider(config.provider);
-          if (config.anthropicApiKey !== undefined) setAnthropicApiKey(config.anthropicApiKey);
-          if (config.anthropicBaseUrl !== undefined) setAnthropicBaseUrl(config.anthropicBaseUrl);
-          if (config.thinkingBudgetTokens !== undefined) setThinkingBudgetTokens(config.thinkingBudgetTokens);
-          if (config.openaiApiKey !== undefined) setOpenaiApiKey(config.openaiApiKey);
-          if (config.openaiBaseUrl !== undefined) setOpenaiBaseUrl(config.openaiBaseUrl);
           if (config.geminiApiKey !== undefined) setGeminiApiKey(config.geminiApiKey);
           if (config.geminiBaseUrl !== undefined) setGeminiBaseUrl(config.geminiBaseUrl);
-          if (config.ollamaApiKey !== undefined) setOllamaApiKey(config.ollamaApiKey);
-          if (config.ollamaBaseUrl !== undefined) setOllamaBaseUrl(config.ollamaBaseUrl);
-          if (config.ollamaModelId !== undefined) setOllamaModelId(config.ollamaModelId);
-          if (config.ollamaCustomModels !== undefined) setOllamaCustomModels(config.ollamaCustomModels);
           if (config.openaiCompatibleInstances !== undefined) setOpenaiCompatibleInstances(config.openaiCompatibleInstances);
 
           setConfigImportStatus("Successfully imported! Click 'Save Settings' to apply changes.");
@@ -578,39 +506,12 @@ export function ProvidersTab({
             ) : (
               <ProviderSettings
                 provider={provider}
-                anthropicApiKey={anthropicApiKey}
-                setAnthropicApiKey={setAnthropicApiKey}
-                anthropicBaseUrl={anthropicBaseUrl}
-                setAnthropicBaseUrl={setAnthropicBaseUrl}
-                anthropicModelId={anthropicModelId}
-                setAnthropicModelId={setAnthropicModelId}
-                thinkingBudgetTokens={thinkingBudgetTokens}
-                setThinkingBudgetTokens={setThinkingBudgetTokens}
-                openaiApiKey={openaiApiKey}
-                setOpenaiApiKey={setOpenaiApiKey}
-                openaiBaseUrl={openaiBaseUrl}
-                setOpenaiBaseUrl={setOpenaiBaseUrl}
-                openaiModelId={openaiModelId}
-                setOpenaiModelId={setOpenaiModelId}
                 geminiApiKey={geminiApiKey}
                 setGeminiApiKey={setGeminiApiKey}
                 geminiBaseUrl={geminiBaseUrl}
                 setGeminiBaseUrl={setGeminiBaseUrl}
                 geminiModelId={geminiModelId}
                 setGeminiModelId={setGeminiModelId}
-                ollamaApiKey={ollamaApiKey}
-                setOllamaApiKey={setOllamaApiKey}
-                ollamaBaseUrl={ollamaBaseUrl}
-                setOllamaBaseUrl={setOllamaBaseUrl}
-                ollamaModelId={ollamaModelId}
-                setOllamaModelId={setOllamaModelId}
-                ollamaCustomModels={ollamaCustomModels}
-                setOllamaCustomModels={setOllamaCustomModels}
-                newOllamaModel={newOllamaModel}
-                setNewOllamaModel={setNewOllamaModel}
-                handleAddOllamaModel={handleAddOllamaModel}
-                handleRemoveOllamaModel={handleRemoveOllamaModel}
-                handleEditOllamaModel={handleEditOllamaModel}
                 openaiCompatibleInstances={openaiCompatibleInstances}
                 setOpenaiCompatibleInstances={setOpenaiCompatibleInstances}
                 newInstance={newInstance}
@@ -634,8 +535,6 @@ export function ProvidersTab({
             saveStatus={saveStatus}
             handleSave={handleSave}
             isDisabled={
-              (provider === 'anthropic' && !anthropicApiKey.trim()) ||
-              (provider === 'openai' && !openaiApiKey.trim()) ||
               (provider === 'gemini' && !geminiApiKey.trim())
             }
           />
