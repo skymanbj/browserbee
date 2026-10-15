@@ -1,7 +1,7 @@
 import { crx } from 'playwright-crx';
 import { BrowserAgent } from '../agent/AgentCore';
 import { setCurrentPage, resetPageContext } from '../agent/PageContextManager';
-import { ensurePermissionForTab, hasDebuggerPermission, notifyPermissionRequired } from './permissions';
+import { ensurePermissionForTab, hasDebuggerPermission } from './permissions';
 import { handleMessage } from './messageHandler';
 import { TabState, WindowState } from './types';
 import { logWithTimestamp, handleError } from './utils';
@@ -318,8 +318,10 @@ export async function attachToTab(tabId: number, windowId?: number, retryCount: 
       // This requests debugger and host permissions from the user when necessary.
       const permissionResult = await ensurePermissionForTab(tab);
       if (!permissionResult.granted) {
-        logWithTimestamp(`Permission denied for tab ${tabId}: ${permissionResult.reason}`, 'warn');
-        notifyPermissionRequired(permissionResult.reason, tabId, windowId);
+        logWithTimestamp(`Permission check failed for tab ${tabId}: ${permissionResult.reason}`, 'warn');
+        // No user-facing "Permission required" banner is raised here anymore — the
+        // only remaining failure case is a revoked debugger permission, which is
+        // already logged above. This keeps the side panel free of yellow prompts.
         return {
           error: "permission_required",
           reason: permissionResult.reason

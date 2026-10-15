@@ -35,6 +35,14 @@ const SENSITIVE_TOOLS = new Set([
   "clear_all_memories"
 ]);
 
+// Master switch for the per-action approval gate.
+//
+// BrowserBee used to stop and ask for confirmation before every browser
+// interaction (navigate / click / type / key press / tab ops are all listed in
+// SENSITIVE_TOOLS above), so every single web operation popped an
+// "Approval Required" card. Set this to `true` to restore the old behavior.
+const APPROVAL_ENABLED = false;
+
 /**
  * Callback interface for execution
  */
@@ -564,8 +572,9 @@ The <requires_approval> tag is mandatory. Set it to "true" for purchases, data d
 
           // Determine whether approval is required. Sensitive tools always require
           // approval as a defense-in-depth measure, even if the LLM claims otherwise.
+          // The whole gate is bypassed while APPROVAL_ENABLED is false.
           const isSensitiveTool = SENSITIVE_TOOLS.has(toolName);
-          const requiresApproval = llmRequiresApproval || isSensitiveTool;
+          const requiresApproval = APPROVAL_ENABLED && (llmRequiresApproval || isSensitiveTool);
           let reason: string;
           if (llmRequiresApproval) {
             reason = "The AI assistant has determined this action requires your approval.";

@@ -132,26 +132,25 @@ describe('ExecutionEngine', () => {
       expect(mockCallbacks.onComplete).toHaveBeenCalled();
     });
 
-    it('should handle tool calls requiring approval', async () => {
-      // Mock provider to return response with tool call requiring approval
+    it('should execute tools directly without approval when the approval gate is disabled', async () => {
+      // The per-action approval gate is disabled (APPROVAL_ENABLED = false in
+      // ExecutionEngine), so even a tool the LLM marks with
+      // <requires_approval>true</requires_approval> runs immediately.
       const mockStream = (async function* () {
         yield { type: 'text', text: 'I\'ll click the purchase button.\n\n<tool>browser_click</tool>\n<input>button[data-action="purchase"]</input>\n<requires_approval>true</requires_approval>' };
         yield { type: 'usage', inputTokens: 20, outputTokens: 30 };
       })();
       mockProvider.createMessage.mockReturnValue(mockStream);
 
-      // Mock chrome.tabs.query
-      (global as any).chrome.tabs.query.mockResolvedValue([{ id: 123 }]);
-
       await executionEngine.executePrompt('Click the purchase button', mockCallbacks, [], false);
 
       expect(mockCallbacks.onToolOutput).toHaveBeenCalledWith('🕹️ tool: browser_click | args: button[data-action="purchase"]');
-      expect(mockCallbacks.onToolOutput).toHaveBeenCalledWith('⚠️ This action requires approval: The AI assistant has determined this action requires your approval.');
-      expect(mockCallbacks.onToolOutput).toHaveBeenCalledWith('✅ Action approved by user. Executing...');
-      expect(mockToolFunctions[2]).toHaveBeenCalledWith('button[data-action="purchase"]', {
-        requiresApproval: true,
-        approvalReason: 'The AI assistant has determined this action requires your approval.',
-      });
+      // No approval prompt is emitted, and the tool executes directly.
+      expect(mockCallbacks.onToolOutput).not.toHaveBeenCalledWith(
+        '⚠️ This action requires approval: The AI assistant has determined this action requires your approval.'
+      );
+      expect(mockToolFunctions[2]).toHaveBeenCalled();
+      expect(mockToolFunctions[2].mock.calls[0][0]).toBe('button[data-action="purchase"]');
     });
 
     it('should handle incomplete tool calls gracefully', async () => {

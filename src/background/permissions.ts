@@ -55,7 +55,8 @@ export async function requestHostPermission(url: string): Promise<boolean> {
 
 /**
  * Ensure that we have permission to attach to/automate a tab.
- * This checks both debugger and host permissions and requests them if needed.
+ * Only the debugger permission is checked: host access is declared statically in
+ * the manifest and is granted at install time, so no per-tab request is needed.
  *
  * @returns An object indicating whether the required permissions are granted.
  */
@@ -78,23 +79,12 @@ export async function ensurePermissionForTab(
     };
   }
 
-  // Then check host permission for the tab's URL. activeTab grants this
-  // automatically when the user opens the side panel, but for tabs activated
-  // via other means we request it explicitly.
-  const url = tab.url;
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    const hostGranted = await hasHostPermission(url);
-    if (!hostGranted) {
-      const requested = await requestHostPermission(url);
-      if (!requested) {
-        return {
-          granted: false,
-          reason: `Host permission for ${new URL(url).hostname} is required to automate this page. Please grant it and try again.`
-        };
-      }
-    }
-  }
-
+  // Host access is declared statically in the manifest (`https://*/*` and
+  // `http://*/*`), so Chrome grants it at install time and it never needs a
+  // per-tab runtime request. We intentionally do NOT call
+  // chrome.permissions.request() here: doing so popped a browser permission
+  // prompt (and the "Permission required" banner) for every page the agent
+  // touched. Automation now proceeds without that per-page confirmation.
   return { granted: true };
 }
 
