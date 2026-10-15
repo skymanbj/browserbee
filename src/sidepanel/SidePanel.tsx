@@ -136,6 +136,15 @@ export function SidePanel() {
     return history.slice(-100);
   }, [messages]);
 
+  // ── 当前连接的标签页（去重后用于顶栏徽章） ──
+  // "Connected to tab: xxx" 系统消息不再渲染到消息流，只在顶栏以徽章体现。
+  const connectedTabs = useMemo(() => {
+    const titles = messages
+      .filter(m => m.type === 'system' && m.content.startsWith('Connected to tab:'))
+      .map(m => m.content.slice('Connected to tab:'.length).trim());
+    return Array.from(new Set(titles));
+  }, [messages]);
+
   // Initialize sessions when tabId and windowId are available
   useEffect(() => {
     if (tabId !== null && windowId !== null) {
@@ -393,37 +402,39 @@ export function SidePanel() {
   };
 
   return (
-    <div className="flex flex-col h-screen p-4 bg-base-200">
-      <header className="mb-2 flex items-center justify-between">
+    <div className="flex flex-col h-screen p-2 bg-base-200">
+      <header className="mb-1.5 flex items-center gap-1.5">
         <TabStatusBar
           tabId={tabId}
           tabTitle={tabTitle}
           tabStatus={tabStatus}
+          theme={themeMode}
+          compact
         />
-        <button
-          onClick={toggleTheme}
-          className="btn btn-ghost btn-sm rounded-full flex items-center gap-1.5 shrink-0"
-          aria-label={`Switch to ${themeMode === 'light' ? 'dark' : 'light'} theme`}
-          title={`Switch to ${themeMode === 'light' ? 'dark' : 'light'} theme`}
-        >
-          {themeMode === 'light' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="m6.34 17.66-1.41 1.41" />
-              <path d="m19.07 4.93-1.41 1.41" />
-            </svg>
-          )}
-        </button>
+        {connectedTabs.length > 1 && (
+          <span
+            className="badge badge-xs badge-ghost shrink-0"
+            title={`已连接:\n${connectedTabs.join('\n')}`}
+          >
+            🔗 {connectedTabs.length}
+          </span>
+        )}
+        <OutputHeader
+          onClearHistory={handleClearHistory}
+          onReflectAndLearn={handleReflectAndLearn}
+          isProcessing={isProcessing}
+          messages={messages}
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          onSwitchSession={switchSession}
+          onNewSession={createNewSession}
+          onDeleteSession={deleteSession}
+          onRenameSession={renameSession}
+          themeMode={themeMode}
+          onToggleTheme={toggleTheme}
+          onOpenOptions={navigateToOptions}
+          onOpenHelp={() => window.open('https://parsaghaffari.github.io/browserbee/', '_blank')}
+        />
       </header>
 
       {permissionError && (
@@ -475,23 +486,11 @@ export function SidePanel() {
 
       {hasConfiguredProviders ? (
         <>
-          <div className="flex flex-col flex-grow gap-4 overflow-hidden md:flex-row shadow-sm">
-            <div className="card bg-base-100 shadow-md flex-1 flex flex-col overflow-hidden">
-              <OutputHeader
-                onClearHistory={handleClearHistory}
-                onReflectAndLearn={handleReflectAndLearn}
-                isProcessing={isProcessing}
-                messages={messages}
-                sessions={sessions}
-                activeSessionId={activeSessionId}
-                onSwitchSession={switchSession}
-                onNewSession={createNewSession}
-                onDeleteSession={deleteSession}
-                onRenameSession={renameSession}
-              />
+          <div className="flex flex-col flex-grow gap-2 overflow-hidden">
+            <div className="card bg-base-100 shadow-sm flex-1 flex flex-col overflow-hidden">
               <div
                 ref={outputRef}
-                className="card-body p-3 overflow-auto bg-base-100 flex-1"
+                className="card-body p-2 overflow-auto bg-base-100 flex-1"
               >
                 <MessageDisplay
                   messages={messages}
@@ -525,14 +524,14 @@ export function SidePanel() {
             isProcessing={isProcessing}
             tabStatus={tabStatus}
             promptHistory={promptHistory}
+            providerSlot={<ProviderSelector compact isProcessing={isProcessing} />}
           />
-          <ProviderSelector isProcessing={isProcessing} />
         </>
       ) : (
         <div className="flex flex-col flex-grow items-center justify-center">
           <div className="text-center mb-6">
             <h2 className="text-xl font-semibold mb-2">No LLM provider configured</h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-base-content/60 mb-4">
               You need to configure an LLM provider before you can use BrowserBee.
             </p>
             <button

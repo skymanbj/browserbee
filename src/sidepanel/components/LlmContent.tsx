@@ -160,7 +160,23 @@ export const LlmContent: React.FC<LlmContentProps> = ({ content }) => {
                 ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
                 ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
                 li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                a: ({node, ...props}) => <a className="text-primary underline" {...props} />,
+                a: ({node, children, href, ...props}) => {
+                  // remark-gfm 会把裸 URL 自动转成链接；窄面板里一条超长 URL 会横跨
+                  // 很多行、把整条消息撑高。这里只对"纯长 URL"的文字做截断，
+                  // 完整地址放进 title，悬停可见。
+                  const text = Array.isArray(children) ? children.join('') : String(children ?? '');
+                  const isLongBareUrl = /^https?:\/\/\S+$/.test(text) && text.length > 44;
+                  return (
+                    <a
+                      {...props}
+                      href={href}
+                      className="text-primary underline break-all"
+                      title={isLongBareUrl ? text : undefined}
+                    >
+                      {isLongBareUrl ? `${text.slice(0, 42)}…` : children}
+                    </a>
+                  );
+                },
                 code: ({node, className, children, ...props}) => {
                   const match = /language-(\w+)/.exec(className || '');
                   // 如果没有 language 样式，但是内容包含换行符，或者它其实是一个多行文本，那也应当是代码块

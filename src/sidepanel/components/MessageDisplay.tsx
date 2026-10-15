@@ -5,6 +5,28 @@ import { LlmContent } from './LlmContent';
 import { ScreenshotMessage } from './ScreenshotMessage';
 import { AttachmentPreview } from './AttachmentPreview';
 
+/**
+ * "Connected to tab: ..." 只是连接事件日志，不是对话内容。
+ * 当前连接的标签页已经在顶栏（TabStatusBar）用状态点 + 标题呈现，
+ * 这里直接不渲染，避免每次都往消息流里堆一整条提示、挤占工作区高度。
+ */
+const isConnectionNotice = (m: Message): boolean =>
+  m.type === 'system' && m.content.startsWith('Connected to tab:');
+
+/**
+ * 系统日志行（如 "Switched to tab: ... (https://...)"）。
+ * 不再用整块底色盒子，改成"左侧细色条 + 无底色"，降低视觉重量；
+ * 同时 break-all + line-clamp-2，避免一条长 URL 把行高撑到十几行。
+ */
+const SystemLine: React.FC<{ content: string }> = ({ content }) => (
+  <div
+    className="border-l-2 border-base-content/15 pl-2 py-0.5 text-xs text-base-content/60 break-all line-clamp-2"
+    title={content}
+  >
+    {content}
+  </div>
+);
+
 interface MessageDisplayProps {
   messages: Message[];
   streamingSegments: Record<number, string>;
@@ -160,7 +182,7 @@ const CollapsibleWrapper: React.FC<{
             e.stopPropagation();
             setIsExpanded(!isExpanded);
           }}
-          className="btn btn-link btn-xs p-0 text-primary no-underline hover:underline font-bold"
+          className="text-xs font-medium text-primary/80 hover:text-primary hover:underline transition-colors"
         >
           {isExpanded ? '收起 ↑' : '展开全文 ↓'}
         </button>
@@ -174,36 +196,40 @@ const ToolGroup: React.FC<{
   isProcessing: boolean;
   onDeleteMessage: (index: number) => void;
 }> = ({ groupMessages, isProcessing, onDeleteMessage }) => {
-  const [isOpen, setIsOpen] = useState(isProcessing);
-
-  useEffect(() => {
-    setIsOpen(isProcessing);
-  }, [isProcessing]);
+  // 默认折叠：只显示"共 N 步"，需要时手动展开，避免占用工作区高度
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border border-base-content border-opacity-10 rounded-lg overflow-hidden my-2 bg-base-200 bg-opacity-30">
-      <div 
+    <div className="border-t border-base-content/10 my-1 pt-0.5">
+      <div
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className="flex items-center justify-between px-3 py-2 cursor-pointer bg-base-200 hover:bg-opacity-80 text-xs font-semibold text-base-content/70 select-none"
+        className="flex items-center justify-between py-1 cursor-pointer text-[11px] font-medium text-base-content/55 hover:text-base-content/80 select-none"
       >
         <div className="flex items-center gap-1.5">
-          <span>⚙️</span>
-          <span>自动操作步骤 (共 {groupMessages.length} 步)</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M8 6h13"></path>
+            <path d="M8 12h13"></path>
+            <path d="M8 18h13"></path>
+            <path d="M3 6h.01"></path>
+            <path d="M3 12h.01"></path>
+            <path d="M3 18h.01"></path>
+          </svg>
+          <span>自动操作步骤 · {groupMessages.length} 步</span>
           {isProcessing && <span className="loading loading-double-ring loading-xs text-primary ml-1"></span>}
         </div>
-        <span className="text-base-content/50 font-bold">
+        <span className="text-base-content/40">
           {isOpen ? '收起 ↑' : '展开 ↓'}
         </span>
       </div>
 
       {isOpen && (
-        <div className="p-2 space-y-1 bg-base-100 bg-opacity-50 max-h-[300px] overflow-y-auto">
+        <div className="space-y-0.5 pb-1 max-h-[300px] overflow-y-auto">
           {groupMessages.map(({ message, originalIndex }) => (
-            <div key={`group-msg-${originalIndex}`} className="flex items-start justify-between gap-2 relative text-xs py-0.5 border-b border-base-content border-opacity-5 last:border-0">
-              <div className="flex-grow min-w-0 bg-base-200 px-2 py-1 rounded text-base-content/60 font-mono overflow-x-auto whitespace-pre-wrap">
+            <div key={`group-msg-${originalIndex}`} className="group flex items-start justify-between gap-2 relative">
+              <div className="flex-grow min-w-0 pl-2 border-l border-base-content/10 text-[11px] leading-relaxed text-base-content/55 font-mono whitespace-pre-wrap break-all">
                 {message.content}
               </div>
               <button
@@ -211,8 +237,8 @@ const ToolGroup: React.FC<{
                   e.stopPropagation();
                   onDeleteMessage(originalIndex);
                 }}
-                className="btn btn-ghost btn-xs btn-circle opacity-25 hover:opacity-100 transition-opacity text-error flex-shrink-0 self-center"
-                title="Delete this step"
+                className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-error flex-shrink-0 self-center"
+                title="删除此步骤"
               >
                 ✕
               </button>
@@ -259,19 +285,25 @@ const ConversationTurnComponent: React.FC<{
   const turnGroupedItems = groupMessages(turn.messages.map(m => m.message));
 
   return (
-    <div className="border border-base-content border-opacity-10 rounded-lg overflow-hidden my-3 shadow-sm bg-base-100">
+    <div className="border border-base-content/[0.08] rounded-lg overflow-hidden my-2.5 bg-base-100">
       {isEditing ? (
         <div 
           className="p-3 bg-base-200 border-b border-base-content border-opacity-5"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="text-xs font-semibold text-base-content/60 mb-1.5 flex items-center gap-1">
-            <span>✏️ 编辑提问:</span>
+            <span className="inline-flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+              编辑提问:
+            </span>
           </div>
           <textarea
             value={editVal}
             onChange={(e) => setEditVal(e.target.value)}
-            className="w-full text-sm p-2 rounded border border-gray-300 focus:outline-none focus:border-primary bg-white text-gray-800"
+            className="w-full text-sm p-2 rounded border border-base-300 focus:outline-none focus:border-primary bg-base-100 text-base-content"
             rows={3}
             style={{ resize: 'vertical' }}
             autoFocus
@@ -303,36 +335,38 @@ const ConversationTurnComponent: React.FC<{
       ) : (
         <div 
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center justify-between px-3 py-2.5 cursor-pointer bg-base-200 hover:bg-opacity-80 text-sm font-medium text-base-content select-none"
+          className="flex items-center justify-between px-2.5 py-2 cursor-pointer bg-base-200/70 hover:bg-base-200 text-sm font-medium text-base-content select-none"
         >
           <div className="flex items-center gap-2 flex-grow min-w-0 pr-2">
             <span className="text-primary font-bold flex-shrink-0">问:</span>
             <span className="truncate flex-grow text-base-content font-medium" title={turn.prompt}>{turn.prompt}</span>
             {turn.attachments && turn.attachments.length > 0 && (
               <span className="badge badge-sm badge-ghost flex-shrink-0 gap-1">
-                📎 {turn.attachments.length}
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+                {turn.attachments.length}
               </span>
             )}
             {isLast && isProcessing && (
               <span className="loading loading-double-ring loading-xs text-primary flex-shrink-0"></span>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* 编辑按钮 - 铅笔图标 + "编辑" 文字 */}
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            {/* 编辑按钮（图标 + 悬停提示；窄面板里不再放文字，给提问留空间） */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setIsEditing(true);
               }}
               disabled={isProcessing}
-              className="btn btn-ghost btn-xs flex items-center gap-1 opacity-60 hover:opacity-100 text-primary font-medium"
+              className="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100 text-primary"
               title="编辑此提问"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
-              <span>编辑</span>
             </button>
             {/* 重新提交按钮 */}
             <button
@@ -343,7 +377,7 @@ const ConversationTurnComponent: React.FC<{
                 }
               }}
               disabled={isProcessing}
-              className="btn btn-ghost btn-xs flex items-center gap-1 opacity-60 hover:opacity-100 text-secondary font-medium"
+              className="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100 text-secondary"
               title="重新提交此提问"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -352,17 +386,16 @@ const ConversationTurnComponent: React.FC<{
                 <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
                 <path d="M8 21H3v-5"/>
               </svg>
-              <span>重新提交</span>
             </button>
             <button
               onClick={handleDeleteClick}
               disabled={isProcessing}
-              className="btn btn-ghost btn-xs btn-circle opacity-30 hover:opacity-100 text-error"
+              className="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100 text-error"
               title="删除本轮对话"
             >
               ✕
             </button>
-            <span className="text-base-content/50 text-xs font-bold">
+            <span className="text-base-content/50 text-[11px] font-medium ml-0.5">
               {isOpen ? '收起 ↑' : '答 ↓'}
             </span>
           </div>
@@ -370,7 +403,7 @@ const ConversationTurnComponent: React.FC<{
       )}
 
       {isOpen && (
-        <div className="p-3 bg-base-100 bg-opacity-30 space-y-2 border-t border-base-content border-opacity-5">
+        <div className="p-2.5 space-y-1.5 border-t border-base-content/[0.06]">
           {turn.attachments && turn.attachments.length > 0 && (
             <div className="border-b border-base-content border-opacity-5 pb-2">
               <AttachmentPreview attachments={turn.attachments} compact />
@@ -404,14 +437,15 @@ const ConversationTurnComponent: React.FC<{
             const originalIndex = turn.messages[relativeIndex].originalIndex;
             const msg = turn.messages[relativeIndex].message;
 
+            // 连接事件提示不再渲染（见 isConnectionNotice）
+            if (isConnectionNotice(msg)) return null;
+
             return (
-              <div key={`msg-${originalIndex}`} className="flex items-start justify-between gap-2 relative">
+              <div key={`msg-${originalIndex}`} className="group flex items-start justify-between gap-2 relative">
                 <div className="flex-grow min-w-0">
                   {msg.type === 'system' ? (
-                    <CollapsibleWrapper content={msg.content} bgClass="from-base-200">
-                      <div className="bg-base-200 px-3 py-1 rounded text-base-content/60 text-sm">
-                        {msg.content}
-                      </div>
+                    <CollapsibleWrapper content={msg.content} bgClass="from-base-100">
+                      <SystemLine content={msg.content} />
                     </CollapsibleWrapper>
                   ) : msg.type === 'screenshot' && msg.imageData ? (
                     <ScreenshotMessage imageData={msg.imageData} mediaType={msg.mediaType} />
@@ -426,8 +460,8 @@ const ConversationTurnComponent: React.FC<{
                     e.stopPropagation();
                     onDeleteMessage(originalIndex);
                   }}
-                  className="btn btn-ghost btn-xs btn-circle opacity-25 hover:opacity-100 transition-opacity text-error flex-shrink-0 self-center"
-                  title="Delete this message"
+                  className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-error flex-shrink-0 self-center"
+                  title="删除此消息"
                 >
                   ✕
                 </button>
@@ -476,13 +510,14 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({
         const msg = item.message!;
         const originalIndex = item.originalIndex!;
 
+        // 连接事件提示不再渲染（见 isConnectionNotice）
+        if (isConnectionNotice(msg)) return null;
+
         return (
-          <div key={`msg-${originalIndex}`} className="mb-2 flex items-start justify-between gap-2 relative">
+          <div key={`msg-${originalIndex}`} className="group mb-1.5 flex items-start justify-between gap-2 relative">
             <div className="flex-grow min-w-0">
               {msg.type === 'system' ? (
-                <div className="bg-base-200 px-3 py-1 rounded text-base-content/60 text-sm">
-                  {msg.content}
-                </div>
+                <SystemLine content={msg.content} />
               ) : msg.type === 'screenshot' && msg.imageData ? (
                 <ScreenshotMessage imageData={msg.imageData} mediaType={msg.mediaType} />
               ) : (
@@ -494,8 +529,8 @@ export const MessageDisplay: React.FC<MessageDisplayProps> = ({
                 e.stopPropagation();
                 onDeleteMessage(originalIndex);
               }}
-              className="btn btn-ghost btn-xs btn-circle opacity-25 hover:opacity-100 transition-opacity text-error flex-shrink-0 self-center"
-              title="Delete this message"
+              className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-error flex-shrink-0 self-center"
+              title="删除此消息"
             >
               ✕
             </button>

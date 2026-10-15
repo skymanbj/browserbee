@@ -1,6 +1,4 @@
-import { faBrain, faCheck, faCopy, faDownload, faTrash } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChatSession } from '../../types/session';
 import { Message } from '../types';
 
@@ -15,6 +13,12 @@ interface OutputHeaderProps {
   onNewSession: () => void;
   onDeleteSession: (sessionId: string) => void;
   onRenameSession: (sessionId: string, newTitle: string) => void;
+  /** 主题相关（可选）：收进溢出菜单 */
+  themeMode?: 'dark' | 'light';
+  onToggleTheme?: () => void;
+  /** 设置 / 帮助入口（可选）：收进溢出菜单 */
+  onOpenOptions?: () => void;
+  onOpenHelp?: () => void;
 }
 
 const formatToMarkdown = (messages: Message[]): string => {
@@ -51,6 +55,103 @@ const formatToText = (messages: Message[]): string => {
     }
     return '';
   }).filter(Boolean).join('\n');
+};
+
+/** 统一的线性图标外壳：viewBox 24 / stroke currentColor / strokeWidth 2 */
+const LineIcon: React.FC<{ size?: number; children: React.ReactNode }> = ({ size = 14, children }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {children}
+  </svg>
+);
+
+/** 溢出菜单用的图标集合（替换原来的 emoji） */
+const MenuIcons = {
+  rename: (
+    <LineIcon>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </LineIcon>
+  ),
+  trash: (
+    <LineIcon>
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    </LineIcon>
+  ),
+  reflect: (
+    <LineIcon>
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+      <path d="M12 2a7 7 0 0 0-4 12.7V18h8v-3.3A7 7 0 0 0 12 2z" />
+    </LineIcon>
+  ),
+  copy: (
+    <LineIcon>
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </LineIcon>
+  ),
+  check: (
+    <LineIcon>
+      <path d="M20 6L9 17l-5-5" />
+    </LineIcon>
+  ),
+  export: (
+    <LineIcon>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M7 10l5 5 5-5" />
+      <path d="M12 15V3" />
+    </LineIcon>
+  ),
+  clear: (
+    <LineIcon>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
+    </LineIcon>
+  ),
+  sun: (
+    <LineIcon>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="M4.9 4.9l1.4 1.4" />
+      <path d="M17.7 17.7l1.4 1.4" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="M4.9 19.1l1.4-1.4" />
+      <path d="M17.7 6.3l1.4-1.4" />
+    </LineIcon>
+  ),
+  moon: (
+    <LineIcon>
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </LineIcon>
+  ),
+  settings: (
+    <LineIcon>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </LineIcon>
+  ),
+  help: (
+    <LineIcon>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </LineIcon>
+  ),
 };
 
 const exportToPDF = (messages: Message[]) => {
@@ -239,12 +340,17 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
   onSwitchSession,
   onNewSession,
   onDeleteSession,
-  onRenameSession
+  onRenameSession,
+  themeMode,
+  onToggleTheme,
+  onOpenOptions,
+  onOpenHelp
 }) => {
   const [copied, setCopied] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitleText, setEditingTitleText] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleStartEditTitle = () => {
     if (!activeSessionId) return;
@@ -299,125 +405,116 @@ export const OutputHeader: React.FC<OutputHeaderProps> = ({
 
   const hasMessages = messages.length > 0;
 
+  // 点击空白处关闭溢出菜单
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = () => setMenuOpen(false);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [menuOpen]);
+
+  const menuItem = (
+    icon: React.ReactNode,
+    label: string,
+    onClick: () => void,
+    opts?: { danger?: boolean; disabled?: boolean }
+  ) => (
+    <button
+      type="button"
+      disabled={opts?.disabled}
+      onClick={(e) => {
+        e.stopPropagation();
+        setMenuOpen(false);
+        onClick();
+      }}
+      className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 hover:bg-base-200 disabled:opacity-40 disabled:cursor-not-allowed ${opts?.danger ? 'text-error' : 'text-base-content'}`}
+    >
+      <span className="w-4 flex items-center justify-center shrink-0">{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+
   return (
-    <div className="flex flex-col bg-base-300 border-b border-base-content border-opacity-10">
-      <div className="flex justify-between items-center p-3">
-        <div className="flex items-center gap-1.5 max-w-[65%] min-w-0">
-          {isEditingTitle ? (
-            <input
-              type="text"
-              value={editingTitleText}
-              onChange={(e) => setEditingTitleText(e.target.value)}
-              onBlur={handleSaveTitle}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveTitle();
-                if (e.key === 'Escape') setIsEditingTitle(false);
-              }}
-              className="input input-xs input-bordered w-full max-w-[140px] font-semibold"
-              autoFocus
-            />
-          ) : (
-            <select
-              value={activeSessionId || ''}
-              onChange={(e) => onSwitchSession(e.target.value)}
-              className="select select-xs select-bordered font-semibold text-xs max-w-[130px] truncate"
-              disabled={isProcessing}
-            >
-              {sessions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
-                </option>
-              ))}
-            </select>
+    <div className="flex flex-col">
+      <div className="flex items-center gap-1 shrink-0">
+        {isEditingTitle ? (
+          <input
+            type="text"
+            value={editingTitleText}
+            onChange={(e) => setEditingTitleText(e.target.value)}
+            onBlur={handleSaveTitle}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSaveTitle();
+              if (e.key === 'Escape') setIsEditingTitle(false);
+            }}
+            className="input input-xs input-bordered w-[150px] font-semibold"
+            autoFocus
+          />
+        ) : (
+          <select
+            value={activeSessionId || ''}
+            onChange={(e) => onSwitchSession(e.target.value)}
+            className="select select-xs select-bordered font-semibold text-xs w-[150px] truncate"
+            disabled={isProcessing}
+            title={sessions.find((s) => s.id === activeSessionId)?.title || '切换会话'}
+          >
+            {sessions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.title}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* 新建会话 */}
+        <button
+          onClick={() => onNewSession()}
+          disabled={isProcessing}
+          className="btn btn-ghost btn-xs btn-circle h-5 w-5 min-h-0 p-0 shrink-0"
+          title="新建会话"
+        >
+          ➕
+        </button>
+
+        {/* 溢出菜单：重命名 / 删除会话 / 反思 / 复制 / 导出 / 清空 / 主题 / 设置 / 帮助 */}
+        <div className="relative shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((v) => !v);
+            }}
+            className={`btn btn-ghost btn-xs btn-circle h-5 w-5 min-h-0 p-0 ${menuOpen ? 'bg-base-200' : ''}`}
+            title="更多操作"
+          >
+            ⋯
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-md border border-base-content/10 bg-base-100 shadow-lg text-xs py-1">
+              {activeSessionId &&
+                menuItem(MenuIcons.rename, '重命名会话', handleStartEditTitle, { disabled: isProcessing })}
+              {activeSessionId && sessions.length > 1 &&
+                menuItem(MenuIcons.trash, '删除会话', handleDeleteClick, { disabled: isProcessing, danger: true })}
+              {menuItem(MenuIcons.reflect, '反思学习', onReflectAndLearn, { disabled: isProcessing })}
+              {menuItem(copied ? MenuIcons.check : MenuIcons.copy, copied ? '已复制' : '复制对话', handleCopy, { disabled: isProcessing || !hasMessages })}
+              {menuItem(MenuIcons.export, '导出对话', () => setShowExport((v) => !v), { disabled: isProcessing || !hasMessages })}
+              {menuItem(MenuIcons.clear, '清空历史', onClearHistory, { disabled: isProcessing, danger: true })}
+              {(onToggleTheme || onOpenOptions || onOpenHelp) && (
+                <div className="my-1 border-t border-base-content/10" />
+              )}
+              {onToggleTheme &&
+                menuItem(themeMode === 'dark' ? MenuIcons.sun : MenuIcons.moon, themeMode === 'dark' ? '浅色主题' : '深色主题', onToggleTheme)}
+              {onOpenOptions && menuItem(MenuIcons.settings, '设置', onOpenOptions)}
+              {onOpenHelp && menuItem(MenuIcons.help, '帮助', onOpenHelp)}
+            </div>
           )}
-
-          <div className="flex gap-0.5 flex-shrink-0">
-            {/* 新建会话 */}
-            <button
-              onClick={() => onNewSession()}
-              disabled={isProcessing}
-              className="btn btn-ghost btn-xs btn-circle hover:bg-base-200"
-              title="新建会话"
-            >
-              ➕
-            </button>
-
-            {/* 编辑标题 */}
-            {!isEditingTitle && activeSessionId && (
-              <button
-                onClick={handleStartEditTitle}
-                disabled={isProcessing}
-                className="btn btn-ghost btn-xs btn-circle hover:bg-base-200"
-                title="重命名会话"
-              >
-                ✏️
-              </button>
-            )}
-
-            {/* 删除会话 */}
-            {activeSessionId && sessions.length > 1 && (
-              <button
-                onClick={handleDeleteClick}
-                disabled={isProcessing}
-                className="btn btn-ghost btn-xs btn-circle text-error hover:bg-base-200"
-                title="删除此会话"
-              >
-                🗑️
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Brain / Reflect */}
-          <div className="tooltip tooltip-bottom" data-tip="Reflect and learn from this session">
-            <button
-              onClick={onReflectAndLearn}
-              className="btn btn-sm btn-outline btn-primary"
-              disabled={isProcessing}
-            >
-              <FontAwesomeIcon icon={faBrain} />
-            </button>
-          </div>
-
-          {/* Copy Button */}
-          <div className="tooltip tooltip-bottom" data-tip="Copy entire conversation">
-            <button
-              onClick={handleCopy}
-              className={`btn btn-sm ${copied ? 'btn-success text-white' : 'btn-outline'}`}
-              disabled={isProcessing || !hasMessages}
-            >
-              <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
-            </button>
-          </div>
-
-          {/* Export Button */}
-          <div className="tooltip tooltip-bottom" data-tip="Export conversation">
-            <button
-              onClick={() => setShowExport(!showExport)}
-              className={`btn btn-sm ${showExport ? 'btn-active btn-primary' : 'btn-outline'}`}
-              disabled={isProcessing || !hasMessages}
-            >
-              <FontAwesomeIcon icon={faDownload} />
-            </button>
-          </div>
-
-          {/* Clear Button */}
-          <div className="tooltip tooltip-bottom" data-tip="Clear conversation history and LLM context">
-            <button
-              onClick={onClearHistory}
-              className="btn btn-sm btn-outline btn-error"
-              disabled={isProcessing}
-            >
-              <FontAwesomeIcon icon={faTrash} />
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Expandable Export Options */}
       {showExport && hasMessages && (
-        <div className="flex items-center justify-around bg-base-200 px-3 py-2 border-t border-base-content border-opacity-10 text-xs">
-          <span className="text-gray-500 font-medium mr-1">格式:</span>
+        <div className="flex items-center justify-around bg-base-200 px-2 py-1 mt-1 rounded border border-base-content border-opacity-10 text-xs">
+          <span className="text-base-content/60 font-medium mr-1">格式:</span>
           <button
             onClick={() => handleExportClick('md')}
             className="btn btn-xs btn-outline btn-primary"

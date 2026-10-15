@@ -7,13 +7,16 @@ interface TabStatusBarProps {
   tabTitle: string;
   tabStatus: 'attached' | 'detached' | 'unknown' | 'running' | 'idle' | 'error';
   theme?: 'dark' | 'light';
+  /** 紧凑模式：单行内联展示（用于与顶部工具栏合并成一行），不再自带卡片外壳 */
+  compact?: boolean;
 }
 
 export const TabStatusBar: React.FC<TabStatusBarProps> = ({
   tabId,
   tabTitle,
   tabStatus,
-  theme = 'dark'
+  theme = 'dark',
+  compact = false
 }) => {
   const [tabUrl, setTabUrl] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -95,44 +98,71 @@ export const TabStatusBar: React.FC<TabStatusBarProps> = ({
     }, 500);
   };
   
+  const dotClass =
+    tabStatus === 'attached' ? 'bg-green-500 animate-pulse' :
+    tabStatus === 'detached' ? 'bg-red-500' :
+    tabStatus === 'running' ? 'bg-blue-500 animate-pulse' :
+    tabStatus === 'idle' ? 'bg-green-500' :
+    tabStatus === 'error' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500';
+
+  const dotTitle =
+    tabStatus === 'attached' ? 'Connected' :
+    tabStatus === 'detached' ? 'Disconnected' :
+    tabStatus === 'running' ? 'Agent Running' :
+    tabStatus === 'idle' ? 'Agent Idle' :
+    tabStatus === 'error' ? 'Agent Error' : 'Unknown';
+
+  const refreshButton = (
+    <button
+      className={
+        compact
+          ? 'btn btn-ghost btn-xs btn-circle h-5 w-5 min-h-0 p-0 shrink-0'
+          : `btn ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} btn-xs min-h-[22px] h-[22px] px-2 flex items-center justify-center text-xs`
+      }
+      onClick={handleRefresh}
+      disabled={isRefreshing}
+      title="Attach to current tab"
+    >
+      <FontAwesomeIcon
+        icon={faSync}
+        className={isRefreshing ? 'animate-spin' : ''}
+        size="xs"
+      />
+    </button>
+  );
+
+  // 紧凑模式：与顶部工具栏同处一行，自身不占额外一整行高度
+  if (compact) {
+    return (
+      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${dotClass}`} title={dotTitle}></div>
+        <span
+          className={`cursor-pointer hover:underline text-xs min-w-0 truncate ${theme === 'dark' ? 'hover:text-indigo-400 text-slate-200' : 'hover:text-indigo-600 text-slate-800'}`}
+          onClick={handleTabClick}
+          title={`${tabTitle}${tabUrl ? `\n${tabUrl}` : ''}`}
+        >
+          {tabTitle}
+        </span>
+        {refreshButton}
+      </div>
+    );
+  }
+
   return (
     <div className={`text-sm px-3 py-1.5 flex items-center justify-between w-full ${theme === 'dark' ? 'glass-card' : 'glass-card-light'}`}>
       <div className="flex items-center flex-grow overflow-hidden">
-        <div className={`w-2 h-2 rounded-full mr-2 flex-shrink-0 ${
-          tabStatus === 'attached' ? 'bg-green-500 animate-pulse' : 
-          tabStatus === 'detached' ? 'bg-red-500' : 
-          tabStatus === 'running' ? 'bg-blue-500 animate-pulse' :
-          tabStatus === 'idle' ? 'bg-green-500' :
-          tabStatus === 'error' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
-        }`} title={
-          tabStatus === 'attached' ? 'Connected' : 
-          tabStatus === 'detached' ? 'Disconnected' : 
-          tabStatus === 'running' ? 'Agent Running' :
-          tabStatus === 'idle' ? 'Agent Idle' :
-          tabStatus === 'error' ? 'Agent Error' : 'Unknown'
-        }></div>
-        <span 
+        <div className={`w-2 h-2 rounded-full mr-2 flex-shrink-0 ${dotClass}`} title={dotTitle}></div>
+        <span
           className={`cursor-pointer hover:underline ${theme === 'dark' ? 'hover:text-indigo-400 text-slate-200' : 'hover:text-indigo-600 text-slate-800'} truncate`}
           onClick={handleTabClick}
           title={`${tabTitle}${tabUrl ? `\n${tabUrl}` : ''}`}
-        > 
+        >
           {tabTitle}
         </span>
       </div>
-      
+
       <div className="flex items-center ml-2">
-          <button 
-            className={`btn ${theme === 'dark' ? 'glass-btn' : 'glass-btn-light'} btn-xs min-h-[22px] h-[22px] px-2 flex items-center justify-center text-xs`}
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            title="Attach to current tab"
-          >
-            <FontAwesomeIcon 
-              icon={faSync} 
-              className={isRefreshing ? 'animate-spin' : ''} 
-              size="xs"
-            />
-          </button>
+        {refreshButton}
       </div>
     </div>
   );

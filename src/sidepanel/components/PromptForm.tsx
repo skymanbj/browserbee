@@ -26,6 +26,8 @@ interface PromptFormProps {
   theme?: 'dark' | 'light';
   /** 历史提示词（按时间从旧到新排列），供 ↑/↓ 键回溯 */
   promptHistory?: string[];
+  /** 内联插槽：渲染在输入框同一行右侧（用于放模型下拉等） */
+  providerSlot?: React.ReactNode;
 }
 
 const DEFAULT_SKILLS: UserSkill[] = [
@@ -65,9 +67,11 @@ export const PromptForm: React.FC<PromptFormProps> = ({
   isProcessing,
   tabStatus,
   theme = 'dark',
-  promptHistory = []
+  promptHistory = [],
+  providerSlot
 }) => {
   const [prompt, setPrompt] = useState('');
+  const [showSkills, setShowSkills] = useState(false);
   const [skills, setSkills] = useState<UserSkill[]>(DEFAULT_SKILLS);
   const [isSaving, setIsSaving] = useState(false);
   const [newSkillName, setNewSkillName] = useState('');
@@ -307,7 +311,8 @@ export const PromptForm: React.FC<PromptFormProps> = ({
   };
 
   return (
-    <div className="mt-4 flex flex-col gap-1.5">
+    <div className="mt-2 flex flex-col gap-1.5">
+      {showSkills && (
       <div className="flex items-center gap-1 text-[11px] w-full py-0.5 select-none overflow-visible">
         {/* 常用技能与可滑动技能按钮列表 */}
         <div className="flex items-center gap-1 overflow-x-auto flex-grow [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-1">
@@ -349,7 +354,10 @@ export const PromptForm: React.FC<PromptFormProps> = ({
             className={`text-xs h-[20px] w-6 flex items-center justify-center rounded ${theme === 'dark' ? 'text-amber-400 hover:bg-white/5' : 'text-amber-600 hover:bg-black/5'} ${showTemplatePicker ? 'opacity-70' : ''}`}
             title="提示词模板库"
           >
-            📋
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="8" y="2" width="8" height="4" rx="1"></rect>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            </svg>
           </button>
 
           {/* 新建技能按钮（始终显示） */}
@@ -359,29 +367,41 @@ export const PromptForm: React.FC<PromptFormProps> = ({
             className={`text-xs h-[20px] w-6 flex items-center justify-center rounded ${theme === 'dark' ? 'text-emerald-400 hover:bg-white/5' : 'text-emerald-600 hover:bg-black/5'}`}
             title="新建常用技能"
           >
-            ✨
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3l1.8 4.9L18.7 9.7l-4.9 1.8L12 16.4l-1.8-4.9L5.3 9.7l4.9-1.8L12 3z"></path>
+              <path d="M18.6 15l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7.7-1.9z"></path>
+            </svg>
           </button>
 
-          {/* 如果当前输入框有内容，且未处于保存面板状态，显示"⭐ 存为技能"按钮 */}
+          {/* 如果当前输入框有内容，且未处于保存面板状态，显示"存为技能"按钮 */}
           {prompt.trim() && !isSaving && (
             <button
               type="button"
               onClick={() => setIsSaving(true)}
-              className={`text-xs h-[20px] w-6 flex items-center justify-center rounded ${theme === 'dark' ? 'text-indigo-400 hover:bg-white/5' : 'text-indigo-600 hover:bg-black/5'}`}
-              title="将输入指令保存为技能"
-            >
-              ⭐
-            </button>
+            className={`text-xs h-[20px] w-6 flex items-center justify-center rounded ${theme === 'dark' ? 'text-indigo-400 hover:bg-white/5' : 'text-indigo-600 hover:bg-black/5'}`}
+            title="将输入指令保存为技能"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+            </svg>
+          </button>
           )}
         </div>
       </div>
+      )}
 
       {/* ── Prompt Template Picker Panel ── */}
       {showTemplatePicker && (
         <div className={`p-2 ${theme === 'dark' ? 'bg-amber-950/30 border border-white/5' : 'bg-amber-50/70 border border-amber-200/50'} rounded-md text-xs animate-fade-in max-h-64 overflow-hidden flex flex-col`}>
           {/* Search input */}
           <div className="flex items-center gap-1 mb-1.5">
-            <span className={`font-semibold ${theme === 'dark' ? 'text-amber-400' : 'text-amber-700'} flex-shrink-0`}>📋 模板库</span>
+            <span className={`font-semibold ${theme === 'dark' ? 'text-amber-400' : 'text-amber-700'} flex-shrink-0 flex items-center gap-1`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="8" y="2" width="8" height="4" rx="1"></rect>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              </svg>
+              模板库
+            </span>
             <input
               type="text"
               placeholder="搜索模板..."
@@ -430,7 +450,11 @@ export const PromptForm: React.FC<PromptFormProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className={`p-4 rounded-lg shadow-xl max-w-md w-full mx-2 ${theme === 'dark' ? 'bg-gray-800 border border-white/10' : 'bg-white border border-gray-200'}`}>
             <h3 className={`text-sm font-bold mb-3 flex items-center gap-1.5 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-700'}`}>
-              📋 填写模板变量
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="8" y="2" width="8" height="4" rx="1"></rect>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              </svg>
+              填写模板变量
               <span className={`text-xs font-normal ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                 — {pendingTemplate.name}
               </span>
@@ -506,7 +530,11 @@ export const PromptForm: React.FC<PromptFormProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className={`p-4 rounded-lg shadow-xl max-w-sm w-full mx-2 ${theme === 'dark' ? 'bg-gray-800 border border-white/10' : 'bg-white border border-gray-200'}`}>
             <h3 className={`text-sm font-bold mb-3 flex items-center gap-1.5 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-700'}`}>
-              ✨ 新建常用技能
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3l1.8 4.9L18.7 9.7l-4.9 1.8L12 16.4l-1.8-4.9L5.3 9.7l4.9-1.8L12 3z"></path>
+                <path d="M18.6 15l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7.7-1.9z"></path>
+              </svg>
+              新建常用技能
             </h3>
             <div className="space-y-2">
               <div className="flex flex-col gap-1">
@@ -556,7 +584,11 @@ export const PromptForm: React.FC<PromptFormProps> = ({
                 className={`btn btn-xs ${theme === 'dark' ? 'glass-btn-primary' : 'glass-btn-primary-light'} h-7 min-h-[28px]`}
                 disabled={!createSkillName.trim()}
               >
-                ✨ 创建技能
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3l1.8 4.9L18.7 9.7l-4.9 1.8L12 16.4l-1.8-4.9L5.3 9.7l4.9-1.8L12 3z"></path>
+                  <path d="M18.6 15l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7.7-1.9z"></path>
+                </svg>
+                创建技能
               </button>
             </div>
           </div>
@@ -616,20 +648,41 @@ export const PromptForm: React.FC<PromptFormProps> = ({
 
       {/* 原指令输入表单 */}
       <form onSubmit={handleSubmit} className="flex items-end gap-1.5 w-full">
+        {/* 图标按钮组：技能 + 上传（两者紧邻，间距由本容器独立控制） */}
+        <div className="flex items-center gap-0.5 shrink-0">
+        {/* 常用技能开关（默认收起，点击展开技能/模板/存为技能） */}
+        <button
+          type="button"
+          onClick={() => setShowSkills(v => !v)}
+          className={`btn btn-sm btn-ghost shrink-0 ${showSkills ? (theme === 'dark' ? 'bg-white/10' : 'bg-black/10') : ''} ${theme === 'dark' ? 'text-emerald-400 hover:bg-white/5' : 'text-emerald-600 hover:bg-black/5'} h-10 w-7 p-0 flex items-center justify-center text-base leading-none`}
+          style={{ minHeight: '40px' }}
+          title="常用技能"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="7.5" height="7.5" rx="2"></rect>
+            <rect x="13.5" y="3" width="7.5" height="7.5" rx="2"></rect>
+            <rect x="3" y="13.5" width="7.5" height="7.5" rx="2"></rect>
+            <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"></rect>
+          </svg>
+        </button>
+
         {/* 添加文件按钮 —— 移到输入框同一行的最左侧 */}
         <button
           type="button"
           onClick={handleFileButtonClick}
-          className={`btn btn-sm btn-ghost shrink-0 ${theme === 'dark' ? 'text-sky-400 hover:bg-white/5' : 'text-sky-600 hover:bg-black/5'} h-10 w-8 p-0 flex items-center justify-center text-lg leading-none`}
+          className={`btn btn-sm btn-ghost shrink-0 ${theme === 'dark' ? 'text-sky-400 hover:bg-white/5' : 'text-sky-600 hover:bg-black/5'} h-10 w-7 p-0 flex items-center justify-center text-lg leading-none`}
           style={{ minHeight: '40px' }}
           title="上传文件或图片"
         >
-          📎
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+          </svg>
         </button>
+        </div>
 
-        <div className="relative flex-grow">
+        <div className="relative flex-grow min-w-0">
           <TextareaAutosize
-            className={`${theme === 'dark' ? 'glass-input' : 'glass-input-light'} textarea w-full pr-12`}
+            className={`${theme === 'dark' ? 'glass-input' : 'glass-input-light'} textarea w-full pr-9`}
             value={prompt}
             onChange={(e) => {
               setPrompt(e.target.value);
@@ -659,8 +712,8 @@ export const PromptForm: React.FC<PromptFormProps> = ({
               }
             }}
             placeholder={tabStatus === 'detached'
-              ? "Tab connection lost. Please refresh the tab to continue."
-              : "Type a message..."}
+              ? "Tab disconnected — refresh to continue."
+              : "Message…"}
             autoFocus
             disabled={isProcessing || tabStatus === 'detached'}
             minRows={1}
@@ -677,8 +730,8 @@ export const PromptForm: React.FC<PromptFormProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="btn btn-sm btn-circle btn-error absolute"
-              style={{ bottom: '5px', right: '5px' }}
+              className="btn btn-xs btn-circle btn-error absolute"
+              style={{ bottom: '8px', right: '6px' }}
               title="Cancel"
             >
               <FontAwesomeIcon icon={faXmark} />
@@ -686,8 +739,8 @@ export const PromptForm: React.FC<PromptFormProps> = ({
           ) : (
             <button
               type="submit"
-              className={`btn btn-sm btn-circle ${theme === 'dark' ? 'glass-btn-primary' : 'glass-btn-primary-light'} absolute`}
-              style={{ bottom: '5px', right: '5px' }}
+              className={`btn btn-xs btn-circle ${theme === 'dark' ? 'glass-btn-primary' : 'glass-btn-primary-light'} absolute`}
+              style={{ bottom: '8px', right: '6px' }}
               disabled={!prompt.trim() || tabStatus === 'detached'}
               title={tabStatus === 'detached' ? "Refresh tab to continue" : "Execute"}
             >
@@ -695,6 +748,8 @@ export const PromptForm: React.FC<PromptFormProps> = ({
             </button>
           )}
         </div>
+
+        {providerSlot}
       </form>
     </div>
   );

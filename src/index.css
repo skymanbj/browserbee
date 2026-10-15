@@ -346,6 +346,27 @@ html[data-theme="light"] select option {
   background: #ffffff !important;
 }
 
+/* ── Dark Mode Text Contrast ─────────────────────────── */
+
+/* daisyUI 的 dark 主题里 base-content 本身已是浅色，再叠加 40–60% 透明度后，
+   在深色底上对比度明显偏低（次要说明文字尤其看不清）。
+   这里给低透明度文字类设一个更高的下限，只影响深色模式，浅色模式保持不变。 */
+html[data-theme="dark"] .text-base-content\/40 {
+  color: color-mix(in oklab, var(--color-base-content) 62%, transparent) !important;
+}
+
+html[data-theme="dark"] .text-base-content\/50 {
+  color: color-mix(in oklab, var(--color-base-content) 72%, transparent) !important;
+}
+
+html[data-theme="dark"] .text-base-content\/55 {
+  color: color-mix(in oklab, var(--color-base-content) 76%, transparent) !important;
+}
+
+html[data-theme="dark"] .text-base-content\/60 {
+  color: color-mix(in oklab, var(--color-base-content) 82%, transparent) !important;
+}
+
 /* ── Utility Animations ──────────────────────────────── */
 
 /* Smooth theme transition */

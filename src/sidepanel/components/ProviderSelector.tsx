@@ -13,6 +13,8 @@ interface ProviderOption {
 
 interface ProviderSelectorProps {
   isProcessing: boolean;
+  /** 紧凑模式：只渲染模型下拉本身（用于并入输入框那一行），设置/帮助入口改由顶部菜单承载 */
+  compact?: boolean;
 }
 
 /** Dark-theme inline styles (used when themeMode === 'dark') */
@@ -63,7 +65,7 @@ const light = {
   borderColor: 'rgba(0,0,0,0.1)',
 } as const;
 
-export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
+export function ProviderSelector({ isProcessing, compact = false }: ProviderSelectorProps) {
   const themeMode = useAppSelector((state) => state.settings.theme);
   const t = themeMode === 'dark' ? dark : light;
 
@@ -192,6 +194,45 @@ export function ProviderSelector({ isProcessing }: ProviderSelectorProps) {
 
   if (isLoading || options.length === 0) {
     return null;
+  }
+
+  // 紧凑模式：只输出模型下拉，供输入框那一行内联使用
+  // 高度与输入栏对齐（输入栏 minHeight 40px），宽度略加宽便于看清模型名
+  if (compact) {
+    return (
+      <select
+        value={`${currentProvider}|${currentModel}`}
+        onChange={handleChange}
+        disabled={isProcessing}
+        title={currentModel || '切换模型'}
+        style={{
+          width: '120px',
+          flexShrink: 0,
+          background: t.select.background,
+          border: t.select.border,
+          borderRadius: '8px',
+          color: t.select.color,
+          fontSize: '12px',
+          padding: '2px 6px',
+          height: '40px',
+          cursor: 'pointer',
+          outline: 'none',
+          opacity: isProcessing ? 0.5 : 1,
+        }}
+      >
+        {options.map(option =>
+          option.models.map(model => (
+            <option
+              key={`${option.provider}|${model.id}`}
+              value={`${option.provider}|${model.id}`}
+              style={{ background: t.option.background, color: t.option.color }}
+            >
+              {model.name}
+            </option>
+          ))
+        )}
+      </select>
+    );
   }
 
   // Function to open options page in a new tab
