@@ -44,6 +44,7 @@ upload_*.png
 # AI Tools local config
 .claude/
 .codex/
+.workbuddy-ai/
 
 # Project rules
 AGENTS.md
